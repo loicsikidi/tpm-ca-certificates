@@ -12,6 +12,9 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # allow failures for (oldstable, latest) and (go.mod, latest)
+    # root cause: latest version of boulder requires Go 1.25.0
+    continue-on-error: ${{ (matrix.go.go-version == 'oldstable' || matrix.go.go-version-file == 'go.mod') && matrix.deps == 'latest' }}
     strategy:
       fail-fast: false
       matrix:
