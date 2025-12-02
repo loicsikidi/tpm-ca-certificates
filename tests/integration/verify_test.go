@@ -114,7 +114,7 @@ func TestVerifyIntegration(t *testing.T) {
 
 		// Validate result structure
 		if result == nil {
-			t.Error("Verification result is nil")
+			t.Fatal("Verification result is nil")
 		}
 		if result.Signature == nil {
 			t.Error("Signature in result is nil")

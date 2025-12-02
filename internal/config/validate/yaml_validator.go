@@ -260,7 +260,7 @@ func isValidFingerprintFormat(fp string) bool {
 
 	// Check all characters are hex and uppercase
 	for _, c := range cleaned {
-		if !((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F')) {
+		if (c < '0' || c > '9') && (c < 'A' || c > 'F') {
 			return false
 		}
 	}
