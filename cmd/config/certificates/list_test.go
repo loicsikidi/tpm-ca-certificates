@@ -21,8 +21,8 @@ func TestListCommand(t *testing.T) {
 			name: "list all certificates",
 			config: `version: "alpha"
 vendors:
-  - name: "Vendor A"
-    id: "VDA"
+  - id: "VDA"
+    name: "Vendor A"
     certificates:
       - name: "Cert A1"
         url: "https://example.com/a1.crt"
@@ -34,8 +34,8 @@ vendors:
         validation:
           fingerprint:
             sha256: "11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00"
-  - name: "Vendor B"
-    id: "VDB"
+  - id: "VDB"
+    name: "Vendor B"
     certificates:
       - name: "Cert B1"
         url: "https://example.com/b1.crt"
@@ -60,16 +60,16 @@ vendors:
 			name: "list certificates for specific vendor",
 			config: `version: "alpha"
 vendors:
-  - name: "Vendor A"
-    id: "VDA"
+  - id: "VDA"
+    name: "Vendor A"
     certificates:
       - name: "Cert A1"
         url: "https://example.com/a1.crt"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
-  - name: "Vendor B"
-    id: "VDB"
+  - id: "VDB"
+    name: "Vendor B"
     certificates:
       - name: "Cert B1"
         url: "https://example.com/b1.crt"
@@ -90,8 +90,8 @@ vendors:
 			name: "error when vendor not found",
 			config: `version: "alpha"
 vendors:
-  - name: "Vendor A"
-    id: "VDA"
+  - id: "VDA"
+    name: "Vendor A"
     certificates:
       - name: "Cert A1"
         url: "https://example.com/a1.crt"
@@ -108,8 +108,8 @@ vendors:
 			name: "list certificate with multiple fingerprints",
 			config: `version: "alpha"
 vendors:
-  - name: "Test Vendor"
-    id: "TST"
+  - id: "TST"
+    name: "Test Vendor"
     certificates:
       - name: "Multi-Hash Cert"
         url: "https://example.com/multi.crt"

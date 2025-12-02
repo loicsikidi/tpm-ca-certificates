@@ -63,8 +63,9 @@ jobs:
       - uses: geomys/sandboxed-step@7d75eb49d17fdeeb3656b3a57d35932d205bcfb9 # v1.2.1
         with:
           run: |
-            if ! go run ./ config format --config .tpm-roots.yaml; then
-              echo "format command failed ⛔"
+            if ! go run ./ config format --config .tpm-roots.yaml --dry-run; then
+              echo ".tpm-roots.yaml needs formatting ⛔"
+              echo "Run 'tpmtb config format --config .tpm-roots.yaml' to fix it."
               exit 1
             fi
             if ! go run ./ config validate --config .tpm-roots.yaml; then

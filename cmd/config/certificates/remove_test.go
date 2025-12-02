@@ -20,8 +20,8 @@ func TestRemoveCommand(t *testing.T) {
 			name: "remove existing certificate",
 			initialConfig: `version: "alpha"
 vendors:
-  - name: "Test Vendor"
-    id: "TST"
+  - id: "TST"
+    name: "Test Vendor"
     certificates:
       - name: "Certificate A"
         url: "https://example.com/cert-a.crt"
@@ -64,8 +64,8 @@ vendors:
 			name: "case insensitive certificate name matching",
 			initialConfig: `version: "alpha"
 vendors:
-  - name: "Test Vendor"
-    id: "TST"
+  - id: "TST"
+    name: "Test Vendor"
     certificates:
       - name: "FirstCert"
         url: "https://example.com/first.crt"
@@ -97,8 +97,8 @@ vendors:
 			name: "error when vendor not found",
 			initialConfig: `version: "alpha"
 vendors:
-  - name: "Test Vendor"
-    id: "TST"
+  - id: "TST"
+    name: "Test Vendor"
     certificates:
       - name: "Test Cert"
         url: "https://example.com/cert.crt"
@@ -116,8 +116,8 @@ vendors:
 			name: "error when certificate not found",
 			initialConfig: `version: "alpha"
 vendors:
-  - name: "Test Vendor"
-    id: "TST"
+  - id: "TST"
+    name: "Test Vendor"
     certificates:
       - name: "Certificate A"
         url: "https://example.com/cert-a.crt"
@@ -135,8 +135,8 @@ vendors:
 			name: "remove first certificate from list",
 			initialConfig: `version: "alpha"
 vendors:
-  - name: "Test Vendor"
-    id: "TST"
+  - id: "TST"
+    name: "Test Vendor"
     certificates:
       - name: "First Cert"
         url: "https://example.com/first.crt"
@@ -168,8 +168,8 @@ vendors:
 			name: "remove last certificate from list",
 			initialConfig: `version: "alpha"
 vendors:
-  - name: "Test Vendor"
-    id: "TST"
+  - id: "TST"
+    name: "Test Vendor"
     certificates:
       - name: "First Cert"
         url: "https://example.com/first.crt"

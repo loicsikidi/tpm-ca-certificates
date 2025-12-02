@@ -22,6 +22,7 @@ func NewCommand() *cobra.Command {
 		Long: `Validate a TPM roots YAML configuration file.
 
 The validator checks:
+  - File starts with YAML document marker (---)
   - Vendor IDs are valid according to TCG TPM Vendor ID Registry
   - Vendors are sorted alphabetically by ID
   - Certificates within each vendor are sorted alphabetically by name

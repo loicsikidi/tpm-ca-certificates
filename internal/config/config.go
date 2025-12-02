@@ -45,8 +45,8 @@ func (c *TPMRootsConfig) CheckAndSetDefault() error {
 
 // Vendor represents a TPM vendor with their certificates.
 type Vendor struct {
-	Name         string        `yaml:"name"`
 	ID           string        `yaml:"id"`
+	Name         string        `yaml:"name"`
 	Certificates []Certificate `yaml:"certificates"`
 }
 

@@ -185,8 +185,8 @@ func TestFormatFile(t *testing.T) {
 
 	inputYAML := `version: alpha
 vendors:
-- name: Test Vendor
-  id: TV
+- id: TV
+  name: Test Vendor
   certificates:
     - name: Test Cert
       url: https://example.com/test cert.cer
@@ -210,6 +210,11 @@ vendors:
 
 	outputStr := string(output)
 
+	// Check that file starts with ---
+	if !strings.HasPrefix(outputStr, "---\n") {
+		t.Error("Output should start with YAML document marker '---'")
+	}
+
 	// Check that strings are quoted
 	if !strings.Contains(outputStr, `"alpha"`) {
 		t.Error("Output should contain quoted version")
@@ -223,5 +228,225 @@ vendors:
 	// Check that URL is encoded
 	if !strings.Contains(outputStr, "test%20cert.cer") {
 		t.Error("Output should contain URL-encoded space")
+	}
+}
+
+func TestEnsureYAMLDocumentMarker(t *testing.T) {
+	f := NewFormatter()
+
+	tests := []struct {
+		name  string
+		input []byte
+		want  string
+	}{
+		{
+			name:  "missing document marker",
+			input: []byte("version: \"alpha\"\nvendors: []"),
+			want:  "---\nversion: \"alpha\"\nvendors: []",
+		},
+		{
+			name:  "already has document marker",
+			input: []byte("---\nversion: \"alpha\"\nvendors: []"),
+			want:  "---\nversion: \"alpha\"\nvendors: []",
+		},
+		{
+			name:  "document marker with extra spaces should add correct marker",
+			input: []byte("  ---  \nversion: \"alpha\""),
+			want:  "---\n  ---  \nversion: \"alpha\"",
+		},
+		{
+			name:  "empty file",
+			input: []byte(""),
+			want:  "---\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := f.ensureYAMLDocumentMarker(tt.input)
+			if string(got) != tt.want {
+				t.Errorf("ensureYAMLDocumentMarker() = %q, want %q", string(got), tt.want)
+			}
+		})
+	}
+}
+
+func TestNeedsFormatting(t *testing.T) {
+	f := NewFormatter()
+
+	tests := []struct {
+		name  string
+		input string
+		want  bool
+	}{
+		{
+			name: "already formatted",
+			input: `---
+version: "alpha"
+vendors:
+    - id: "TV"
+      name: "Test Vendor"
+      certificates:
+        - name: "Test Cert"
+          url: "https://example.com/test.cer"
+          validation:
+            fingerprint:
+                sha1: "AA:BB:CC:DD"
+`,
+			want: false,
+		},
+		{
+			name: "missing document marker",
+			input: `version: "alpha"
+vendors:
+    - id: "TV"
+      name: "Test Vendor"
+      certificates:
+        - name: "Test Cert"
+          url: "https://example.com/test.cer"
+          validation:
+            fingerprint:
+                sha1: "AA:BB:CC:DD"
+`,
+			want: true,
+		},
+		{
+			name: "needs formatting - no quotes",
+			input: `---
+version: alpha
+vendors:
+  - id: TV
+    name: Test Vendor
+    certificates:
+      - name: Test Cert
+        url: https://example.com/test.cer
+        validation:
+          fingerprint:
+            sha1: aa:bb:cc:dd
+`,
+			want: true,
+		},
+		{
+			name: "needs formatting - lowercase fingerprint",
+			input: `---
+version: "alpha"
+vendors:
+  - id: "TV"
+    name: "Test Vendor"
+    certificates:
+      - name: "Test Cert"
+        url: "https://example.com/test.cer"
+        validation:
+          fingerprint:
+            sha1: "aa:bb:cc:dd"
+`,
+			want: true,
+		},
+		{
+			name: "needs formatting - unsorted vendors",
+			input: `---
+version: "alpha"
+vendors:
+  - id: "VB"
+    name: "Vendor B"
+    certificates:
+      - name: "Cert"
+        url: "https://example.com/b.cer"
+        validation:
+          fingerprint:
+            sha1: "AA:BB:CC:DD"
+  - id: "VA"
+    name: "Vendor A"
+    certificates:
+      - name: "Cert"
+        url: "https://example.com/a.cer"
+        validation:
+          fingerprint:
+            sha1: "AA:BB:CC:DD"
+`,
+			want: true,
+		},
+		{
+			name: "needs formatting - unsorted certificates",
+			input: `---
+version: "alpha"
+vendors:
+  - id: "TV"
+    name: "Test Vendor"
+    certificates:
+      - name: "Z Cert"
+        url: "https://example.com/z.cer"
+        validation:
+          fingerprint:
+            sha1: "AA:BB:CC:DD"
+      - name: "A Cert"
+        url: "https://example.com/a.cer"
+        validation:
+          fingerprint:
+            sha1: "AA:BB:CC:DD"
+`,
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			inputPath := filepath.Join(tmpDir, "test.yaml")
+
+			if err := os.WriteFile(inputPath, []byte(tt.input), 0644); err != nil {
+				t.Fatal(err)
+			}
+
+			got, err := f.NeedsFormatting(inputPath)
+			if err != nil {
+				t.Fatalf("NeedsFormatting() error = %v", err)
+			}
+
+			if got != tt.want {
+				t.Errorf("NeedsFormatting() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNeedsFormattingInvalidFile(t *testing.T) {
+	f := NewFormatter()
+
+	tests := []struct {
+		name      string
+		input     string
+		wantError bool
+	}{
+		{
+			name:      "file does not exist",
+			input:     "/nonexistent/file.yaml",
+			wantError: true,
+		},
+		{
+			name:      "invalid yaml",
+			input:     "invalid: yaml: content:",
+			wantError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var inputPath string
+			if tt.name == "file does not exist" {
+				inputPath = tt.input
+			} else {
+				tmpDir := t.TempDir()
+				inputPath = filepath.Join(tmpDir, "test.yaml")
+				if err := os.WriteFile(inputPath, []byte(tt.input), 0644); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			_, err := f.NeedsFormatting(inputPath)
+			if (err != nil) != tt.wantError {
+				t.Errorf("NeedsFormatting() error = %v, wantError %v", err, tt.wantError)
+			}
+		})
 	}
 }

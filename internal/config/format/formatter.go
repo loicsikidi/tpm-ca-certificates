@@ -19,9 +19,46 @@ func NewFormatter() *Formatter {
 	return &Formatter{}
 }
 
-// Format applies formatting rules to a TPM roots configuration file.
+// NeedsFormatting checks if a file needs formatting without modifying it.
+//
+// It returns true if the file would be changed by formatting, false otherwise.
+//
+// Example:
+//
+//	formatter := format.NewFormatter()
+//	needs, err := formatter.NeedsFormatting(".tpm-roots.yaml")
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//	if needs {
+//	    fmt.Println("File needs formatting")
+//	}
+func (f *Formatter) NeedsFormatting(inputPath string) (bool, error) {
+	cfg, err := config.LoadConfig(inputPath)
+	if err != nil {
+		return false, fmt.Errorf("failed to load config: %w", err)
+	}
+
+	f.applyFormatting(cfg)
+
+	formattedData, err := f.marshalWithQuotes(cfg)
+	if err != nil {
+		return false, fmt.Errorf("failed to marshal YAML: %w", err)
+	}
+
+	originalData, err := os.ReadFile(inputPath)
+	if err != nil {
+		return false, fmt.Errorf("failed to read original file: %w", err)
+	}
+
+	formattedWithMarker := f.ensureYAMLDocumentMarker(formattedData)
+	return string(formattedWithMarker) != string(originalData), nil
+}
+
+// FormatFile applies formatting rules to a TPM roots configuration file.
 //
 // The formatting includes:
+//   - Adding YAML document marker (---) at the beginning if missing
 //   - Sorting vendors by ID (alphabetical)
 //   - Sorting certificates within each vendor by name (alphabetical)
 //   - URL-encoding certificate URLs
@@ -47,6 +84,8 @@ func (f *Formatter) FormatFile(inputPath, outputPath string) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal YAML: %w", err)
 	}
+
+	yamlData = f.ensureYAMLDocumentMarker(yamlData)
 
 	if err := os.WriteFile(outputPath, yamlData, 0644); err != nil {
 		return fmt.Errorf("failed to write output file: %w", err)
@@ -159,4 +198,19 @@ func (f *Formatter) addQuotesToStrings(node *yaml.Node) {
 	for _, child := range node.Content {
 		f.addQuotesToStrings(child)
 	}
+}
+
+// ensureYAMLDocumentMarker ensures the YAML data starts with --- on the first line.
+func (f *Formatter) ensureYAMLDocumentMarker(data []byte) []byte {
+	lines := strings.Split(string(data), "\n")
+	if len(lines) == 0 {
+		return append([]byte("---\n"), data...)
+	}
+
+	// Check that first line is exactly "---" without any leading/trailing spaces
+	if lines[0] != "---" {
+		return append([]byte("---\n"), data...)
+	}
+
+	return data
 }

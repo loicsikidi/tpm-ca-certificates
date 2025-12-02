@@ -21,8 +21,8 @@ func TestListCommand(t *testing.T) {
 			name: "list all vendors in table format",
 			config: `version: "alpha"
 vendors:
-  - name: "Vendor A"
-    id: "VDA"
+  - id: "VDA"
+    name: "Vendor A"
     certificates:
       - name: "Cert A1"
         url: "https://example.com/a1.crt"
@@ -34,8 +34,8 @@ vendors:
         validation:
           fingerprint:
             sha256: "11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00"
-  - name: "Vendor B"
-    id: "VDB"
+  - id: "VDB"
+    name: "Vendor B"
     certificates:
       - name: "Cert B1"
         url: "https://example.com/b1.crt"
@@ -61,16 +61,16 @@ vendors:
 			name: "list all vendors in short format",
 			config: `version: "alpha"
 vendors:
-  - name: "Vendor A"
-    id: "VDA"
+  - id: "VDA"
+    name: "Vendor A"
     certificates:
       - name: "Cert A1"
         url: "https://example.com/a1.crt"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
-  - name: "Vendor B"
-    id: "VDB"
+  - id: "VDB"
+    name: "Vendor B"
     certificates:
       - name: "Cert B1"
         url: "https://example.com/b1.crt"
@@ -98,8 +98,8 @@ vendors: []
 			name: "single vendor with multiple certificates",
 			config: `version: "alpha"
 vendors:
-  - name: "Test Vendor Corp"
-    id: "TST"
+  - id: "TST"
+    name: "Test Vendor Corp"
     certificates:
       - name: "Cert 1"
         url: "https://example.com/1.crt"
@@ -129,24 +129,24 @@ vendors:
 			name: "multiple vendors short format",
 			config: `version: "alpha"
 vendors:
-  - name: "Alpha Vendor"
-    id: "ALPHA"
+  - id: "ALPHA"
+    name: "Alpha Vendor"
     certificates:
       - name: "Cert"
         url: "https://example.com/cert.crt"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
-  - name: "Beta Vendor"
-    id: "BETA"
+  - id: "BETA"
+    name: "Beta Vendor"
     certificates:
       - name: "Cert"
         url: "https://example.com/cert.crt"
         validation:
           fingerprint:
             sha1: "BB:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
-  - name: "Gamma Vendor"
-    id: "GAMMA"
+  - id: "GAMMA"
+    name: "Gamma Vendor"
     certificates:
       - name: "Cert"
         url: "https://example.com/cert.crt"

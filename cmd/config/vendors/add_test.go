@@ -22,8 +22,8 @@ func TestAddCommand(t *testing.T) {
 			name: "add new vendor successfully",
 			initialConfig: `version: "alpha"
 vendors:
-  - name: "Vendor A"
-    id: "VDA"
+  - id: "VDA"
+    name: "Vendor A"
     certificates:
       - name: "Cert A1"
         url: "https://example.com/a1.crt"
@@ -61,16 +61,16 @@ vendors:
 			name: "add vendor at the end (alphabetically)",
 			initialConfig: `version: "alpha"
 vendors:
-  - name: "AMD"
-    id: "AMD"
+  - id: "AMD"
+    name: "AMD"
     certificates:
       - name: "Cert 1"
         url: "https://example.com/1.crt"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
-  - name: "Intel"
-    id: "INTC"
+  - id: "INTC"
+    name: "Intel"
     certificates:
       - name: "Cert 2"
         url: "https://example.com/2.crt"
@@ -107,16 +107,16 @@ vendors:
 			name: "add vendor in the middle (alphabetically)",
 			initialConfig: `version: "alpha"
 vendors:
-  - name: "AMD"
-    id: "AMD"
+  - id: "AMD"
+    name: "AMD"
     certificates:
       - name: "Cert 1"
         url: "https://example.com/1.crt"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
-  - name: "Qualcomm"
-    id: "QCOM"
+  - id: "QCOM"
+    name: "Qualcomm"
     certificates:
       - name: "Cert 2"
         url: "https://example.com/2.crt"
@@ -150,8 +150,8 @@ vendors:
 			name: "error when vendor already exists",
 			initialConfig: `version: "alpha"
 vendors:
-  - name: "Intel Corporation"
-    id: "INTC"
+  - id: "INTC"
+    name: "Intel Corporation"
     certificates:
       - name: "Cert 1"
         url: "https://example.com/1.crt"
@@ -170,8 +170,8 @@ vendors:
 			name: "error when vendor ID is not in TCG registry",
 			initialConfig: `version: "alpha"
 vendors:
-  - name: "Intel Corporation"
-    id: "INTC"
+  - id: "INTC"
+    name: "Intel Corporation"
     certificates:
       - name: "Cert 1"
         url: "https://example.com/1.crt"
@@ -190,16 +190,16 @@ vendors:
 			name: "formatter sorts vendors lexicographically",
 			initialConfig: `version: "alpha"
 vendors:
-  - name: "alpha vendor"
-    id: "alpha"
+  - id: "alpha"
+    name: "alpha vendor"
     certificates:
       - name: "Cert 1"
         url: "https://example.com/1.crt"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
-  - name: "charlie vendor"
-    id: "charlie"
+  - id: "charlie"
+    name: "charlie vendor"
     certificates:
       - name: "Cert 2"
         url: "https://example.com/2.crt"

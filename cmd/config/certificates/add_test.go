@@ -20,8 +20,8 @@ func TestAddCommand(t *testing.T) {
 			name: "add certificate with auto-calculated fingerprint",
 			initialConfig: `version: "alpha"
 vendors:
-  - name: "STMicroelectronics"
-    id: "STM"
+  - id: "STM"
+    name: "STMicroelectronics"
     certificates:
       - name: "Existing Cert"
         url: "https://example.com/cert.crt"
@@ -64,8 +64,8 @@ vendors:
 			name: "add certificate with provided SHA256 fingerprint",
 			initialConfig: `version: "alpha"
 vendors:
-  - name: "STMicroelectronics"
-    id: "STM"
+  - id: "STM"
+    name: "STMicroelectronics"
     certificates:
       - name: "GlobalSign Trusted Computing CA"
         url: "https://secure.globalsign.com/cacert/gstpmroot.crt"
@@ -110,8 +110,8 @@ vendors:
 			name: "error when vendor not found",
 			initialConfig: `version: "alpha"
 vendors:
-  - name: "STMicroelectronics"
-    id: "STM"
+  - id: "STM"
+    name: "STMicroelectronics"
     certificates:
       - name: "Test Cert"
         url: "https://example.com/cert.crt"
@@ -343,8 +343,8 @@ func TestHashAlgorithmValidation(t *testing.T) {
 			configPath := tmpDir + "/.tpm-roots.yaml"
 			cfg := `version: "alpha"
 vendors:
-  - name: "STMicroelectronics"
-    id: "STM"
+  - id: "STM"
+    name: "STMicroelectronics"
     certificates: []
 `
 			if err := os.WriteFile(configPath, []byte(cfg), 0644); err != nil {

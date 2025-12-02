@@ -164,8 +164,8 @@ func TestLoadConfig(t *testing.T) {
 
 		validYAML := `version: alpha
 vendors:
-- name: "Test Vendor"
-  id: "TV"
+- id: "TV"
+  name: "Test Vendor"
   certificates:
     - name: "Test Cert"
       url: "https://example.com/cert.cer"

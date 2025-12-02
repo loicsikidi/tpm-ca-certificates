@@ -13,9 +13,10 @@ The TPM Trust Bundle is generated from a human-readable YAML configuration file 
 
 ## File Structure
 
-The configuration file follows this structure:
+The configuration file must start with the YAML document marker `---` on the first line, followed by the configuration structure:
 
 ```yaml
+---
 version: "alpha"
 vendors:
     - name: "Vendor Name"
@@ -58,7 +59,30 @@ vendors:
 
 The configuration file must follow these validation rules:
 
-### 1. Vendor ID Registry
+### 1. YAML Document Marker
+
+The file must start with the YAML document marker `---` on the first line.
+
+```yaml
+# ✓ Correct
+---
+version: "alpha"
+vendors: []
+
+# ✗ Incorrect - missing document marker
+version: "alpha"
+vendors: []
+
+# ✗ Incorrect - comment before document marker
+# This is a comment
+---
+version: "alpha"
+```
+
+> [!IMPORTANT]
+> The `validate` command will reject files that do not start with `---`. The `format` command will automatically add it if missing.
+
+### 2. Vendor ID Registry
 
 All vendor IDs must be valid according to the **TCG TPM Vendor ID Registry**.
 
@@ -81,6 +105,10 @@ vendors:
 ## Formatting Rules
 
 The configuration file must follow these formatting rules, which are automatically applied by the `format` command:
+
+### 1. YAML Document Marker
+
+The `format` command automatically ensures the file starts with `---` on the first line.
 
 ### 2. Vendor Sorting
 

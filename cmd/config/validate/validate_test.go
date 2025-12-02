@@ -19,10 +19,11 @@ func TestValidateCommand(t *testing.T) {
 	}{
 		{
 			name: "valid config without quiet",
-			configContent: `version: "alpha"
+			configContent: `---
+version: "alpha"
 vendors:
-  - name: "STMicroelectronics"
-    id: "STM"
+  - id: "STM"
+    name: "STMicroelectronics"
     certificates:
       - name: "Test Certificate"
         url: "https://example.com/cert.crt"
@@ -37,10 +38,11 @@ vendors:
 		},
 		{
 			name: "valid config with quiet",
-			configContent: `version: "alpha"
+			configContent: `---
+version: "alpha"
 vendors:
-  - name: "STMicroelectronics"
-    id: "STM"
+  - id: "STM"
+    name: "STMicroelectronics"
     certificates:
       - name: "Test Certificate"
         url: "https://example.com/cert.crt"
@@ -54,10 +56,11 @@ vendors:
 		},
 		{
 			name: "invalid config without quiet",
-			configContent: `version: "alpha"
+			configContent: `---
+version: "alpha"
 vendors:
-  - name: "STMicroelectronics"
-    id: "INVALID"
+  - id: "INVALID"
+    name: "STMicroelectronics"
     certificates:
       - name: "Test Certificate"
         url: "http://example.com/cert.crt"
@@ -72,10 +75,11 @@ vendors:
 		},
 		{
 			name: "invalid config with quiet",
-			configContent: `version: "alpha"
+			configContent: `---
+version: "alpha"
 vendors:
-  - name: "STMicroelectronics"
-    id: "INVALID"
+  - id: "INVALID"
+    name: "STMicroelectronics"
     certificates:
       - name: "Test Certificate"
         url: "http://example.com/cert.crt"

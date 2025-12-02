@@ -37,6 +37,7 @@ func NewYAMLValidator() *YAMLValidator {
 // ValidateFile validates a TPM roots configuration file.
 //
 // It checks:
+//   - File starts with YAML document marker (---)
 //   - Vendor IDs are valid according to TCG TPM Vendor ID Registry
 //   - Vendors are sorted alphabetically by ID
 //   - Certificates within each vendor are sorted alphabetically by name
@@ -62,6 +63,8 @@ func (v *YAMLValidator) ValidateFile(path string) ([]ValidationError, error) {
 		return nil, fmt.Errorf("failed to read file: %w", err)
 	}
 
+	v.validateYAMLDocumentMarker(data)
+
 	cfg, err := config.LoadConfig(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config: %w", err)
@@ -79,6 +82,22 @@ func (v *YAMLValidator) ValidateFile(path string) ([]ValidationError, error) {
 	v.validateQuotes(data)
 
 	return v.errors, nil
+}
+
+// validateYAMLDocumentMarker checks that the file starts with ---.
+func (v *YAMLValidator) validateYAMLDocumentMarker(data []byte) {
+	if len(v.errors) >= v.maxErrors {
+		return
+	}
+
+	lines := strings.Split(string(data), "\n")
+	// Check that first line is exactly "---" without any leading/trailing spaces
+	if len(lines) == 0 || lines[0] != "---" {
+		v.errors = append(v.errors, ValidationError{
+			Line:    1,
+			Message: "file must start with YAML document marker '---' on the first line",
+		})
+	}
 }
 
 // buildLineMapping creates a mapping from YAML paths to line numbers.

@@ -15,10 +15,11 @@ func TestYAMLValidator_ValidateFile(t *testing.T) {
 	}{
 		{
 			name: "valid file",
-			yaml: `version: "alpha"
+			yaml: `---
+version: "alpha"
 vendors:
-  - name: "STMicroelectronics"
-    id: "STM"
+  - id: "STM"
+    name: "STMicroelectronics"
     certificates:
       - name: "Cert A"
         url: "https://example.com/cert.cer"
@@ -29,19 +30,49 @@ vendors:
 			wantErrors: 0,
 		},
 		{
-			name: "unsorted vendors",
+			name: "missing YAML document marker",
 			yaml: `version: "alpha"
 vendors:
-  - name: "Nuvoton Technology"
-    id: "NTC"
+  - id: "STM"
+    name: "STMicroelectronics"
     certificates:
       - name: "Cert A"
         url: "https://example.com/cert.cer"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
-  - name: "Intel"
-    id: "INTC"
+`,
+			wantErrors:  1,
+			errorChecks: []string{"must start with YAML document marker"},
+		},
+		{
+			name: "comment before document marker",
+			yaml: `# This is a comment
+---
+version: "alpha"
+vendors:
+  - id: "STM"
+    name: "STMicroelectronics"
+    certificates: []
+`,
+			wantErrors:  1,
+			errorChecks: []string{"must start with YAML document marker"},
+		},
+		{
+			name: "unsorted vendors",
+			yaml: `---
+version: "alpha"
+vendors:
+  - id: "NTC"
+    name: "Nuvoton Technology"
+    certificates:
+      - name: "Cert A"
+        url: "https://example.com/cert.cer"
+        validation:
+          fingerprint:
+            sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
+  - id: "INTC"
+    name: "Intel"
     certificates:
       - name: "Cert A"
         url: "https://example.com/cert.cer"
@@ -54,10 +85,11 @@ vendors:
 		},
 		{
 			name: "unsorted certificates",
-			yaml: `version: "alpha"
+			yaml: `---
+version: "alpha"
 vendors:
-  - name: "STMicroelectronics"
-    id: "STM"
+  - id: "STM"
+    name: "STMicroelectronics"
     certificates:
       - name: "Cert Z"
         url: "https://example.com/cert.cer"
@@ -75,10 +107,11 @@ vendors:
 		},
 		{
 			name: "unencoded URL",
-			yaml: `version: "alpha"
+			yaml: `---
+version: "alpha"
 vendors:
-  - name: "STMicroelectronics"
-    id: "STM"
+  - id: "STM"
+    name: "STMicroelectronics"
     certificates:
       - name: "Cert A"
         url: "https://example.com/cert with space.cer"
@@ -91,10 +124,11 @@ vendors:
 		},
 		{
 			name: "http URL",
-			yaml: `version: "alpha"
+			yaml: `---
+version: "alpha"
 vendors:
-  - name: "STMicroelectronics"
-    id: "STM"
+  - id: "STM"
+    name: "STMicroelectronics"
     certificates:
       - name: "Cert A"
         url: "http://example.com/cert.cer"
@@ -107,10 +141,11 @@ vendors:
 		},
 		{
 			name: "lowercase fingerprint",
-			yaml: `version: "alpha"
+			yaml: `---
+version: "alpha"
 vendors:
-  - name: "STMicroelectronics"
-    id: "STM"
+  - id: "STM"
+    name: "STMicroelectronics"
     certificates:
       - name: "Cert A"
         url: "https://example.com/cert.cer"
@@ -123,10 +158,11 @@ vendors:
 		},
 		{
 			name: "unquoted string",
-			yaml: `version: alpha
+			yaml: `---
+version: alpha
 vendors:
-  - name: "STMicroelectronics"
-    id: "STM"
+  - id: "STM"
+    name: "STMicroelectronics"
     certificates:
       - name: "Cert A"
         url: "https://example.com/cert.cer"
@@ -139,10 +175,11 @@ vendors:
 		},
 		{
 			name: "invalid vendor ID",
-			yaml: `version: "alpha"
+			yaml: `---
+version: "alpha"
 vendors:
-  - name: "Unknown Vendor"
-    id: "INVALID"
+  - id: "INVALID"
+    name: "Unknown Vendor"
     certificates:
       - name: "Cert A"
         url: "https://example.com/cert.cer"
