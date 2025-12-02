@@ -29,6 +29,12 @@ tpm-ca-certificates
 *.swo
 *~
 
+# pre-commit
+.pre-commit-config.yaml
+
+# IA assistants
+.claude/
+
 # nix
 result
 

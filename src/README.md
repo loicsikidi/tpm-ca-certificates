@@ -1,0 +1,16 @@
+* INTC
+  * https://software.intel.com/sites/manageability/AMT_Implementation_and_Reference_Guide/default.htm?turl=WordDocuments%2FODCA.htm
+  * score=C
+* NFX
+  * https://www.infineon.com/design-resources/platforms/optiga-software-tools/optiga-tpm-certificates/optiga-trust-certificates
+  * https://www.infineon.com/assets/row/public/documents/30/51/infineon-optiga-trust-m-configguide-productfamilyoverview-en.pdf
+  * https://www.infineon.com/part/OPTIGA-TRUST-M-SLS32AIA#documents
+  * https://www.infineon.com/assets/row/public/documents/30/67/infineon-optiga-trust-m-v1-keys-and-certificates-v1.50-certificates-en.pdf?fileId=5546d46271bf4f920171c5f3c75a0fa2
+  * https://www.infineon.com/assets/row/public/documents/30/67/infineon-optigatm-trust-ecc-root-ca-certificates-en.cer
+  * score=C
+* NTC
+  * https://www.nuvoton.com.cn/products/cloud-computing/security/trusted-platform-module-tpm/?tab=1
+  * score=A
+* STM
+  * https://www.st.com/content/st_com/en/search.html#q=endorsement%20certificate-t=resources-page=1
+  * score=B

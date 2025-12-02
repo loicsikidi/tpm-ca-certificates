@@ -1,0 +1,13 @@
+version: "alpha"
+vendors:
+    - name: "Intel Corporation"
+      id: "INTC"
+      certificates: []
+    - name: "Nuvoton Technology"
+      id: "NTC"
+      certificates:
+        - name: "NPCTxxx ECC521 RootCA"
+          url: "https://www.nuvoton.com/security/NTC-TPM-EK-Cert/NPCTxxxECC521RootCA.cer"
+          validation:
+            fingerprint:
+                sha1: "7C:7B:3C:8A:46:5E:67:D2:8F:4D:B0:F3:5C:E1:20:C4:BB:4A:AC:CC"

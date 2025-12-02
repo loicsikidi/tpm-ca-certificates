@@ -1,0 +1,187 @@
+package config
+
+import (
+	"crypto/sha1"
+	"crypto/sha256"
+	"crypto/sha512"
+	"errors"
+	"fmt"
+	"hash"
+	"os"
+
+	"go.yaml.in/yaml/v4"
+)
+
+// TPMRootsConfig represents the root configuration from .tpm-roots.yaml file.
+type TPMRootsConfig struct {
+	Version string   `yaml:"version"`
+	Vendors []Vendor `yaml:"vendors"`
+}
+
+// CheckAndSetDefault validates the TPMRootsConfig structure.
+func (c *TPMRootsConfig) CheckAndSetDefault() error {
+	if c.Version == "" {
+		return errors.New("invalid input: 'version' cannot be empty")
+	}
+
+	if len(c.Vendors) == 0 {
+		return errors.New("invalid input: at least one vendor must be defined")
+	}
+
+	for i, vendor := range c.Vendors {
+		if err := vendor.CheckAndSetDefault(); err != nil {
+			var errMsg string
+			if vendor.Name == "" {
+				errMsg = fmt.Sprintf("vendor[%d]", i)
+			} else {
+				errMsg = fmt.Sprintf("vendor.name: %s", vendor.Name)
+			}
+			return fmt.Errorf("%s: %w", errMsg, err)
+		}
+	}
+
+	return nil
+}
+
+// Vendor represents a TPM vendor with their certificates.
+type Vendor struct {
+	Name         string        `yaml:"name"`
+	ID           string        `yaml:"id"`
+	Certificates []Certificate `yaml:"certificates"`
+}
+
+// CheckAndSetDefault validates a Vendor.
+func (v *Vendor) CheckAndSetDefault() error {
+	if v.Name == "" {
+		return errors.New("invalid input: 'name' cannot be empty")
+	}
+
+	for i, cert := range v.Certificates {
+		if err := cert.CheckAndSetDefault(); err != nil {
+			var errMsg string
+			if cert.Name == "" {
+				errMsg = fmt.Sprintf("certificate[%d]", i)
+			} else {
+				errMsg = fmt.Sprintf("certificate.name: %s", cert.Name)
+			}
+			return fmt.Errorf("%s: %w", errMsg, err)
+		}
+	}
+
+	return nil
+}
+
+// Certificate represents a single certificate with its download URL and validation rules.
+type Certificate struct {
+	Name       string     `yaml:"name"`
+	URL        string     `yaml:"url"`
+	Validation Validation `yaml:"validation"`
+}
+
+// CheckAndSetDefault validates a Certificate.
+func (c *Certificate) CheckAndSetDefault() error {
+	if c.Name == "" {
+		return errors.New("invalid input: 'name' cannot be empty")
+	}
+
+	if c.URL == "" {
+		return errors.New("invalid input: 'url' cannot be empty")
+	}
+
+	if err := c.Validation.Fingerprint.CheckAndSetDefault(); err != nil {
+		return fmt.Errorf("validation: %w", err)
+	}
+
+	return nil
+}
+
+// Validation contains fingerprint validation rules for a certificate.
+type Validation struct {
+	Fingerprint Fingerprint `yaml:"fingerprint"`
+}
+
+// Fingerprint contains hash-based fingerprints for certificate validation.
+//
+// Supported algorithms: sha1, sha256, sha384, sha512.
+type Fingerprint struct {
+	SHA1   string `yaml:"sha1,omitempty"`
+	SHA256 string `yaml:"sha256,omitempty"`
+	SHA384 string `yaml:"sha384,omitempty"`
+	SHA512 string `yaml:"sha512,omitempty"`
+}
+
+// CheckAndSetDefault validates a Fingerprint.
+func (f *Fingerprint) CheckAndSetDefault() error {
+	if f.SHA1 == "" && f.SHA256 == "" && f.SHA384 == "" && f.SHA512 == "" {
+		return errors.New("invalid input: at least one fingerprint (sha1, sha256, sha384, sha512) must be provided")
+	}
+
+	return nil
+}
+
+// GetFingerprintValue returns the most secure fingerprint value and its corresponding hash algorithm.
+//
+// Priority order (most to least secure): SHA512, SHA384, SHA256, SHA1.
+func (f *Fingerprint) GetFingerprintValue() (string, hash.Hash) {
+	if f.SHA512 != "" {
+		return f.SHA512, sha512.New()
+	}
+	if f.SHA384 != "" {
+		return f.SHA384, sha512.New384()
+	}
+	if f.SHA256 != "" {
+		return f.SHA256, sha256.New()
+	}
+	return f.SHA1, sha1.New()
+}
+
+// LoadConfig reads and parses the TPM roots configuration from a YAML file.
+//
+// Example:
+//
+//	cfg, err := config.LoadConfig(".tpm-roots.yaml")
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+func LoadConfig(path string) (*TPMRootsConfig, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read config file: %w", err)
+	}
+
+	var cfg TPMRootsConfig
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return nil, fmt.Errorf("failed to parse YAML: %w", err)
+	}
+
+	if err := cfg.CheckAndSetDefault(); err != nil {
+		return nil, fmt.Errorf("invalid configuration: %w", err)
+	}
+
+	return &cfg, nil
+}
+
+// SaveConfig writes the TPM roots configuration to a YAML file.
+//
+// Example:
+//
+//	err := config.SaveConfig(".tpm-roots.yaml", cfg)
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+func SaveConfig(path string, cfg *TPMRootsConfig) error {
+	if err := cfg.CheckAndSetDefault(); err != nil {
+		return fmt.Errorf("invalid configuration: %w", err)
+	}
+
+	data, err := yaml.Marshal(cfg)
+	if err != nil {
+		return fmt.Errorf("failed to marshal YAML: %w", err)
+	}
+
+	if err := os.WriteFile(path, data, 0644); err != nil {
+		return fmt.Errorf("failed to write config file: %w", err)
+	}
+
+	return nil
+}

@@ -1,0 +1,134 @@
+version: 2
+
+project_name: tpm-ca-certificates
+
+# Build du binaire tpmtb pour plusieurs plateformes
+builds:
+  - id: tpmtb
+    main: ./
+    binary: tpmtb
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+
+# Archives des binaires tpmtb
+archives:
+  - id: tpmtb-archives
+    ids:
+      - tpmtb
+    formats: [ 'tar.gz' ]
+    format_overrides:
+      - goos: windows
+        formats: [ 'zip' ]
+    name_template: "tpmtb_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+# Checksum de tous les artifacts
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+docker_digest:
+  name_template: "digests.txt"
+
+sboms:
+  - artifacts: archive
+  - id: source
+    artifacts: source
+
+# Signature Cosign v3 keyless
+signs:
+  - id: cosign-checksum
+    cmd: cosign
+    signature: "${artifact}.sigstore.json"
+    args:
+      - "sign-blob"
+      - "--bundle=${signature}"
+      - "${artifact}"
+      - "--yes"
+    artifacts: checksum
+
+dockers_v2:
+  - images:
+      - "ghcr.io/loicsikidi/tpm-ca-certificates"
+    tags:
+      - "v{{ .Version }}"
+      - latest
+    dockerfile: Dockerfile
+    labels:
+      "org.opencontainers.image.created": "{{ .Date }}"
+      "org.opencontainers.image.title": "{{ .ProjectName }}"
+      "org.opencontainers.image.revision": "{{ .FullCommit }}"
+      "org.opencontainers.image.version": "{{ .Version }}"
+      "org.opencontainers.image.source": "https://github.com/loicsikidi/tpm-ca-certificates"
+
+# Configuration de la release GitHub
+release:
+  github:
+    owner: loicsikidi
+    name: tpm-ca-certificates
+  draft: false
+  prerelease: auto
+  mode: append
+  header: |
+    ## {{ .ProjectName }} {{ .Tag }}
+
+    ### What's Changed
+
+    This release contains the `tpmtb` binary and OCI images built from commit `{{ .FullCommit }}`.
+
+    ### Artifacts
+
+    - **`tpmtb_*`** - CLI binaries for various platforms
+    - **`checksums.txt`** - SHA-256 checksums of all artifacts
+    - **`checksums.txt.sigstore.json`** - Cosign v3 signature bundle
+
+    ### OCI Images
+
+    ```bash
+    docker pull ghcr.io/loicsikidi/{{ .ProjectName }}:{{ .Tag }}
+    docker pull ghcr.io/loicsikidi/{{ .ProjectName }}:latest
+    ```
+
+    ### Verification
+
+    #### GitHub CLI
+    ```bash
+    # Verify the archive
+    gh attestation verify tpmtb_{{ .Version }}_linux_amd64.tar.gz --owner loicsikidi
+    # Verify the OCI image
+    gh attestation verify ghcr.io/loicsikidi/{{ .ProjectName }}:{{ .Tag }} --owner loicsikidi
+    ```
+
+    #### Cosign
+
+    > [!TIP]
+    > Make sure to you have Cosign **v3** installed!
+
+    ```bash
+    cosign verify-blob \
+      --bundle checksums.txt.sigstore.json \
+      --certificate-identity-regexp 'https://github.com/loicsikidi/tpm-ca-certificates/{{ .Tag }}' \
+      --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+      checksums.txt
+    ```
+  footer: |
+    **Generated with [GoReleaser](https://goreleaser.com/) 🚀**
+
+# Changelog automatique
+changelog:
+  use: github
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - 'typo'

@@ -1,0 +1,72 @@
+version: 2
+
+project_name: tpm-ca-certificates
+
+# No build for this kind of release
+builds:
+  - skip: true
+
+release:
+  github:
+    owner: loicsikidi
+    name: tpm-ca-certificates
+  draft: false
+  prerelease: false
+  mode: append
+  extra_files:
+    - glob: ./tpm-ca-certificates.pem
+    - glob: ./checksums.txt
+    - glob: ./checksums.txt.sigstore.json
+  header: |
+    ## TPM CA Certificates {{ .Tag }}
+
+    ### What's Changed
+
+    This release contains the TPM CA Certificates generated at commit `{{ .FullCommit }}`.
+
+    ### Artifacts
+
+    - **`tpm-ca-certificates.pem`** - The TPM trust bundle
+    - **`checksums.txt`** - SHA-256 checksum
+    - **`checksums.txt.sigstore.json`** - Cosign v3 signature bundle
+
+    ### Verification
+
+    #### Option 1: GitHub CLI (simplest)
+    ```bash
+    gh attestation verify tpm-ca-certificates.pem --owner loicsikidi
+    ```
+
+    #### Option 2: Cosign
+
+    > [!TIP]
+    > Make sure to you have Cosign **v3** installed!
+  
+    ```bash
+    cosign verify-blob \
+      --bundle checksums.txt.sigstore.json \
+      --certificate-identity-regexp 'https://github.com/loicsikidi/tpm-ca-certificates/{{ .Tag }}' \
+      --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+      checksums.txt
+    ```
+
+    #### Option 3: Reproducibility
+    ```bash
+    git clone https://github.com/loicsikidi/tpm-ca-certificates
+    cd tpm-ca-certificates
+    git checkout {{ .Tag }}
+    go run ./ generate --workers 10 --output tpm-ca-certificates.pem
+    sha256sum tpm-ca-certificates.pem  # Compare with checksums.txt
+    ```
+  footer: |
+    **Generated with [GoReleaser](https://goreleaser.com/) 🚀**
+
+changelog:
+  use: github
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - 'typo'

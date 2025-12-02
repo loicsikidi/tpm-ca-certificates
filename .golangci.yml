@@ -1,0 +1,11 @@
+version: "2"
+run:
+  timeout: 2m
+ 
+linters:
+  default: standard
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck
