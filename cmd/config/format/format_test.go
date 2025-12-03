@@ -265,13 +265,6 @@ invalid yaml content:
 				t.Fatalf("failed to read original config: %v", err)
 			}
 
-			// Set up command options
-			origConfigPath := configPath
-			origDryRun := dryRun
-
-			configPath = origConfigPath
-			dryRun = tt.dryRun
-
 			// Run the format command
 			cmd := NewCommand()
 			cmd.SetArgs([]string{"--config", configPath})
@@ -280,10 +273,6 @@ invalid yaml content:
 			}
 
 			err = cmd.Execute()
-
-			// Restore original values
-			configPath = origConfigPath
-			dryRun = origDryRun
 
 			// Check error expectation
 			if tt.expectError && err == nil {
@@ -295,7 +284,7 @@ invalid yaml content:
 
 			// In dry-run mode, verify file wasn't modified (except for formatted case)
 			if tt.dryRun && !tt.expectError {
-				currentContent, err := os.ReadFile(origConfigPath)
+				currentContent, err := os.ReadFile(configPath)
 				if err != nil {
 					t.Fatalf("failed to read current config: %v", err)
 				}
@@ -306,7 +295,7 @@ invalid yaml content:
 
 			// Run validation if provided
 			if tt.validateResult != nil {
-				tt.validateResult(t, origConfigPath)
+				tt.validateResult(t, configPath)
 			}
 		})
 	}

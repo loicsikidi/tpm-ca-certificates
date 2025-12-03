@@ -126,6 +126,9 @@ func resolveGitMetadata() (string, string, error) {
 	if err := validateDate(info.Tag); err != nil {
 		return "", "", fmt.Errorf("git tag %q is not in YYYY-MM-DD format (use --date and --commit flags to specify manually): %w", info.Tag, err)
 	}
+	if err := validateCommit(info.Commit); err != nil {
+		return "", "", fmt.Errorf("git commit %q is not a valid commit hash (use --date and --commit flags to specify manually): %w", info.Commit, err)
+	}
 
 	return info.Tag, info.Commit, nil
 }
