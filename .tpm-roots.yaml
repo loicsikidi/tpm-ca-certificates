@@ -1,10 +1,8 @@
+---
 version: "alpha"
 vendors:
-    - name: "Intel Corporation"
-      id: "INTC"
-      certificates: []
-    - name: "Nuvoton Technology"
-      id: "NTC"
+    - id: "NTC"
+      name: "Nuvoton Technology"
       certificates:
         - name: "NPCTxxx ECC521 RootCA"
           url: "https://www.nuvoton.com/security/NTC-TPM-EK-Cert/NPCTxxxECC521RootCA.cer"
