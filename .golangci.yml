@@ -1,0 +1,15 @@
+version: "2"
+run:
+  timeout: 2m
+
+linters:
+  default: standard
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck
+      # Ignore errcheck for defer Close() calls - these are often acceptable in defer statements
+      - text: "Error return value of .*(Close|MarkFlagRequired).* is not checked"
+        linters:
+          - errcheck

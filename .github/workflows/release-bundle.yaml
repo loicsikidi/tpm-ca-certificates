@@ -1,0 +1,66 @@
+name: Release Trust Bundle
+
+on:
+  push:
+    tags:
+      - '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'  # YYYY-MM-DD format
+
+permissions: {}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write        # publish release
+      id-token: write        # required for Cosign keyless (OIDC)
+      attestations: write    # publish attestations
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+        with:
+          fetch-depth: 0  # Required for GoReleaser changelog and `tpmtb` to auto-detect tag and commit sha
+          persist-credentials: false
+
+      - name: Setup Go
+        uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
+        with:
+          go-version-file: 'go.mod'
+          cache: false
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
+
+      - name: Generate TPM trust bundle and sign checksum
+        run: |
+          # Generate the TPM trust bundle (with maximum concurrency to speed up downloads)
+          go run ./ generate --workers 10 --output tpm-ca-certificates.pem
+
+          # Verify that the bundle was generated
+          test -f tpm-ca-certificates.pem || exit 1
+
+          # Generate the checksum
+          sha256sum tpm-ca-certificates.pem > checksums.txt
+
+          # Display stats for the logs
+          echo "Bundle size: $(wc -c < tpm-ca-certificates.pem) bytes"
+          cat checksums.txt
+
+          ## Sign the checksum with Cosign
+          cosign sign-blob \
+            --bundle checksums.txt.sigstore.json \
+            --yes \
+            checksums.txt
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # v6.4.0
+        with:
+          distribution: goreleaser
+          version: '~> v2'
+          args: release --clean --config .goreleaser-bundle.yaml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Attest build provenance (checksums.txt)
+        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3.0.0
+        with:
+          subject-checksums: checksums.txt

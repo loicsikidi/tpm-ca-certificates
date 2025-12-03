@@ -1,0 +1,110 @@
+version: 2
+
+project_name: tpm-ca-certificates
+
+# No build for this kind of release
+builds:
+  - skip: true
+
+release:
+  github:
+    owner: loicsikidi
+    name: tpm-ca-certificates
+  draft: false
+  prerelease: false
+  mode: append
+  extra_files:
+    - glob: ./tpm-ca-certificates.pem
+    - glob: ./checksums.txt
+    - glob: ./checksums.txt.sigstore.json
+  header: |
+    ## TPM CA Certificates {{ .Tag }}
+
+    ### What's Changed
+
+    This release contains the TPM CA Certificates generated at commit [{{ .FullCommit }}](https://github.com/loicsikidi/{{ .ProjectName }}/tree/{{ .FullCommit }}).
+
+    ### Artifacts
+
+    - **`tpm-ca-certificates.pem`** - The TPM trust bundle
+    - **`checksums.txt`** - SHA-256 checksum
+    - **`checksums.txt.sigstore.json`** - Sigstore signature bundle for checksum verification
+
+    ### Verification
+
+    > [!IMPORTANT]
+    > If you are not familiar with the concepts around software supply chain security,
+    > (eg. build provenance attestation, keyless signature, etc.), please read the following resources first:
+    > - [Cosign Signing Overview](https://docs.sigstore.dev/cosign/signing/overview/)
+    > - [SLSA provenance attestation](https://slsa.dev/spec/v1.2/provenance)
+    > - [GitHub attest-build-provenance action](https://github.com/actions/attest-build-provenance)
+
+
+    #### Option 1: tpmtb CLI
+
+    > [!NOTE]
+    > The following commands verify the **integrity** and **provenance** of the `tpm-ca-certificates.pem` artifact
+    >
+    > `tpmtb` is able to verify Github attestation signatures and Cosign keyless signatures natively (no need to install Cosign or gh).
+
+    ```bash
+    tpmtb verify tpm-ca-certificates.pem \
+      --checksums-signature checksums.txt.sigstore.json \
+      --checksums-file checksums.txt
+    ```
+
+    #### Option 2: GitHub CLI
+
+    > [!NOTE]
+    > The following commands verify the **integrity** and **provenance** of an artifact using its associated cryptographic signed attestation
+    > generated during the release process.
+
+    ```bash
+    gh attestation verify tpm-ca-certificates.pem --owner loicsikidi
+    ```
+
+    #### Option 3: Cosign
+
+    > [!NOTE]
+    > The following command verifies **ONLY the integrity** of the `checksums.txt` file
+    > thanks to keyless signature generated during the release process. Once verified, you can
+    > then manually check the checksum of any artifact.
+    >
+    > *Note: in addition, keyless signature allows you to know the identity bound to the ephemeral key (a GitHub workflow in our case).*
+
+    > [!TIP]
+    > Make sure to use **`cosign >= v2.4.3`** in order to support [sigstore bundle format](https://docs.sigstore.dev/about/bundle/).
+  
+    ```bash
+    cosign verify-blob \
+      --bundle checksums.txt.sigstore.json \
+      --certificate-identity-regexp 'https://github.com/loicsikidi/{{ .ProjectName }}/.github/workflows/release-bundle.yaml@refs/tags/{{ .Tag }}' \
+      --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+      checksums.txt
+    ```
+
+    #### Option 4: Reproducibility
+
+    > [!WARNING]
+    > This method only verifies the **integrity** of `tpm-ca-certificates.pem` file.
+    > To be fully secure it MUST be used in addition with option 1 or 2 to verify the provenance of the artifact.
+
+    ```bash
+    git clone https://github.com/loicsikidi/{{ .ProjectName }}
+    cd {{ .ProjectName }}
+    git checkout {{ .Tag }}
+    go run ./ generate --workers 10 --output tpm-ca-certificates.pem
+    sha256sum tpm-ca-certificates.pem  # Compare with checksums.txt
+    ```
+  footer: |
+    **Generated with GoReleaser 🚀**
+
+changelog:
+  use: github
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - 'typo'
