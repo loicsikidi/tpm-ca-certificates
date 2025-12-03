@@ -210,7 +210,7 @@ func (g *Generator) processCertificate(cert config.Certificate, vendorID string)
 	pemBlock := encodePEM(x509Cert)
 	header := buildCertificateHeader(x509Cert, cert.Name, vendorID)
 
-	return fmt.Sprintf("%s%s\n", header, pemBlock), nil
+	return fmt.Sprintf("%s%s", header, pemBlock), nil
 }
 
 // encodePEM converts an x509 certificate to PEM format.
