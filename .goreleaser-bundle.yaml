@@ -103,8 +103,6 @@ changelog:
   use: github
   sort: asc
   filters:
-    exclude:
-      - '^docs:'
-      - '^test:'
-      - '^chore:'
-      - 'typo'
+    # Include only commits starting with "rot:" (prefix for "root of trust" changes)
+    include:
+      - '^rot:' 
