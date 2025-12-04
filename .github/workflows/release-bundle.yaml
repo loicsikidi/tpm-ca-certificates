@@ -33,7 +33,7 @@ jobs:
       - name: Generate TPM trust bundle and sign checksum
         run: |
           # Generate the TPM trust bundle (with maximum concurrency to speed up downloads)
-          go run ./ generate --workers 10 --output tpm-ca-certificates.pem
+          go run ./ bundle generate --workers 10 --output tpm-ca-certificates.pem
 
           # Verify that the bundle was generated
           test -f tpm-ca-certificates.pem || exit 1

@@ -6,6 +6,7 @@ require (
 	github.com/sigstore/sigstore-go v1.1.3
 	github.com/spf13/cobra v1.10.1
 	go.yaml.in/yaml/v4 v4.0.0-rc.3
+	golang.org/x/term v0.37.0
 )
 
 require (
@@ -127,8 +128,7 @@ require (
 	golang.org/x/net v0.43.0 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
 	golang.org/x/sync v0.17.0 // indirect
-	golang.org/x/sys v0.36.0 // indirect
-	golang.org/x/term v0.35.0 // indirect
+	golang.org/x/sys v0.38.0 // indirect
 	golang.org/x/text v0.29.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
 	google.golang.org/api v0.248.0 // indirect

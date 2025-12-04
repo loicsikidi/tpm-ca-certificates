@@ -18,7 +18,7 @@ func newListCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "List vendors in the configuration",
+		Short: "list vendors from the configuration",
 		Long: `List all vendors in the configuration file.
 
 By default, displays a formatted table with vendor details.

@@ -11,7 +11,7 @@ import (
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "version",
-		Short:        "Display version information",
+		Short:        "display the current version of the cli",
 		Long:         `Display detailed version information including revision, version, build time, and dirty status.`,
 		SilenceUsage: true,
 		Run:          run,

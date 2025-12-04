@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/loicsikidi/tpm-ca-certificates/internal/github"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/cosign"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/policy"
 )
@@ -19,9 +20,9 @@ func contains(s, substr string) bool {
 // testPolicyConfig returns a valid policy.Config for testing purposes.
 func testPolicyConfig() policy.Config {
 	return policy.Config{
-		SourceRepo:    "loicsikidi/tpm-ca-certificates",
+		SourceRepo:    &github.SourceRepo,
 		OIDCIssuer:    "https://token.actions.githubusercontent.com",
-		BuildWorkflow: ".github/workflows/release-bundle.yaml",
+		BuildWorkflow: github.ReleaseBundleWorkflowPath,
 		Tag:           "2025-12-03",
 	}
 }

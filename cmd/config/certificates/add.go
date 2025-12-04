@@ -1,7 +1,6 @@
 package certificates
 
 import (
-	"crypto/sha256"
 	"crypto/x509"
 	"encoding/hex"
 	"fmt"
@@ -14,6 +13,7 @@ import (
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config/download"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config/format"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config/vendors"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/digest"
 	"github.com/spf13/cobra"
 )
 
@@ -32,7 +32,7 @@ func newAddCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "add",
-		Short: "Add one or more certificates to a vendor in the configuration",
+		Short: "add one or more certificates in the configuration file",
 		Long: `Add one or more certificates to a vendor's certificate list in the .tpm-roots.yaml file.
 
 The certificates will be downloaded from the provided URL(s), validated, and added to the
@@ -421,16 +421,16 @@ func verifyFingerprint(cert *x509.Certificate, alg, expectedHash string) error {
 
 	switch strings.ToLower(alg) {
 	case "sha1":
-		hash := sha1Hash(cert.Raw)
+		hash := digest.Sha1Hash(cert.Raw)
 		actualHash = strings.ToUpper(formatFingerprint(hex.EncodeToString(hash)))
 	case "sha256":
-		hash := sha256.Sum256(cert.Raw)
-		actualHash = strings.ToUpper(formatFingerprint(hex.EncodeToString(hash[:])))
+		hash := digest.Sha256Hash(cert.Raw)
+		actualHash = strings.ToUpper(formatFingerprint(hex.EncodeToString(hash)))
 	case "sha384":
-		hash := sha384Hash(cert.Raw)
+		hash := digest.Sha384Hash(cert.Raw)
 		actualHash = strings.ToUpper(formatFingerprint(hex.EncodeToString(hash)))
 	case "sha512":
-		hash := sha512Hash(cert.Raw)
+		hash := digest.Sha512Hash(cert.Raw)
 		actualHash = strings.ToUpper(formatFingerprint(hex.EncodeToString(hash)))
 	default:
 		return fmt.Errorf("unsupported hash algorithm: %s", alg)
@@ -449,14 +449,13 @@ func calculateFingerprint(data []byte, algorithm string) (string, error) {
 
 	switch strings.ToLower(algorithm) {
 	case "sha1":
-		hashBytes = sha1Hash(data)
+		hashBytes = digest.Sha1Hash(data)
 	case "sha256":
-		hash := sha256.Sum256(data)
-		hashBytes = hash[:]
+		hashBytes = digest.Sha256Hash(data)
 	case "sha384":
-		hashBytes = sha384Hash(data)
+		hashBytes = digest.Sha384Hash(data)
 	case "sha512":
-		hashBytes = sha512Hash(data)
+		hashBytes = digest.Sha512Hash(data)
 	default:
 		return "", fmt.Errorf("unsupported hash algorithm: %s", algorithm)
 	}

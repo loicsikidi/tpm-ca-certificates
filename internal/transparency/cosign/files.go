@@ -2,8 +2,9 @@ package cosign
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
+
+	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
 )
 
 const (
@@ -22,8 +23,8 @@ func FindChecksumFiles(bundlePath string) (checksumPath, signaturePath string, f
 	checksumPath = filepath.Join(bundleDir, checksumsFilename)
 	signaturePath = filepath.Join(bundleDir, signatureFilename)
 
-	checksumExists := fileExists(checksumPath)
-	signatureExists := fileExists(signaturePath)
+	checksumExists := utils.FileExists(checksumPath)
+	signatureExists := utils.FileExists(signaturePath)
 
 	if checksumExists && signatureExists {
 		return checksumPath, signaturePath, true
@@ -33,23 +34,14 @@ func FindChecksumFiles(bundlePath string) (checksumPath, signaturePath string, f
 	return "", "", false
 }
 
-// fileExists checks if a file exists and is not a directory.
-func fileExists(path string) bool {
-	info, err := os.Stat(path)
-	if err != nil {
-		return false
-	}
-	return !info.IsDir()
-}
-
 // ValidateChecksumFilesExist validates that the specified checksum files exist.
 //
 // This is a helper function to verify that user-provided paths are valid.
 func ValidateChecksumFilesExist(checksumPath, signaturePath string) error {
-	if !fileExists(checksumPath) {
+	if !utils.FileExists(checksumPath) {
 		return fmt.Errorf("checksums file not found: %s", checksumPath)
 	}
-	if !fileExists(signaturePath) {
+	if !utils.FileExists(signaturePath) {
 		return fmt.Errorf("signature file not found: %s", signaturePath)
 	}
 	return nil

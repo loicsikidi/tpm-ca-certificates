@@ -16,7 +16,7 @@ var (
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "format",
-		Short: "Format TPM roots configuration file",
+		Short: "format TPM roots configuration file",
 		Long: `Format a TPM roots YAML configuration file with consistent styling.
 
 The formatter applies the following rules:

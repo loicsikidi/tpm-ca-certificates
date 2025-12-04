@@ -3,6 +3,7 @@ package github
 import (
 	"fmt"
 
+	"github.com/loicsikidi/tpm-ca-certificates/internal/github"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/policy"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/verifier"
 	"github.com/sigstore/sigstore-go/pkg/verify"
@@ -53,7 +54,7 @@ func NewVerifier(cfg Config) (*Verifier, error) {
 }
 
 // Verify verifies an attestation bundle against a policy.
-func (v *Verifier) Verify(att *Attestation) (*verify.VerificationResult, error) {
+func (v *Verifier) Verify(att *github.Attestation) (*verify.VerificationResult, error) {
 	if att.Bundle == nil {
 		return nil, fmt.Errorf("attestation bundle is nil")
 	}
