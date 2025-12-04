@@ -1,4 +1,4 @@
-package attestation
+package github
 
 import "github.com/sigstore/sigstore-go/pkg/bundle"
 

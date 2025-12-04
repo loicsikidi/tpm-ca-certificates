@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/policy"
 	"github.com/sigstore/sigstore-go/pkg/verify"
 )
 
@@ -186,25 +187,21 @@ func Test_displayBundleMetadata(t *testing.T) {
 func Test_displayPolicyCriteria(t *testing.T) {
 	tests := []struct {
 		name       string
-		owner      string
 		sourceRepo string
 		tag        string
 	}{
 		{
 			name:       "valid criteria",
-			owner:      "loicsikidi",
 			sourceRepo: "loicsikidi/tpm-ca-certificates",
 			tag:        "2025-12-04",
 		},
 		{
 			name:       "different owner",
-			owner:      "github",
 			sourceRepo: "github/example-repo",
 			tag:        "2025-01-01",
 		},
 		{
 			name:       "empty tag",
-			owner:      "loicsikidi",
 			sourceRepo: "loicsikidi/tpm-ca-certificates",
 			tag:        "",
 		},
@@ -213,7 +210,12 @@ func Test_displayPolicyCriteria(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// This function prints to stdout, so we're just checking it doesn't panic
-			displayPolicyCriteria(tt.owner, tt.sourceRepo, tt.tag)
+			cfg := policy.Config{
+				SourceRepo:    tt.sourceRepo,
+				BuildWorkflow: ".github/workflows/release-bundle.yaml",
+				Tag:           tt.tag,
+			}
+			displayPolicyCriteria(cfg)
 		})
 	}
 }
@@ -237,7 +239,7 @@ func Test_verifyRekorTimestampDate(t *testing.T) {
 			timestamp:    time.Date(2025, 11, 4, 12, 0, 0, 0, time.UTC),
 			expectedDate: "2025-12-04",
 			expectError:  true,
-			errorMsg:     "Rekor timestamp date mismatch: expected 2025-12-04, got 2025-11-04",
+			errorMsg:     "date mismatch between tag and Rekor entry: expected 2025-12-04, got 2025-11-04",
 		},
 	}
 

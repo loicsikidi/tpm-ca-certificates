@@ -1,4 +1,4 @@
-package attestation
+package digest
 
 import (
 	"crypto/sha256"

@@ -5,21 +5,24 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/loicsikidi/tpm-ca-certificates/internal/attestation"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/github"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/digest"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/policy"
 )
 
 const (
 	// Test repository with known attestations
-	testRepo     = "loicsikidi/tpm-ca-certificates"
-	testOwner    = "loicsikidi"
-	testRepoName = "tpm-ca-certificates"
-	testTag      = "2025-12-04"
-	testCommit   = "63e6a017e9c15428b2959cb2760d21f05dea42f4"
+	testBundlePath = "testdata/tpm-ca-certificates.pem"
+	testRepo       = "loicsikidi/tpm-ca-certificates"
+	testOwner      = "loicsikidi"
+	testRepoName   = "tpm-ca-certificates"
+	testTag        = "2025-12-03"
+	testCommit     = "7422b99b8b097ba8d80b4b7d3f27c13b78e35a7f"
 
 	// Expected digest for the test bundle
-	// This is the actual digest of tpm-ca-certificates.pem from this repository
+	// This is the actual digest of tpm-ca-certificates.pem from the 2025-12-03 release
 	// (includes the metadata header with Date and Commit)
-	expectedDigest = "sha256:cb9edc2a6c187da284ce12908df949fb5628d78f2b52ab246ceafbd8cc7a0b80"
+	expectedDigest = "sha256:604f64f1e807646b979f4c23f9a0be9da98d2f76132d54254cb79c4b4b4e4046"
 )
 
 // TestVerifyIntegration validates the complete verification workflow
@@ -36,12 +39,9 @@ func TestVerifyIntegration(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	// Get path to test bundle
-	bundlePath := createTestBundle(t)
-
 	// Step 1: Compute digest
 	t.Log("Step 1: Computing bundle digest...")
-	digest, err := attestation.ComputeSHA256(bundlePath)
+	digest, err := digest.ComputeSHA256(testBundlePath)
 	if err != nil {
 		t.Fatalf("Failed to compute digest: %v", err)
 	}
@@ -53,7 +53,7 @@ func TestVerifyIntegration(t *testing.T) {
 
 	// Step 2: Fetch attestations from GitHub API
 	t.Log("Step 2: Fetching attestations from GitHub API...")
-	client := attestation.NewHTTPClient(nil)
+	client := github.NewHTTPClient(nil)
 	attestations, err := client.GetAttestations(testOwner, testRepoName, digest)
 	if err != nil {
 		t.Fatalf("Failed to fetch attestations: %v", err)
@@ -73,36 +73,31 @@ func TestVerifyIntegration(t *testing.T) {
 
 	// Step 3: Create verifier
 	t.Log("Step 3: Creating Sigstore verifier...")
-	verifier, err := attestation.NewVerifier()
-	if err != nil {
-		t.Fatalf("Failed to create verifier: %v", err)
-	}
-	t.Log("✓ Verifier created")
-
-	// Step 4: Build policy
-	t.Log("Step 4: Building verification policy...")
-	policyOpts := attestation.PolicyOptions{
+	policyCfg := policy.Config{
 		SourceRepo:    testRepo,
 		OIDCIssuer:    "https://token.actions.githubusercontent.com",
 		PredicateType: "https://slsa.dev/provenance/v1",
 		BuildWorkflow: ".github/workflows/release-bundle.yaml",
 		Tag:           testTag,
 	}
-
-	policy, err := attestation.BuildPolicy(digest, policyOpts)
+	verifier, err := github.NewVerifier(github.Config{
+		Digest: digest,
+		Policy: policyCfg,
+	})
 	if err != nil {
-		t.Fatalf("Failed to build policy: %v", err)
+		t.Fatalf("Failed to create verifier: %v", err)
 	}
+	t.Log("✓ Verifier created")
 	t.Log("✓ Policy built with criteria:")
-	t.Logf("  - OIDC Issuer: %s", policyOpts.OIDCIssuer)
-	t.Logf("  - Source Repo: %s", policyOpts.SourceRepo)
-	t.Logf("  - Build Workflow: %s@refs/tags/%s", policyOpts.BuildWorkflow, policyOpts.Tag)
+	t.Logf("  - OIDC Issuer: %s", policyCfg.OIDCIssuer)
+	t.Logf("  - Source Repo: %s", policyCfg.SourceRepo)
+	t.Logf("  - Build Workflow: %s", policyCfg.BuildWorkflowRef())
 
-	// Step 5: Verify attestations
-	t.Log("Step 5: Verifying attestations...")
+	// Step 4: Verify attestations
+	t.Log("Step 4: Verifying attestations...")
 	var verified bool
 	for i, att := range attestations {
-		result, err := verifier.Verify(att, policy)
+		result, err := verifier.Verify(att)
 		if err != nil {
 			t.Logf("Attestation %d verification failed: %v", i, err)
 			continue
@@ -138,7 +133,7 @@ func TestVerifyInvalidDigest(t *testing.T) {
 
 	invalidDigest := "sha256:0000000000000000000000000000000000000000000000000000000000000000"
 
-	client := attestation.NewHTTPClient(nil)
+	client := github.NewHTTPClient(nil)
 	attestations, err := client.GetAttestations(testOwner, testRepoName, invalidDigest)
 
 	// Either no attestations found or error - both are acceptable
@@ -153,14 +148,12 @@ func TestVerifyPolicyMismatch(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	bundlePath := createTestBundle(t)
-
-	digest, err := attestation.ComputeSHA256(bundlePath)
+	digest, err := digest.ComputeSHA256(testBundlePath)
 	if err != nil {
 		t.Fatalf("Failed to compute digest: %v", err)
 	}
 
-	client := attestation.NewHTTPClient(nil)
+	client := github.NewHTTPClient(nil)
 	attestations, err := client.GetAttestations(testOwner, testRepoName, digest)
 	if err != nil {
 		t.Fatalf("Failed to fetch attestations: %v", err)
@@ -170,13 +163,8 @@ func TestVerifyPolicyMismatch(t *testing.T) {
 		t.Skip("No attestations available for test")
 	}
 
-	verifier, err := attestation.NewVerifier()
-	if err != nil {
-		t.Fatalf("Failed to create verifier: %v", err)
-	}
-
 	// Build policy with wrong workflow name
-	policyOpts := attestation.PolicyOptions{
+	policyCfg := policy.Config{
 		SourceRepo:    testRepo,
 		OIDCIssuer:    "https://token.actions.githubusercontent.com",
 		PredicateType: "https://slsa.dev/provenance/v1",
@@ -184,14 +172,17 @@ func TestVerifyPolicyMismatch(t *testing.T) {
 		Tag:           testTag,
 	}
 
-	policy, err := attestation.BuildPolicy(digest, policyOpts)
+	verifier, err := github.NewVerifier(github.Config{
+		Digest: digest,
+		Policy: policyCfg,
+	})
 	if err != nil {
-		t.Fatalf("Failed to build policy: %v", err)
+		t.Fatalf("Failed to create verifier: %v", err)
 	}
 
 	// Verification should fail
 	for i, att := range attestations {
-		_, err := verifier.Verify(att, policy)
+		_, err := verifier.Verify(att)
 		if err == nil {
 			t.Errorf("Attestation %d verification should have failed with wrong workflow, but succeeded", i)
 		} else {
@@ -200,20 +191,98 @@ func TestVerifyPolicyMismatch(t *testing.T) {
 	}
 }
 
-// createTestBundle returns the path to the test bundle stored in testdata.
-//
-// This uses a snapshot of tpm-ca-certificates.pem stored in testdata to ensure
-// test stability even as the main bundle evolves.
-func createTestBundle(t *testing.T) string {
-	t.Helper()
-	return "testdata/tpm-ca-certificates.pem"
+// TestVerifyCommitMismatch verifies that verification fails when commit doesn't match.
+func TestVerifyCommitMismatch(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	digest, err := digest.ComputeSHA256(testBundlePath)
+	if err != nil {
+		t.Fatalf("Failed to compute digest: %v", err)
+	}
+
+	client := github.NewHTTPClient(nil)
+	attestations, err := client.GetAttestations(testOwner, testRepoName, digest)
+	if err != nil {
+		t.Fatalf("Failed to fetch attestations: %v", err)
+	}
+
+	if len(attestations) == 0 {
+		t.Skip("No attestations available for test")
+	}
+
+	// Build policy with correct settings but we'll test with wrong commit
+	policyCfg := policy.Config{
+		SourceRepo:    testRepo,
+		OIDCIssuer:    "https://token.actions.githubusercontent.com",
+		PredicateType: "https://slsa.dev/provenance/v1",
+		BuildWorkflow: ".github/workflows/release-bundle.yaml",
+		Tag:           testTag,
+	}
+
+	verifier, err := github.NewVerifier(github.Config{
+		Digest: digest,
+		Policy: policyCfg,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create verifier: %v", err)
+	}
+
+	wrongCommit := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+	// Verify attestation (this should succeed)
+	result, err := verifier.Verify(attestations[0])
+	if err != nil {
+		t.Fatalf("Attestation verification failed: %v", err)
+	}
+
+	// Now verify commit should fail
+	fields := result.Statement.Predicate.GetFields()
+	var actualCommit string
+	if buildDef := fields["buildDefinition"]; buildDef != nil {
+		buildDefStruct := buildDef.GetStructValue()
+		if buildDefStruct != nil {
+			buildDefFields := buildDefStruct.GetFields()
+			if resolvedDeps := buildDefFields["resolvedDependencies"]; resolvedDeps != nil {
+				resolvedDepsList := resolvedDeps.GetListValue()
+				if resolvedDepsList != nil && len(resolvedDepsList.GetValues()) > 0 {
+					firstDep := resolvedDepsList.GetValues()[0]
+					if firstDep != nil {
+						firstDepStruct := firstDep.GetStructValue()
+						if firstDepStruct != nil {
+							firstDepFields := firstDepStruct.GetFields()
+							if digest := firstDepFields["digest"]; digest != nil {
+								digestStruct := digest.GetStructValue()
+								if digestStruct != nil {
+									digestFields := digestStruct.GetFields()
+									if commit := digestFields["gitCommit"]; commit != nil {
+										actualCommit = commit.GetStringValue()
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if actualCommit == "" {
+		t.Fatal("Failed to extract commit from attestation")
+	}
+
+	// Verify that commits don't match
+	if actualCommit == wrongCommit {
+		t.Errorf("Expected different commits, but both are %s", actualCommit)
+	}
+
+	t.Logf("✓ Commit validation works: actual=%s, wrong=%s", actualCommit, wrongCommit)
 }
 
 // TestDigestComputation validates the digest computation separately.
 func TestDigestComputation(t *testing.T) {
-	bundlePath := createTestBundle(t)
-
-	digest, err := attestation.ComputeSHA256(bundlePath)
+	digest, err := digest.ComputeSHA256(testBundlePath)
 	if err != nil {
 		t.Fatalf("Failed to compute digest: %v", err)
 	}
@@ -235,7 +304,7 @@ func TestBundleLocation(t *testing.T) {
 		tmpFile.WriteString("test content")
 		tmpFile.Close()
 
-		_, err = attestation.ComputeSHA256(tmpFile.Name())
+		_, err = digest.ComputeSHA256(tmpFile.Name())
 		if err != nil {
 			t.Errorf("Failed to compute digest for file in current dir: %v", err)
 		}
@@ -250,7 +319,7 @@ func TestBundleLocation(t *testing.T) {
 			t.Fatalf("Failed to create test file: %v", err)
 		}
 
-		_, err := attestation.ComputeSHA256(bundlePath)
+		_, err := digest.ComputeSHA256(bundlePath)
 		if err != nil {
 			t.Errorf("Failed to compute digest for file in subdirectory: %v", err)
 		}

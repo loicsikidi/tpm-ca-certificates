@@ -1,4 +1,4 @@
-package attestation
+package github
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 
 	"github.com/sigstore/sigstore-go/pkg/bundle"
 )
@@ -141,13 +140,4 @@ func (c *HTTPClient) fetchBundle(ctx context.Context, bundleURL string) (*bundle
 	}
 
 	return &loadedBundle, nil
-}
-
-// splitRepo splits a repository string in the format "owner/repo" into owner and repo.
-func splitRepo(repository string) (owner, repo string, err error) {
-	parts := strings.SplitN(repository, "/", 2)
-	if len(parts) != 2 {
-		return "", "", fmt.Errorf("invalid repository format: expected 'owner/repo', got %q", repository)
-	}
-	return parts[0], parts[1], nil
 }
