@@ -57,7 +57,7 @@ signs:
 
 dockers_v2:
   - images:
-      - "ghcr.io/loicsikidi/tpm-ca-certificates"
+      - "ghcr.io/loicsikidi/tpm-ca-certificates/tpmtb"
     tags:
       - "v{{ .Version }}"
       - latest
