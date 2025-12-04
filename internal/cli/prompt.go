@@ -16,10 +16,10 @@ func PromptConfirmation(question string) bool {
 	if err != nil {
 		// Fallback to regular input if raw mode fails
 		var response string
-		fmt.Scanln(&response)
+		fmt.Scanln(&response) //nolint:errcheck
 		return response == "y" || response == "Y"
 	}
-	defer term.Restore(int(os.Stdin.Fd()), oldState)
+	defer term.Restore(int(os.Stdin.Fd()), oldState) //nolint:errcheck
 
 	var buf [1]byte
 	_, err = os.Stdin.Read(buf[:])
