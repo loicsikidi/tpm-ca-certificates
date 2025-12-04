@@ -2,7 +2,8 @@ package policy
 
 import (
 	"fmt"
-	"strings"
+
+	"github.com/loicsikidi/tpm-ca-certificates/internal/github"
 )
 
 // Config contains the common criteria for verification (GitHub Attestation and Cosign).
@@ -10,11 +11,10 @@ import (
 // It centralizes the security policy for both verification methods to ensure
 // consistency across different verification types.
 type Config struct {
-	// SourceRepo is the GitHub repository in "owner/repo" format
-	// Example: "loicsikidi/tpm-ca-certificates"
+	// SourceRepo is the GitHub repository.
 	//
 	// Required.
-	SourceRepo string
+	SourceRepo *github.Repo
 
 	// OIDCIssuer is the expected OIDC issuer URL
 	// Default: https://token.actions.githubusercontent.com
@@ -40,8 +40,11 @@ type Config struct {
 
 // CheckAndSetDefaults validates the config and sets default values.
 func (c *Config) CheckAndSetDefaults() error {
-	if c.SourceRepo == "" {
+	if c.SourceRepo == nil {
 		return fmt.Errorf("invalid input: 'SourceRepo' is required")
+	}
+	if err := c.SourceRepo.CheckAndSetDefaults(); err != nil {
+		return fmt.Errorf("invalid input: 'SourceRepo' is invalid: %w", err)
 	}
 
 	if c.BuildWorkflow == "" {
@@ -60,24 +63,7 @@ func (c *Config) CheckAndSetDefaults() error {
 	if c.PredicateType == "" {
 		c.PredicateType = "https://slsa.dev/provenance/v1"
 	}
-
-	// Validate repo format
-	if _, _, err := c.SplitRepo(); err != nil {
-		return fmt.Errorf("invalid SourceRepo format: %w", err)
-	}
-
 	return nil
-}
-
-// SplitRepo splits the source repository into owner and repo name.
-//
-// Returns an error if the format is invalid (expected "owner/repo").
-func (c *Config) SplitRepo() (owner, repo string, err error) {
-	parts := strings.SplitN(c.SourceRepo, "/", 2)
-	if len(parts) != 2 {
-		return "", "", fmt.Errorf("expected 'owner/repo', got %q", c.SourceRepo)
-	}
-	return parts[0], parts[1], nil
 }
 
 // BuildWorkflowRef returns the full workflow reference including the tag.
@@ -91,16 +77,14 @@ func (c *Config) BuildWorkflowRef() string {
 //
 // Format: https://github.com/{owner}/{repo}
 func (c *Config) BuildSignerRepoURL() string {
-	owner, repo, _ := c.SplitRepo() // error ignored since CheckAndSetDefaults ensures validity
-	return fmt.Sprintf("https://github.com/%s/%s", owner, repo)
+	return fmt.Sprintf("https://github.com/%s", c.SourceRepo.String())
 }
 
 // BuildSANRegex returns the Subject Alternative Name regex pattern.
 //
 // Format: (?i)^https://github.com/{owner}/{repo}/
 func (c *Config) BuildSANRegex() string {
-	owner, repo, _ := c.SplitRepo() // error ignored since CheckAndSetDefaults ensures validity
-	return fmt.Sprintf("(?i)^https://github.com/%s/%s/", owner, repo)
+	return fmt.Sprintf("(?i)^https://github.com/%s/", c.SourceRepo.String())
 }
 
 // BuildFullWorkflowURI returns the complete workflow URI including repo, path and tag.

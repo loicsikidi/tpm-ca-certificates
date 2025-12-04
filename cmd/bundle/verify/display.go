@@ -2,37 +2,15 @@ package verify
 
 import (
 	"fmt"
-	"path/filepath"
 	"strings"
 
+	"github.com/loicsikidi/tpm-ca-certificates/internal/cli"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/policy"
 	"github.com/sigstore/sigstore-go/pkg/verify"
 )
 
-type color string
-
-const (
-	colorRed    color = "\033[31m"
-	colorGreen  color = "\033[32m"
-	colorYellow color = "\033[33m"
-	colorReset  color = "\033[0m"
-)
-
-func colorize(color color, text string) string {
-	return string(color) + text + string(colorReset)
-}
-
 func displayDigest(digest, sourceFile string) {
 	fmt.Printf("Loaded digest %s for %s\n", digest, sourceFile)
-	fmt.Println()
-}
-
-func displaySuccess(msg string) {
-	fmt.Println(colorize(colorGreen, msg))
-	fmt.Println()
-}
-func displayError(msg string) {
-	fmt.Println(colorize(colorRed, msg))
 	fmt.Println()
 }
 
@@ -43,7 +21,7 @@ func displayChecksumFiles(checksumsFile, checksumsSignature string) {
 
 }
 func displayGithubAttestationSuccess(verifiedAttestations []verifiedAttestation) {
-	displaySuccess("✅ GitHub verification succeeded")
+	cli.DisplaySuccess("✅ GitHub verification succeeded")
 
 	fmt.Printf("The following %d attestation(s) matched the policy criteria\n", len(verifiedAttestations))
 	fmt.Println()
@@ -63,28 +41,19 @@ func displayBundleMetadata(date, commit string) {
 	fmt.Println()
 }
 
-func displayPolicyCriteria(cfg policy.Config) {
+func displayPolicyCriteria(cfg policy.Config, commitID string) {
 	// Ensure defaults are set for display
 	_ = cfg.CheckAndSetDefaults()
 
-	owner, _, _ := cfg.SplitRepo()
-
 	fmt.Println("The following policy criteria will be enforced:")
 	fmt.Printf("- Predicate type must match:................ %s\n", cfg.PredicateType)
-	fmt.Printf("- Source Repository Owner URI must match:... %s\n", fmt.Sprintf("https://github.com/%s", owner))
+	fmt.Printf("- Source Repository Owner URI must match:... %s\n", fmt.Sprintf("https://github.com/%s", cfg.SourceRepo.Owner))
 	fmt.Printf("- Subject Alternative Name must match regex: %s\n", cfg.BuildSANRegex())
 	fmt.Printf("- OIDC Issuer must match:................... %s\n", cfg.OIDCIssuer)
 	fmt.Printf("- Build Workflow must match:................ %s\n", cfg.BuildWorkflowRef())
+	fmt.Printf("- Git commit ID must match:................. %s\n", commitID)
+	fmt.Printf("- Rekor entry date must match:.............. %s\n", cfg.Tag)
 	fmt.Println()
-}
-
-func displayCosignMissingChecksumFilesErr(bundlePath string) {
-	fmt.Println(colorize(colorRed, "❌ Cosign verification failed"))
-	fmt.Println()
-	fmt.Println("Error: Required checksum files not found")
-	fmt.Println("Auto-detection looked for:")
-	fmt.Printf("  - %s\n", filepath.Join(filepath.Dir(bundlePath), "checksums.txt"))
-	fmt.Printf("  - %s\n", filepath.Join(filepath.Dir(bundlePath), "checksums.txt.sigstore.json"))
 }
 
 func displayTitle(title string) {

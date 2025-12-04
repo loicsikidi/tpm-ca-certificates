@@ -18,7 +18,7 @@ var (
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "validate",
-		Short: "Validate TPM roots configuration file",
+		Short: "validate TPM roots configuration file",
 		Long: `Validate a TPM roots YAML configuration file.
 
 The validator checks:

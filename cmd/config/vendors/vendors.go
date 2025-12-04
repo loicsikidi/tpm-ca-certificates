@@ -8,7 +8,7 @@ import (
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "vendors",
-		Short: "Manage vendors in the TPM roots configuration",
+		Short: "manage vendors in the TPM roots configuration file",
 		Long:  `List or manage vendors in the configuration file.`,
 	}
 
