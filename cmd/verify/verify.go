@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/loicsikidi/tpm-ca-certificates/internal/attestation"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
@@ -154,6 +155,12 @@ func run(cmd *cobra.Command, args []string) error {
 		result, err := verifier.Verify(att, policy)
 		if err != nil {
 			verificationErr = fmt.Errorf("attestation %d verification failed: %w", i, err)
+			continue
+		}
+
+		// Verify Rekor timestamp matches the bundle date
+		if err := verifyRekorTimestampDate(result, effectiveDate); err != nil {
+			verificationErr = fmt.Errorf("attestation %d timestamp validation failed: %w", i, err)
 			continue
 		}
 
@@ -330,4 +337,25 @@ func splitRepo(repository string) (owner, repo string, err error) {
 
 func colorize(color color, text string) string {
 	return string(color) + text + string(colorReset)
+}
+
+// verifyRekorTimestampDate validates that the Rekor timestamp date matches the expected tag date.
+func verifyRekorTimestampDate(result *verify.VerificationResult, expectedDate string) error {
+	if len(result.VerifiedTimestamps) == 0 {
+		return fmt.Errorf("no verified timestamps found in attestation")
+	}
+
+	// Get the first Rekor timestamp
+	rekorTimestamp := result.VerifiedTimestamps[0].Timestamp
+
+	// Extract date from timestamp (YYYY-MM-DD format)
+	actualDate := rekorTimestamp.UTC().Format("2006-01-02")
+
+	// Compare dates
+	if actualDate != expectedDate {
+		return fmt.Errorf("date mismatch between tag and Rekor entry: expected %s, got %s (full timestamp: %s)",
+			expectedDate, actualDate, rekorTimestamp.UTC().Format(time.RFC3339))
+	}
+
+	return nil
 }

@@ -2,6 +2,9 @@ package verify
 
 import (
 	"testing"
+	"time"
+
+	"github.com/sigstore/sigstore-go/pkg/verify"
 )
 
 func Test_splitRepo(t *testing.T) {
@@ -213,4 +216,86 @@ func Test_displayPolicyCriteria(t *testing.T) {
 			displayPolicyCriteria(tt.owner, tt.sourceRepo, tt.tag)
 		})
 	}
+}
+
+func Test_verifyRekorTimestampDate(t *testing.T) {
+	tests := []struct {
+		name         string
+		timestamp    time.Time
+		expectedDate string
+		expectError  bool
+		errorMsg     string
+	}{
+		{
+			name:         "matching date",
+			timestamp:    time.Date(2025, 12, 4, 4, 38, 8, 0, time.UTC),
+			expectedDate: "2025-12-04",
+			expectError:  false,
+		},
+		{
+			name:         "date mismatch - different month",
+			timestamp:    time.Date(2025, 11, 4, 12, 0, 0, 0, time.UTC),
+			expectedDate: "2025-12-04",
+			expectError:  true,
+			errorMsg:     "Rekor timestamp date mismatch: expected 2025-12-04, got 2025-11-04",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a mock VerificationResult with the test timestamp
+			result := &verify.VerificationResult{
+				VerifiedTimestamps: []verify.TimestampVerificationResult{
+					{
+						Timestamp: tt.timestamp,
+						Type:      "Rekor",
+					},
+				},
+			}
+
+			err := verifyRekorTimestampDate(result, tt.expectedDate)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("expected error but got none")
+				} else if tt.errorMsg != "" && !containsSubstring(err.Error(), tt.errorMsg) {
+					t.Errorf("expected error containing %q, got %q", tt.errorMsg, err.Error())
+				}
+			} else {
+				if err != nil {
+					t.Errorf("unexpected error: %v", err)
+				}
+			}
+		})
+	}
+}
+
+func Test_verifyRekorTimestampDate_NoTimestamps(t *testing.T) {
+	result := &verify.VerificationResult{
+		VerifiedTimestamps: []verify.TimestampVerificationResult{},
+	}
+
+	err := verifyRekorTimestampDate(result, "2025-12-04")
+	if err == nil {
+		t.Error("expected error for missing timestamps, got nil")
+	}
+	if !containsSubstring(err.Error(), "no verified timestamps found") {
+		t.Errorf("expected error about missing timestamps, got: %v", err)
+	}
+}
+
+// containsSubstring checks if s contains substr.
+func containsSubstring(s, substr string) bool {
+	return len(s) >= len(substr) && (s == substr || len(substr) == 0 ||
+		(len(s) > 0 && len(substr) > 0 && indexSubstring(s, substr) >= 0))
+}
+
+// indexSubstring returns the index of substr in s, or -1 if not found.
+func indexSubstring(s, substr string) int {
+	for i := 0; i+len(substr) <= len(s); i++ {
+		if s[i:i+len(substr)] == substr {
+			return i
+		}
+	}
+	return -1
 }
