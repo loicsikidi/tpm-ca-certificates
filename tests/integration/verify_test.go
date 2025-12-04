@@ -10,19 +10,20 @@ import (
 
 const (
 	// Test repository with known attestations
-	testRepo     = "loicsikidi/test-hybrid-release"
+	testRepo     = "loicsikidi/tpm-ca-certificates"
 	testOwner    = "loicsikidi"
-	testRepoName = "test-hybrid-release"
-	testTag      = "2025-01-03"
-	testCommit   = "a703c9c414fcad56351b5b6326a7d0cbaf2f0b9c"
+	testRepoName = "tpm-ca-certificates"
+	testTag      = "2025-12-04"
+	testCommit   = "63e6a017e9c15428b2959cb2760d21f05dea42f4"
 
 	// Expected digest for the test bundle
-	// This is the actual digest of tpm-ca-certificates.pem from the test release
-	expectedDigest = "sha256:ac58579d398a60f0d610b0bd405c983ff30a91a551ca57dd4ca30aee2536cc4a"
+	// This is the actual digest of tpm-ca-certificates.pem from this repository
+	// (includes the metadata header with Date and Commit)
+	expectedDigest = "sha256:cb9edc2a6c187da284ce12908df949fb5628d78f2b52ab246ceafbd8cc7a0b80"
 )
 
 // TestVerifyIntegration validates the complete verification workflow
-// using the test repository loicsikidi/test-hybrid-release.
+// using the repository loicsikidi/tpm-ca-certificates.
 //
 // This test performs end-to-end verification including:
 // 1. Computing the bundle digest
@@ -35,9 +36,8 @@ func TestVerifyIntegration(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	// Create temporary test bundle
+	// Get path to test bundle
 	bundlePath := createTestBundle(t)
-	defer os.Remove(bundlePath)
 
 	// Step 1: Compute digest
 	t.Log("Step 1: Computing bundle digest...")
@@ -85,7 +85,7 @@ func TestVerifyIntegration(t *testing.T) {
 		SourceRepo:    testRepo,
 		OIDCIssuer:    "https://token.actions.githubusercontent.com",
 		PredicateType: "https://slsa.dev/provenance/v1",
-		BuildWorkflow: ".github/workflows/release-bundle.yml",
+		BuildWorkflow: ".github/workflows/release-bundle.yaml",
 		Tag:           testTag,
 	}
 
@@ -154,7 +154,6 @@ func TestVerifyPolicyMismatch(t *testing.T) {
 	}
 
 	bundlePath := createTestBundle(t)
-	defer os.Remove(bundlePath)
 
 	digest, err := attestation.ComputeSHA256(bundlePath)
 	if err != nil {
@@ -181,7 +180,7 @@ func TestVerifyPolicyMismatch(t *testing.T) {
 		SourceRepo:    testRepo,
 		OIDCIssuer:    "https://token.actions.githubusercontent.com",
 		PredicateType: "https://slsa.dev/provenance/v1",
-		BuildWorkflow: ".github/workflows/wrong-workflow.yml", // Wrong workflow
+		BuildWorkflow: ".github/workflows/wrong-workflow.yaml", // Wrong workflow
 		Tag:           testTag,
 	}
 
@@ -201,48 +200,18 @@ func TestVerifyPolicyMismatch(t *testing.T) {
 	}
 }
 
-// createTestBundle creates a temporary file with the test certificate content.
+// createTestBundle returns the path to the test bundle stored in testdata.
 //
-// This is the actual content from the test-hybrid-release repository.
+// This uses a snapshot of tpm-ca-certificates.pem stored in testdata to ensure
+// test stability even as the main bundle evolves.
 func createTestBundle(t *testing.T) string {
 	t.Helper()
-
-	// This is the actual content of tpm-ca-certificates.pem from test-hybrid-release
-	bundleContent := `-----BEGIN CERTIFICATE-----
-MIIBdjCCARygAwIBAgIRAKjIOzWTCC66SJLRB5eewJMwCgYIKoZIzj0EAwIwGTEX
-MBUGA1UEAxMOTWluaUNBIFJvb3QgQ0EwHhcNMjUxMTI5MTY0NzEyWhcNMjUxMTMw
-MTY0NzEyWjAZMRcwFQYDVQQDEw5NaW5pQ0EgUm9vdCBDQTBZMBMGByqGSM49AgEG
-CCqGSM49AwEHA0IABJ5ZcPVrm5WIroTQM0PcVCxnTiwIzJDvQSnAoJO7nny2ezTv
-Ln6ysc9EUMyRJA1hjwLqb2yaNCbdMQ5xh52A8MOjRTBDMA4GA1UdDwEB/wQEAwIB
-BjASBgNVHRMBAf8ECDAGAQH/AgEBMB0GA1UdDgQWBBSAykAbjjr1GLB2d/qrvv5x
-hWsmNjAKBggqhkjOPQQDAgNIADBFAiA0PhgsJ+CFea3nKLJm09tt+RQIZavbV+Cw
-gVfsRDq+JQIhAIVaPP1n1jNPKP+fjOIXHQCzaCK7WSQe8KuQwpzZszVE
------END CERTIFICATE-----
-`
-
-	tmpFile, err := os.CreateTemp("", "tpm-ca-certificates-*.pem")
-	if err != nil {
-		t.Fatalf("Failed to create temp file: %v", err)
-	}
-
-	if _, err := tmpFile.WriteString(bundleContent); err != nil {
-		tmpFile.Close()
-		os.Remove(tmpFile.Name())
-		t.Fatalf("Failed to write bundle content: %v", err)
-	}
-
-	if err := tmpFile.Close(); err != nil {
-		os.Remove(tmpFile.Name())
-		t.Fatalf("Failed to close temp file: %v", err)
-	}
-
-	return tmpFile.Name()
+	return "testdata/tpm-ca-certificates.pem"
 }
 
 // TestDigestComputation validates the digest computation separately.
 func TestDigestComputation(t *testing.T) {
 	bundlePath := createTestBundle(t)
-	defer os.Remove(bundlePath)
 
 	digest, err := attestation.ComputeSHA256(bundlePath)
 	if err != nil {

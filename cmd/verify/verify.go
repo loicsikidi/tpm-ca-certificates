@@ -6,12 +6,16 @@ import (
 	"strings"
 
 	"github.com/loicsikidi/tpm-ca-certificates/internal/attestation"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
 	"github.com/sigstore/sigstore-go/pkg/verify"
 	"github.com/spf13/cobra"
 )
 
+const (
+	sourceRepo = "loicsikidi/tpm-ca-certificates"
+)
+
 var (
-	sourceRepo         string
 	checksumsFile      string
 	checksumsSignature string
 	bundleDate         string
@@ -49,29 +53,27 @@ The verify command performs two types of verification:
    - Validates checksum matches the bundle
 
 The command outputs verification results`,
-		Example: `  # Verify bundle with default settings
+		Example: `  # Verify bundle with default settings (date and commit from bundle metadata)
   tpmtb verify tpm-ca-certificates.pem
 
   # Verify with explicit checksum files
   tpmtb verify tpm-ca-certificates.pem --checksums-file checksums.txt --checksums-signature checksums.txt.sigstore.json
-  
-  # Verify bundle from a different repository (useful for forks)
-  tpmtb verify tpm-ca-certificates.pem --source-repo owner/repo`,
+
+  # Override bundle metadata with explicit date and commit
+  tpmtb verify tpm-ca-certificates.pem --date 2025-01-03 --commit a703c9c414fcad56351b5b6326a7d0cbaf2f0b9c`,
 		Args:         cobra.ExactArgs(1),
 		SilenceUsage: true,
 		RunE:         run,
 	}
 
-	cmd.Flags().StringVar(&sourceRepo, "source-repo", "loicsikidi/tpm-trust-bundle",
-		"Source GitHub repository (owner/repo)")
 	cmd.Flags().StringVar(&checksumsFile, "checksums-file", "",
 		"Path to checksums.txt file (default: auto-detect by searching in the same directory as the bundle)")
 	cmd.Flags().StringVar(&checksumsSignature, "checksums-signature", "",
 		"Path to checksums.txt.sigstore.json file (default: auto-detect by searching in the same directory as the bundle)")
-	cmd.Flags().StringVar(&bundleDate, "date", "2025-01-03",
-		"Bundle generation date (YYYY-MM-DD)")
-	cmd.Flags().StringVar(&bundleCommit, "commit", "a703c9c414fcad56351b5b6326a7d0cbaf2f0b9c",
-		"Git commit hash (40-character hex string)")
+	cmd.Flags().StringVar(&bundleDate, "date", "",
+		"Bundle generation date (YYYY-MM-DD) - overrides bundle metadata if specified")
+	cmd.Flags().StringVar(&bundleCommit, "commit", "",
+		"Git commit hash (40-character hex string) - overrides bundle metadata if specified")
 
 	return cmd
 }
@@ -84,6 +86,22 @@ type verifiedAttestation struct {
 func run(cmd *cobra.Command, args []string) error {
 	bundlePath := args[0]
 	bundleFilename := filepath.Base(bundlePath)
+
+	effectiveDate := bundleDate
+	effectiveCommit := bundleCommit
+
+	if (effectiveDate != "" && effectiveCommit == "") || (effectiveDate == "" && effectiveCommit != "") {
+		return fmt.Errorf("both --date and --commit flags must be provided together")
+	}
+
+	if effectiveDate == "" && effectiveCommit == "" {
+		metadata, err := bundle.ParseMetadata(bundlePath)
+		if err != nil {
+			return fmt.Errorf("failed to parse bundle metadata: %w", err)
+		}
+		effectiveDate = metadata.Date
+		effectiveCommit = metadata.Commit
+	}
 
 	digest, err := attestation.ComputeSHA256(bundlePath)
 	if err != nil {
@@ -111,7 +129,7 @@ func run(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Loaded %d attestation(s) from GitHub API\n", len(attestations))
 	fmt.Println()
 
-	displayPolicyCriteria(owner, sourceRepo, bundleDate)
+	displayPolicyCriteria(owner, sourceRepo, effectiveDate)
 
 	verifier, err := attestation.NewVerifier()
 	if err != nil {
@@ -120,8 +138,8 @@ func run(cmd *cobra.Command, args []string) error {
 
 	policyOpts := attestation.PolicyOptions{
 		SourceRepo:    sourceRepo,
-		BuildWorkflow: ".github/workflows/release-bundle.yml",
-		Tag:           bundleDate,
+		BuildWorkflow: ".github/workflows/release-bundle.yaml",
+		Tag:           effectiveDate,
 	}
 
 	policy, err := attestation.BuildPolicy(digest, policyOpts)
@@ -145,7 +163,7 @@ func run(cmd *cobra.Command, args []string) error {
 		})
 	}
 
-	displayBundleMetadata(bundleDate, bundleCommit)
+	displayBundleMetadata(effectiveDate, effectiveCommit)
 
 	if len(verifiedAttestations) == 0 {
 		fmt.Println(colorize(colorRed, "❌ Verification failed"))
