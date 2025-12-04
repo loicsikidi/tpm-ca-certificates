@@ -9,3 +9,8 @@ vendors:
           validation:
             fingerprint:
                 sha1: "7C:7B:3C:8A:46:5E:67:D2:8F:4D:B0:F3:5C:E1:20:C4:BB:4A:AC:CC"
+        - name: "Nuvoton TPM Root CA 1110"
+          url: "https://www.nuvoton.com/security/NTC-TPM-EK-Cert/Nuvoton%20TPM%20Root%20CA%201110.cer"
+          validation:
+            fingerprint:
+                sha1: "65:5E:44:5E:96:54:5C:F3:E4:84:82:94:9B:35:A7:CE:B3:46:58:CC"
