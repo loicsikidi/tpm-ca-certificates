@@ -3,7 +3,7 @@
   { }, }:
 let
   helpers = import (builtins.fetchTarball
-    "https://github.com/loicsikidi/nix-shell-toolbox/tarball/main") {
+    "https://github.com/loicsikidi/nix-shell-toolbox/archive/main.tar.gz") {
       inherit pkgs;
     };
 in pkgs.mkShell {

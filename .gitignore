@@ -20,13 +20,14 @@ go.work
 # Build artifacts
 dist/
 tpmtb
-tpm-ca-certificates
 
 # Generated files during bundle release
-# Note: they are added to avoid dirty git status during release process (ie. goreleaser)
-tpm-ca-certificates.pem
-checksums.txt
-checksums.txt.sigstore.json
+# Notes: 
+#  - they are added to avoid dirty git status during release process (ie. goreleaser)
+#  - these files are generated at the root of the repository
+/tpm-ca-certificates.pem
+/checksums.txt
+/checksums.txt.sigstore.json
 
 # IDE
 .vscode/

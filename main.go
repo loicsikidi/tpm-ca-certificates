@@ -6,7 +6,7 @@ import (
 
 	"github.com/loicsikidi/tpm-ca-certificates/cmd/config"
 	"github.com/loicsikidi/tpm-ca-certificates/cmd/generate"
-	"github.com/loicsikidi/tpm-ca-certificates/cmd/verify"
+	"github.com/loicsikidi/tpm-ca-certificates/cmd/releases"
 	"github.com/loicsikidi/tpm-ca-certificates/cmd/version"
 	"github.com/spf13/cobra"
 )
@@ -33,7 +33,7 @@ Notes:
 	rootCmd.AddCommand(generate.NewCommand())
 	rootCmd.AddCommand(version.NewCommand())
 	rootCmd.AddCommand(config.NewCommand())
-	rootCmd.AddCommand(verify.NewCommand())
+	rootCmd.AddCommand(releases.NewCommand())
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
