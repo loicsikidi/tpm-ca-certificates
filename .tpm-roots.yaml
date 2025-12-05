@@ -14,3 +14,33 @@ vendors:
           validation:
             fingerprint:
                 sha1: "65:5E:44:5E:96:54:5C:F3:E4:84:82:94:9B:35:A7:CE:B3:46:58:CC"
+        - name: "Nuvoton TPM Root CA 1111"
+          url: "https://www.nuvoton.com/security/NTC-TPM-EK-Cert/Nuvoton%20TPM%20Root%20CA%201111.cer"
+          validation:
+            fingerprint:
+                sha1: "48:65:2A:31:B9:D2:66:08:4E:2A:E9:82:D8:B6:73:26:D6:6C:73:72"
+        - name: "Nuvoton TPM Root CA 2111"
+          url: "https://www.nuvoton.com/security/NTC-TPM-EK-Cert/Nuvoton%20TPM%20Root%20CA%202111.cer"
+          validation:
+            fingerprint:
+                sha1: "A3:43:0D:4E:2F:07:55:61:96:5A:E6:ED:32:C9:1A:3D:73:22:C4:2B"
+        - name: "Nuvoton TPM Root CA 2112"
+          url: "https://www.nuvoton.com/security/NTC-TPM-EK-Cert/Nuvoton%20TPM%20Root%20CA%202112.cer"
+          validation:
+            fingerprint:
+                sha1: "58:9A:6B:D9:EE:96:3B:EC:E2:06:58:D1:4A:24:0F:7B:4B:72:40:33"
+        - name: "NuvotonTPMRootCA1210"
+          url: "https://www.nuvoton.com/security/NTC-TPM-EK-Cert/NuvotonTPMRootCA1210.cer"
+          validation:
+            fingerprint:
+                sha1: "86:A9:9E:10:F6:B1:1E:41:BD:19:D8:EF:79:DB:C9:5A:F4:D3:C3:ED"
+        - name: "NuvotonTPMRootCA2210"
+          url: "https://www.nuvoton.com/security/NTC-TPM-EK-Cert/NuvotonTPMRootCA2210.cer"
+          validation:
+            fingerprint:
+                sha1: "4A:D6:DD:BD:52:52:2C:52:1C:BF:92:99:C4:46:26:3F:34:81:A6:7A"
+        - name: "NuvotonTPMRootCA2211"
+          url: "https://www.nuvoton.com/security/NTC-TPM-EK-Cert/NuvotonTPMRootCA2211.cer"
+          validation:
+            fingerprint:
+                sha1: "5E:74:87:90:69:4F:6A:7F:6E:AB:AF:70:15:26:86:3C:DD:FE:6D:AC"
