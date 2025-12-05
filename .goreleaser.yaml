@@ -74,7 +74,7 @@ release:
   github:
     owner: loicsikidi
     name: tpm-ca-certificates
-  draft: false
+  draft: true
   prerelease: auto
   mode: append
   header: |
@@ -115,7 +115,7 @@ release:
 
     First, verify the **integrity** of the checksums file using Cosign:
 
-    > [!IMPORTANT]
+    > [!TIP]
     > Make sure to use **`cosign >= v2.4.3`** to support the [Sigstore bundle format](https://docs.sigstore.dev/about/bundle/).
 
     ```bash
