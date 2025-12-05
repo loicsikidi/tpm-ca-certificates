@@ -8,7 +8,7 @@ import (
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "certificates",
-		Short: "Manage certificates in the TPM roots configuration",
+		Short: "manage certificates in the TPM roots configuration",
 		Long:  `Add, remove, or list certificates in the .tpm-roots.yaml configuration file.`,
 	}
 

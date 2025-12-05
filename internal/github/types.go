@@ -76,6 +76,9 @@ type ReleasesOptions struct {
 
 	// SortOrder specifies the sort order (default: desc - most recent first)
 	SortOrder SortOrder
+
+	// ReturnFirstValue indicates whether to return only the first value
+	ReturnFirstValue bool
 }
 
 // CheckAndSetDefaults validates and sets default values for ReleasesOptions.

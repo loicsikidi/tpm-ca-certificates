@@ -1,18 +1,23 @@
-package certificates
+package integration
 
 import (
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/loicsikidi/tpm-ca-certificates/cmd/config/certificates"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config"
 )
 
 func TestAddCommand(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test that downloads certificates from remote URLs")
+	}
+
 	tests := []struct {
 		name           string
 		initialConfig  string
-		opts           addOptions
+		opts           certificates.AddOptions
 		expectError    bool
 		validateResult func(t *testing.T, cfg *config.TPMRootsConfig)
 	}{
@@ -29,11 +34,11 @@ vendors:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
 `,
-			opts: addOptions{
-				vendorID:      "STM",
-				name:          "New Test Certificate",
-				url:           "https://secure.globalsign.com/cacert/gstpmroot.crt",
-				hashAlgorithm: "sha256",
+			opts: certificates.AddOptions{
+				VendorID:      "STM",
+				Name:          "New Test Certificate",
+				URL:           "https://secure.globalsign.com/cacert/gstpmroot.crt",
+				HashAlgorithm: "sha256",
 			},
 			expectError: false,
 			validateResult: func(t *testing.T, cfg *config.TPMRootsConfig) {
@@ -73,12 +78,12 @@ vendors:
           fingerprint:
             sha1: "3D:5E:6B:4A:8C:2F:1E:4B:9A:7C:8D:2E:3F:4A:5B:6C:7D:8E:9F:0A"
 `,
-			opts: addOptions{
-				vendorID:      "STM",
-				name:          "STSAFE ECC Root CA 02",
-				url:           "https://sw-center.st.com/STSAFE/STSAFEEccRootCA02.crt",
-				fingerprint:   "SHA256:FD:1E:7B:68:AC:CD:82:56:36:B2:7B:31:77:C6:74:02:D4:63:A7:F0:4C:97:B6:C4:7A:B7:05:FC:DC:1A:04:F6",
-				hashAlgorithm: "sha256",
+			opts: certificates.AddOptions{
+				VendorID:      "STM",
+				Name:          "STSAFE ECC Root CA 02",
+				URL:           "https://sw-center.st.com/STSAFE/STSAFEEccRootCA02.crt",
+				Fingerprint:   "SHA256:FD:1E:7B:68:AC:CD:82:56:36:B2:7B:31:77:C6:74:02:D4:63:A7:F0:4C:97:B6:C4:7A:B7:05:FC:DC:1A:04:F6",
+				HashAlgorithm: "sha256",
 			},
 			expectError: false,
 			validateResult: func(t *testing.T, cfg *config.TPMRootsConfig) {
@@ -119,11 +124,11 @@ vendors:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
 `,
-			opts: addOptions{
-				vendorID:      "NONEXISTENT",
-				name:          "Test Certificate",
-				url:           "https://example.com/cert.crt",
-				hashAlgorithm: "sha256",
+			opts: certificates.AddOptions{
+				VendorID:      "NONEXISTENT",
+				Name:          "Test Certificate",
+				URL:           "https://example.com/cert.crt",
+				HashAlgorithm: "sha256",
 			},
 			expectError: true,
 		},
@@ -140,10 +145,10 @@ vendors:
 			}
 
 			// Set config path
-			tt.opts.configPath = configPath
+			tt.opts.ConfigPath = configPath
 
 			// Run the add command
-			err := runAdd(&tt.opts)
+			err := certificates.RunAdd(&tt.opts)
 
 			// Check error expectation
 			if tt.expectError && err == nil {
@@ -218,7 +223,7 @@ func TestInsertCertificateAlphabetically(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := insertCertificateAlphabetically(tt.existing, tt.new)
+			result := certificates.InsertCertificateAlphabetically(tt.existing, tt.new)
 
 			if len(result) != len(tt.expected) {
 				t.Fatalf("expected %d certificates, got %d", len(tt.expected), len(result))
@@ -270,7 +275,7 @@ func TestCalculateFingerprint(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := calculateFingerprint(testData, tt.algorithm)
+			result, err := certificates.CalculateFingerprint(testData, tt.algorithm)
 
 			if tt.expectErr {
 				if err == nil {
@@ -351,16 +356,16 @@ vendors:
 				t.Fatal(err)
 			}
 
-			opts := &addOptions{
-				configPath:    configPath,
-				vendorID:      "STM",
-				name:          "Test Cert",
-				url:           "https://secure.globalsign.com/cacert/gstpmroot.crt",
-				hashAlgorithm: tt.hashAlgo,
-				fingerprint:   tt.fingerprint,
+			opts := &certificates.AddOptions{
+				ConfigPath:    configPath,
+				VendorID:      "STM",
+				Name:          "Test Cert",
+				URL:           "https://secure.globalsign.com/cacert/gstpmroot.crt",
+				HashAlgorithm: tt.hashAlgo,
+				Fingerprint:   tt.fingerprint,
 			}
 
-			err := runAdd(opts)
+			err := certificates.RunAdd(opts)
 
 			if tt.expectError {
 				if err == nil {
@@ -416,7 +421,7 @@ func TestParseFingerprint(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			alg, _, err := parseFingerprint(tt.input)
+			alg, _, err := certificates.ParseFingerprint(tt.input)
 
 			if tt.expectedErr && err == nil {
 				t.Fatal("expected error but got none")

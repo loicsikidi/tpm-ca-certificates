@@ -46,7 +46,7 @@ tpmtb bundle download --date 2025-12-03
 1. 📥 Downloads `tpm-ca-certificates.pem` from GitHub release
 2. 📋 Downloads `checksums.txt` and `checksums.txt.sigstore.json`
 3. 🔐 Verifies both **integrity** (Cosign signature) and **provenance** (SLSA attestation)
-4. ✨ Outputs the bundle to the current directory
+4. 🗑️ Clean the current directory by removing checksum files
 
 ## Understanding Bundle Verification 🔍
 

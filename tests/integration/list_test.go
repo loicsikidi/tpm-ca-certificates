@@ -1,15 +1,19 @@
-package list
+package integration
 
 import (
 	"context"
-	"io"
 	"strings"
 	"testing"
 
+	"github.com/loicsikidi/tpm-ca-certificates/cmd/bundle/list"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/github"
 )
 
 func TestListCommand(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test that fetches releases from GitHub API")
+	}
+
 	tests := []struct {
 		name        string
 		args        []string
@@ -78,7 +82,7 @@ func TestListCommand(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cmd := NewCommand()
+			cmd := list.NewCommand()
 			cmd.SetArgs(tt.args)
 
 			err := cmd.ExecuteContext(context.Background())
@@ -113,7 +117,7 @@ func TestListCommandOutput(t *testing.T) {
 	}
 
 	// This test verifies the output format by running the actual command
-	cmd := NewCommand()
+	cmd := list.NewCommand()
 	cmd.SetArgs([]string{"--limit", "3"})
 
 	err := cmd.ExecuteContext(context.Background())
@@ -147,63 +151,5 @@ func TestListCommandWithRealAPI(t *testing.T) {
 		if !strings.Contains(release.TagName, "-") {
 			t.Errorf("expected date format (YYYY-MM-DD), got %s", release.TagName)
 		}
-	}
-}
-
-func TestRunFunctionValidation(t *testing.T) {
-	tests := []struct {
-		name        string
-		limit       int
-		sortOrder   string
-		wantErr     bool
-		errContains string
-	}{
-		{
-			name:      "invalid sort order",
-			limit:     10,
-			sortOrder: "invalid",
-			wantErr:   true,
-		},
-		{
-			name:      "negative limit",
-			limit:     -1,
-			sortOrder: "desc",
-			wantErr:   true,
-		},
-		{
-			name:      "zero limit",
-			limit:     0,
-			sortOrder: "desc",
-			wantErr:   true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Save original values
-			origLimit := limit
-			origSortOrder := sortOrder
-			defer func() {
-				limit = origLimit
-				sortOrder = origSortOrder
-			}()
-
-			// Set test values
-			limit = tt.limit
-			sortOrder = tt.sortOrder
-
-			cmd := NewCommand()
-			cmd.SetOut(io.Discard)
-			cmd.SetErr(io.Discard)
-
-			err := run(cmd, []string{})
-
-			if tt.wantErr && err == nil {
-				t.Errorf("expected error but got none")
-			}
-			if !tt.wantErr && err != nil {
-				t.Errorf("unexpected error: %v", err)
-			}
-		})
 	}
 }

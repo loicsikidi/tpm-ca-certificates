@@ -4,10 +4,10 @@ import (
 	"crypto/x509"
 	"encoding/hex"
 	"fmt"
-	"os"
 	"slices"
 	"strings"
 
+	"github.com/loicsikidi/tpm-ca-certificates/internal/cli"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/concurrency"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config/download"
@@ -17,18 +17,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type addOptions struct {
-	configPath    string
-	vendorID      string
-	name          string
-	url           string
-	fingerprint   string
-	hashAlgorithm string
-	concurrency   int
+// AddOptions holds options for the add command.
+type AddOptions struct {
+	ConfigPath    string
+	VendorID      string
+	Name          string
+	URL           string
+	Fingerprint   string
+	HashAlgorithm string
+	Concurrency   int
 }
 
 func newAddCommand() *cobra.Command {
-	opts := &addOptions{}
+	opts := &AddOptions{}
 
 	cmd := &cobra.Command{
 		Use:   "add",
@@ -62,17 +63,17 @@ hash algorithm (default: SHA256). Use -a to specify a different algorithm (sha1,
   tpmtb config certificates add -i STM -u "https://example.com/cert1.crt,https://example.com/cert2.crt" -f "SHA256:AB:CD:...,SHA256:12:34:..."`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runAdd(opts)
+			return RunAdd(opts)
 		},
 	}
 
-	cmd.Flags().StringVarP(&opts.configPath, "config", "c", ".tpm-roots.yaml", "Path to the configuration file")
-	cmd.Flags().StringVarP(&opts.vendorID, "vendor-id", "i", "", "Vendor ID to add the certificate to")
-	cmd.Flags().StringVarP(&opts.name, "name", "n", "", "Name of the certificate (optional when multiple URLs provided, ignored for multiple URLs)")
-	cmd.Flags().StringVarP(&opts.url, "url", "u", "", "URL(s) of the certificate(s) to download (comma-separated for multiple)")
-	cmd.Flags().StringVarP(&opts.fingerprint, "fingerprint", "f", "", "Fingerprint(s) in format HASH_ALG:HASH (comma-separated for multiple URLs)")
-	cmd.Flags().StringVarP(&opts.hashAlgorithm, "hash-algorithm", "a", "sha256", "Hash algorithm to use for fingerprint calculation (sha1, sha256, sha384, sha512)")
-	cmd.Flags().IntVarP(&opts.concurrency, "workers", "j", 0,
+	cmd.Flags().StringVarP(&opts.ConfigPath, "config", "c", ".tpm-roots.yaml", "Path to the configuration file")
+	cmd.Flags().StringVarP(&opts.VendorID, "vendor-id", "i", "", "Vendor ID to add the certificate to")
+	cmd.Flags().StringVarP(&opts.Name, "name", "n", "", "Name of the certificate (optional when multiple URLs provided, ignored for multiple URLs)")
+	cmd.Flags().StringVarP(&opts.URL, "url", "u", "", "URL(s) of the certificate(s) to download (comma-separated for multiple)")
+	cmd.Flags().StringVarP(&opts.Fingerprint, "fingerprint", "f", "", "Fingerprint(s) in format HASH_ALG:HASH (comma-separated for multiple URLs)")
+	cmd.Flags().StringVarP(&opts.HashAlgorithm, "hash-algorithm", "a", "sha256", "Hash algorithm to use for fingerprint calculation (sha1, sha256, sha384, sha512)")
+	cmd.Flags().IntVarP(&opts.Concurrency, "workers", "j", 0,
 		fmt.Sprintf("Number of workers to use for parallel downloads (0=auto-detect, max=%d)", concurrency.MaxWorkers))
 
 	cmd.MarkFlagRequired("vendor-id")
@@ -88,30 +89,31 @@ type certDownloadResult struct {
 	err         error
 }
 
-func runAdd(opts *addOptions) error {
-	if err := vendors.ValidateVendorID(opts.vendorID); err != nil {
+// RunAdd executes the add command with the given options.
+func RunAdd(opts *AddOptions) error {
+	if err := vendors.ValidateVendorID(opts.VendorID); err != nil {
 		return err
 	}
 
-	if opts.concurrency > concurrency.MaxWorkers {
-		return fmt.Errorf("concurrency value %d exceeds maximum allowed (%d)", opts.concurrency, concurrency.MaxWorkers)
+	if opts.Concurrency > concurrency.MaxWorkers {
+		return fmt.Errorf("concurrency value %d exceeds maximum allowed (%d)", opts.Concurrency, concurrency.MaxWorkers)
 	}
 
-	hashAlgo := strings.ToLower(opts.hashAlgorithm)
+	hashAlgo := strings.ToLower(opts.HashAlgorithm)
 	validAlgos := []string{"sha1", "sha256", "sha384", "sha512"}
 	if !slices.Contains(validAlgos, hashAlgo) {
-		return fmt.Errorf("invalid hash algorithm '%s', must be one of: %s", opts.hashAlgorithm, strings.Join(validAlgos, ", "))
+		return fmt.Errorf("invalid hash algorithm '%s', must be one of: %s", opts.HashAlgorithm, strings.Join(validAlgos, ", "))
 	}
 
-	if opts.fingerprint != "" {
+	if opts.Fingerprint != "" {
 		// Parse all fingerprints and check they match the specified algorithm
-		fpRaw := strings.SplitSeq(opts.fingerprint, ",")
+		fpRaw := strings.SplitSeq(opts.Fingerprint, ",")
 		for fp := range fpRaw {
 			trimmed := strings.TrimSpace(fp)
 			if trimmed == "" {
 				continue
 			}
-			alg, _, err := parseFingerprint(trimmed)
+			alg, _, err := ParseFingerprint(trimmed)
 			if err != nil {
 				return fmt.Errorf("invalid fingerprint format: %w", err)
 			}
@@ -121,24 +123,24 @@ func runAdd(opts *addOptions) error {
 		}
 	}
 
-	cfg, err := config.LoadConfig(opts.configPath)
+	cfg, err := config.LoadConfig(opts.ConfigPath)
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 
 	vendorIdx := -1
 	for i, v := range cfg.Vendors {
-		if v.ID == opts.vendorID {
+		if v.ID == opts.VendorID {
 			vendorIdx = i
 			break
 		}
 	}
 	if vendorIdx == -1 {
-		return fmt.Errorf("vendor with ID '%s' not found", opts.vendorID)
+		return fmt.Errorf("vendor with ID '%s' not found", opts.VendorID)
 	}
 
 	// Parse URLs (trim whitespace)
-	urlsRaw := strings.Split(opts.url, ",")
+	urlsRaw := strings.Split(opts.URL, ",")
 	urls := make([]string, 0, len(urlsRaw))
 	for _, u := range urlsRaw {
 		trimmed := strings.TrimSpace(u)
@@ -152,8 +154,8 @@ func runAdd(opts *addOptions) error {
 	}
 
 	var fingerprints []string
-	if opts.fingerprint != "" {
-		fpRaw := strings.Split(opts.fingerprint, ",")
+	if opts.Fingerprint != "" {
+		fpRaw := strings.Split(opts.Fingerprint, ",")
 		for _, fp := range fpRaw {
 			trimmed := strings.TrimSpace(fp)
 			if trimmed != "" {
@@ -167,12 +169,12 @@ func runAdd(opts *addOptions) error {
 	}
 
 	// Warn if multiple URLs provided with -n flag
-	if len(urls) > 1 && opts.name != "" {
-		fmt.Fprintf(os.Stderr, "⚠️  Multiple URLs provided, ignoring -n flag (names will be deduced from certificate CN)\n")
+	if len(urls) > 1 && opts.Name != "" {
+		cli.DisplayWarning("⚠️ Multiple URLs provided, ignoring -n flag (names will be deduced from certificate CN)")
 	}
 
 	// Determine worker count
-	workers := opts.concurrency
+	workers := opts.Concurrency
 	if workers == 0 {
 		workers = concurrency.DetectCPUCount()
 	}
@@ -199,7 +201,7 @@ func runAdd(opts *addOptions) error {
 		}
 
 		// Determine certificate name
-		certName := opts.name
+		certName := opts.Name
 		if certName == "" {
 			certName = extractCertificateName(result.cert)
 			if certName == "" {
@@ -211,7 +213,7 @@ func runAdd(opts *addOptions) error {
 				continue
 			}
 			if len(urls) == 1 {
-				fmt.Fprintf(os.Stderr, "⚠️  No name provided, using certificate CN: %s\n", certName)
+				cli.DisplayWarning("⚠️ No name provided, using certificate CN: %s", certName)
 			}
 		}
 
@@ -252,7 +254,7 @@ func runAdd(opts *addOptions) error {
 
 	// Add successful certificates to config
 	for _, cert := range successfulCerts {
-		cfg.Vendors[vendorIdx].Certificates = insertCertificateAlphabetically(
+		cfg.Vendors[vendorIdx].Certificates = InsertCertificateAlphabetically(
 			cfg.Vendors[vendorIdx].Certificates,
 			cert,
 		)
@@ -260,12 +262,12 @@ func runAdd(opts *addOptions) error {
 
 	// Save and format configuration if at least one certificate was added
 	if successCount > 0 {
-		if err := config.SaveConfig(opts.configPath, cfg); err != nil {
+		if err := config.SaveConfig(opts.ConfigPath, cfg); err != nil {
 			return fmt.Errorf("failed to save configuration: %w", err)
 		}
 
 		formatter := format.NewFormatter()
-		if err := formatter.FormatFile(opts.configPath, opts.configPath); err != nil {
+		if err := formatter.FormatFile(opts.ConfigPath, opts.ConfigPath); err != nil {
 			return fmt.Errorf("failed to format configuration: %w", err)
 		}
 	}
@@ -274,12 +276,11 @@ func runAdd(opts *addOptions) error {
 	if len(urls) == 1 {
 		// Single URL: simple output
 		if successCount > 0 {
-			fmt.Printf("✅ Certificate '%s' added successfully to vendor '%s'\n", successfulCerts[0].Name, opts.vendorID)
+			cli.DisplaySuccess("✅ Certificate '%s' added successfully to vendor '%s'", successfulCerts[0].Name, opts.VendorID)
 		}
 	} else {
 		// Multiple URLs: detailed output
-		fmt.Printf("\n")
-		fmt.Printf("✅ %d/%d certificates added successfully to vendor '%s'\n", successCount, len(urls), opts.vendorID)
+		cli.DisplaySuccess("✅ %d/%d certificates added successfully to vendor '%s'", successCount, len(urls), opts.VendorID)
 
 		if successCount > 0 {
 			fmt.Printf("\nSuccessfully added:\n")
@@ -289,7 +290,8 @@ func runAdd(opts *addOptions) error {
 		}
 
 		if failCount > 0 {
-			fmt.Printf("\n❌ Failed (%d):\n", failCount)
+			fmt.Println()
+			cli.DisplayError("❌ Failed (%d):", failCount)
 			for _, f := range failures {
 				fmt.Printf("  • %s - %v\n", f.url, f.err)
 			}
@@ -335,7 +337,7 @@ func downloadCertificatesParallel(urls []string, fingerprints []string, hashAlgo
 		var fpValidation string
 		if input.fingerprint != "" {
 			// Verify provided fingerprint
-			alg, hash, err := parseFingerprint(input.fingerprint)
+			alg, hash, err := ParseFingerprint(input.fingerprint)
 			if err != nil {
 				result.err = fmt.Errorf("invalid fingerprint: %w", err)
 				return result
@@ -349,7 +351,7 @@ func downloadCertificatesParallel(urls []string, fingerprints []string, hashAlgo
 			fpValidation = hash
 		} else {
 			// Calculate fingerprint using specified algorithm
-			hashStr, err := calculateFingerprint(cert.Raw, hashAlgo)
+			hashStr, err := CalculateFingerprint(cert.Raw, hashAlgo)
 			if err != nil {
 				result.err = fmt.Errorf("failed to calculate fingerprint: %w", err)
 				return result
@@ -358,7 +360,7 @@ func downloadCertificatesParallel(urls []string, fingerprints []string, hashAlgo
 
 			// Show warning only for single URL (not cluttering output for multi-URL)
 			if len(urls) == 1 {
-				fmt.Fprintf(os.Stderr, "⚠️  No fingerprint provided, calculating %s fingerprint automatically\n", strings.ToUpper(hashAlgo))
+				cli.DisplayWarning("⚠️ No fingerprint provided, calculating %s fingerprint automatically", strings.ToUpper(hashAlgo))
 			}
 		}
 		result.fingerprint = fpValidation
@@ -382,8 +384,8 @@ func certificateExists(certs []config.Certificate, url string) bool {
 	return false
 }
 
-// parseFingerprint parses a fingerprint string in format "HASH_ALG:HASH".
-func parseFingerprint(fp string) (string, string, error) {
+// ParseFingerprint parses a fingerprint string in format "HASH_ALG:HASH".
+func ParseFingerprint(fp string) (string, string, error) {
 	parts := strings.SplitN(fp, ":", 2)
 	if len(parts) < 2 {
 		return "", "", fmt.Errorf("fingerprint must be in format HASH_ALG:HASH")
@@ -443,8 +445,8 @@ func verifyFingerprint(cert *x509.Certificate, alg, expectedHash string) error {
 	return nil
 }
 
-// calculateFingerprint calculates the fingerprint of data using the specified hash algorithm.
-func calculateFingerprint(data []byte, algorithm string) (string, error) {
+// CalculateFingerprint calculates the fingerprint of data using the specified hash algorithm.
+func CalculateFingerprint(data []byte, algorithm string) (string, error) {
 	var hashBytes []byte
 
 	switch strings.ToLower(algorithm) {
@@ -463,8 +465,8 @@ func calculateFingerprint(data []byte, algorithm string) (string, error) {
 	return strings.ToUpper(formatFingerprint(hex.EncodeToString(hashBytes))), nil
 }
 
-// insertCertificateAlphabetically inserts a certificate in alphabetical order by name.
-func insertCertificateAlphabetically(certs []config.Certificate, newCert config.Certificate) []config.Certificate {
+// InsertCertificateAlphabetically inserts a certificate in alphabetical order by name.
+func InsertCertificateAlphabetically(certs []config.Certificate, newCert config.Certificate) []config.Certificate {
 	insertIdx := len(certs)
 	for i, cert := range certs {
 		if strings.ToLower(newCert.Name) < strings.ToLower(cert.Name) {

@@ -12,7 +12,7 @@ import (
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "config",
-		Short: "manage TPM roots configuration file",
+		Short: "manage the configuration file",
 		Long:  `Format, validate, and manage certificates and vendors in the configuration file.`,
 	}
 
