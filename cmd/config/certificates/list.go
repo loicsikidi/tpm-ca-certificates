@@ -18,7 +18,7 @@ func newListCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "List certificates in the configuration",
+		Short: "list certificates in the configuration file",
 		Long: `List all certificates in the configuration file.
 
 If a vendor ID is specified, only certificates for that vendor will be listed.`,

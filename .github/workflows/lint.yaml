@@ -72,4 +72,8 @@ jobs:
               echo "validate command failed ⛔"
               exit 1
             fi
+            if ! go run ./ bundle generate --config .tpm-roots.yaml --output test-bundle.pem; then
+              echo "bundle generate command failed ⛔"
+              exit 1
+            fi
             echo "no linting issues found 💫"

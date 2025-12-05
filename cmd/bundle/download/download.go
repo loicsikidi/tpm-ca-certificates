@@ -31,7 +31,7 @@ var (
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "download",
-		Short: "Download a TPM trust bundle from GitHub releases",
+		Short: "download a TPM trust bundle from GitHub releases and verify it",
 		Long: `Download a TPM trust bundle from GitHub releases and optionally verify it.
 
 The download command fetches a bundle from GitHub releases and can automatically
@@ -74,8 +74,9 @@ func run(cmd *cobra.Command, args []string) error {
 	if releaseTag == "" {
 		fmt.Println("Fetching latest release...")
 		opts := github.ReleasesOptions{
-			PageSize:  1,
-			SortOrder: github.SortOrderDesc,
+			PageSize:         50, // to be safe if many versioned releases exist in comparison to bundle releases
+			ReturnFirstValue: true,
+			SortOrder:        github.SortOrderDesc,
 		}
 		releases, err := client.GetReleases(cmd.Context(), github.SourceRepo, opts)
 		if err != nil {
@@ -133,7 +134,7 @@ func run(cmd *cobra.Command, args []string) error {
 		} else {
 			// Cleanup everything on failure we might expect errors
 			// because some files might not exist if failure happened early
-			// so we ignore errors here
+			// so we ignore errors on purpose here
 			cleanupFiles(bundlePath, checksumsPath, checksumsSigPath) //nolint:errcheck
 		}
 	}()

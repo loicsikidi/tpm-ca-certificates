@@ -250,7 +250,7 @@ bmVvbiBPUFRJR0EoVE0pIFJTQSBSb290IENBMB4XDTEyMTAyMjE0MTI0NVoXDTM3
    - Preserve whitespace and formatting in metadata values
    - Support arbitrary metadata keys (extensibility)
 
-2. **Validation**: The `tpmtb config validate` command should verify:
+2. **Validation**: The `tpmtb bundle validate` command should verify:
    - Global metadata presence and format
    - Certificate metadata format
    - PEM block validity

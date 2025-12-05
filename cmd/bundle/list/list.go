@@ -16,7 +16,7 @@ var (
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "List available TPM trust bundle releases",
+		Short: "list available TPM trust bundle releases",
 		Long: `List publicly available TPM trust bundle releases from GitHub.
 
 Only releases with date-format tags (YYYY-MM-DD) are displayed, as these
@@ -85,7 +85,7 @@ func run(cmd *cobra.Command, args []string) error {
 		releases = releases[:limit]
 	}
 
-	fmt.Printf("Available TPM trust bundle releases (%d):\n\n", len(releases))
+	fmt.Printf("Available TPM trust bundle releases (%d):\n", len(releases))
 	for _, release := range releases {
 		fmt.Printf("  %s\n", release.TagName)
 	}

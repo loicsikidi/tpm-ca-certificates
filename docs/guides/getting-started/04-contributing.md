@@ -55,7 +55,7 @@ Add the new certificate(s) to the certificate inventory table:
 
 ```markdown
 | Certificate Name | Source Document | Does the source references a fingerprint? |
-|-----------------|-----------------|-----------------|
+|------------------|-----------------|:-----------------------------------------:|
 | Existing Cert 1 | [doc.pdf](doc.pdf) | No |
 | **New Cert Name** | **[doc.pdf](doc.pdf)** | **No** |
 ```
@@ -133,7 +133,7 @@ Use this template:
 ## Certificate Inventory
 
 | Certificate Name | Source Document | Does the source references a fingerprint? |
-|-----------------|-----------------|-----------------|
+|------------------|-----------------|:-----------------------------------------:|
 | Certificate 1 | [vendor_doc.pdf](vendor_doc.pdf) | No |
 | Certificate 2 | [vendor_doc.pdf](vendor_doc.pdf) | No |
 
@@ -166,7 +166,7 @@ Add the new vendor to the Vendor Index table:
 
 ```markdown
 | Vendor ID | Vendor Name | Documentation | Accessibility Score |
-|-----------|-------------|---------------|---------------------|
+|-----------|-------------|---------------|:-------------------:|
 | [VENDOR_ID](VENDOR_ID/) | Vendor Full Name | [README](VENDOR_ID/README.md) | A/B/C |
 ```
 

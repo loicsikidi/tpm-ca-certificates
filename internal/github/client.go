@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"slices"
 
 	"github.com/sigstore/sigstore-go/pkg/bundle"
 )
@@ -200,9 +201,11 @@ func (c *HTTPClient) GetReleases(ctx context.Context, repo Repo, opts ReleasesOp
 	// Sort releases based on sort order
 	if opts.SortOrder == SortOrderAsc {
 		// Reverse the slice for ascending order (GitHub API returns desc by default)
-		for i, j := 0, len(bundleReleases)-1; i < j; i, j = i+1, j-1 {
-			bundleReleases[i], bundleReleases[j] = bundleReleases[j], bundleReleases[i]
-		}
+		slices.Reverse(bundleReleases)
+	}
+
+	if opts.ReturnFirstValue && len(bundleReleases) > 0 {
+		return bundleReleases[:1], nil
 	}
 
 	return bundleReleases, nil

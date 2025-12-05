@@ -20,7 +20,7 @@ func newRemoveCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "remove",
-		Short: "Remove a certificate from a vendor in the configuration",
+		Short: "remove a certificate from the configuration file",
 		Long: `Remove a certificate from a vendor's certificate list in the configuration file.
 
 The certificate is identified by its name (case-insensitive match).`,

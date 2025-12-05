@@ -24,7 +24,7 @@ var (
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "generate",
-		Short: "Generate TPM trust bundle from a configuration file",
+		Short: "generate TPM trust bundle from a configuration file",
 		Long: `Generate a PEM-encoded trust bundle by downloading and validating TPM root certificates.
 
 The command reads vendor certificate configurations from a YAML file, downloads each certificate,

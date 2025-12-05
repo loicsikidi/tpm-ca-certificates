@@ -21,7 +21,7 @@ func newAddCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "add <id> <name>",
-		Short: "add a new vendor to the configuration",
+		Short: "add a new vendor to the configuration file",
 		Long: `Add a new vendor to the configuration file.
 
 The vendor will be added with an empty certificate list and inserted in alphabetical order by ID.`,
