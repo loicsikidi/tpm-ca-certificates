@@ -5,9 +5,9 @@ This directory contains the evidence and documentation proving how the URLs for 
 ## Vendor Index
 
 | Vendor ID | Vendor Name | Documentation | Accessibility Score |
-|-----------|-------------|---------------|:-------------------:|
-| INTC | Intel Corporation | [README](INTC/) | C |
-| IFX | Infineon Technologies | [README](IFX/) | B |
+|-----------|-------------|:-------------:|:-------------------:|
+| INTC | Intel | [README](INTC/) | C |
+| IFX | Infineon | [README](IFX/) | B |
 | NTC | Nuvoton Technology | [README](NTC/) | A |
 | STM | STMicroelectronics | [README](STM/) | A |
 

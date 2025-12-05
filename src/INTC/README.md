@@ -3,7 +3,7 @@
 ## Certificate Inventory
 
 | Certificate Name | Source Document | Does the source references a fingerprint? |
-|-----------------|-----------------|-----------------|
+|-----------------|-----------------|:-----------------:|
 | OnDie CA RootCA | Intel AMT Implementation and Reference Guide | No |
 
 ### Source Information

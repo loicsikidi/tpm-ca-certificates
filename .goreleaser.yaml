@@ -94,8 +94,8 @@ release:
     ### OCI Images
 
     ```bash
-    docker pull ghcr.io/loicsikidi/{{ .ProjectName }}:{{ .Tag }}
-    docker pull ghcr.io/loicsikidi/{{ .ProjectName }}:latest
+    docker pull ghcr.io/loicsikidi/{{ .ProjectName }}/tpmtb:{{ .Tag }}
+    docker pull ghcr.io/loicsikidi/{{ .ProjectName }}/tpmtb:latest
     ```
 
     ### Verification
@@ -107,40 +107,41 @@ release:
     > - [SLSA provenance attestation](https://slsa.dev/spec/v1.2/provenance)
     > - [GitHub attest-build-provenance action](https://github.com/actions/attest-build-provenance)
 
-    #### Option 1: GitHub CLI
+    #### 1. Artefacts with Cosign and GitHub CLI
 
-    > [!NOTE]
-    > The following commands verify the **integrity** and **provenance** of an artifact using its associated cryptographic signed attestation
-    > generated during the release process.
+    For complete security verification, follow this two-step process:
 
-    ```bash
-    # Verify the archive
-    gh attestation verify tpmtb_{{ .Version }}_linux_amd64.tar.gz --owner loicsikidi
-    # Verify the OCI image
-    gh attestation verify oci://ghcr.io/loicsikidi/{{ .ProjectName }}:{{ .Tag }} --owner loicsikidi
-    ```
+    **Step 1: Verify Integrity with Cosign**
 
-    #### Option 2: Cosign
+    First, verify the **integrity** of the checksums file using Cosign:
 
-    > [!NOTE]
-    > The following command verifies **ONLY the integrity** of the `checksums.txt` file
-    > thanks to keyless signature generated during the release process. Once verified, you can
-    > then manually check the checksum of any artifact.
-    >
-    > *Note: in addition, keyless signature allows you to know the identity bound to the ephemeral key (a GitHub workflow in our case).*
-
-    > [!TIP]
-    > Make sure to use **`cosign >= v2.4.3`** in order to support [sigstore bundle format](https://docs.sigstore.dev/about/bundle/).
+    > [!IMPORTANT]
+    > Make sure to use **`cosign >= v2.4.3`** to support the [Sigstore bundle format](https://docs.sigstore.dev/about/bundle/).
 
     ```bash
+    # Verify the checksums signature
     cosign verify-blob \
       --bundle checksums.txt.sigstore.json \
       --certificate-identity-regexp 'https://github.com/loicsikidi/{{ .ProjectName }}/.github/workflows/release.yaml@refs/tags/{{ .Tag }}' \
       --certificate-oidc-issuer https://token.actions.githubusercontent.com \
       checksums.txt
 
-    # If the signature is OK, then you can verify any artifact located in the same directory
+    # Verify any artifact matches the checksum
     sha256sum -c checksums.txt
+    ```
+
+    **Step 2: Verify Provenance with GitHub CLI**
+
+    Once the checksum integrity is established, verify the **provenance** using GitHub's attestation system:
+
+    ```bash
+    # Verify the archive
+    gh attestation verify tpmtb_{{ .Version }}_linux_amd64.tar.gz --owner loicsikidi
+    ```
+    #### 2. OCI Provenance
+
+    ```bash
+    gh attestation verify oci://ghcr.io/loicsikidi/{{ .ProjectName }}/tpmtb:{{ .Tag }} --owner loicsikidi
     ```
   footer: |
     **Generated with GoReleaser 🚀**
