@@ -1,16 +1,19 @@
-* INTC
-  * https://software.intel.com/sites/manageability/AMT_Implementation_and_Reference_Guide/default.htm?turl=WordDocuments%2FODCA.htm
-  * score=C
-* NFX
-  * https://www.infineon.com/design-resources/platforms/optiga-software-tools/optiga-tpm-certificates/optiga-trust-certificates
-  * https://www.infineon.com/assets/row/public/documents/30/51/infineon-optiga-trust-m-configguide-productfamilyoverview-en.pdf
-  * https://www.infineon.com/part/OPTIGA-TRUST-M-SLS32AIA#documents
-  * https://www.infineon.com/assets/row/public/documents/30/67/infineon-optiga-trust-m-v1-keys-and-certificates-v1.50-certificates-en.pdf?fileId=5546d46271bf4f920171c5f3c75a0fa2
-  * https://www.infineon.com/assets/row/public/documents/30/67/infineon-optigatm-trust-ecc-root-ca-certificates-en.cer
-  * score=C
-* NTC
-  * https://www.nuvoton.com.cn/products/cloud-computing/security/trusted-platform-module-tpm/?tab=1
-  * score=A
-* STM
-  * https://www.st.com/content/st_com/en/search.html#q=endorsement%20certificate-t=resources-page=1
-  * score=B
+# TPM Root Certificates - Evidences
+
+This directory contains the evidence and documentation proving how the URLs for TPM root certificates were discovered from each manufacturer. Each vendor subdirectory includes references to official documentation, screenshots, and fingerprint validation information.
+
+## Vendor Index
+
+| Vendor ID | Vendor Name | Documentation | Accessibility Score |
+|-----------|-------------|:-------------:|:-------------------:|
+| INTC | Intel | [README](INTC/) | C |
+| IFX | Infineon | [README](IFX/) | B |
+| NTC | Nuvoton Technology | [README](NTC/) | A |
+| STM | STMicroelectronics | [README](STM/) | A |
+
+### Accessibility Score Legend
+
+The score indicates how easily the certificate information was found:
+- **A**: Easy to find (<15 minutes)
+- **B**: Required some effort (15-30 minutes)
+- **C**: Required significant effort (>1 hour)
