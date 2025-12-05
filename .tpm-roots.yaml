@@ -44,3 +44,31 @@ vendors:
           validation:
             fingerprint:
                 sha1: "5E:74:87:90:69:4F:6A:7F:6E:AB:AF:70:15:26:86:3C:DD:FE:6D:AC"
+    - id: "STM"
+      name: "STMicroelectronics"
+      certificates:
+        - name: "GlobalSign Trusted Platform Module ECC Root CA"
+          url: "https://secure.globalsign.com/cacert/tpmeccroot.crt"
+          validation:
+            fingerprint:
+                sha256: "5A:8C:7B:5E:B8:88:CF:CE:93:22:06:8E:80:E8:2B:28:B5:54:FF:EB:7F:DC:96:38:DC:B3:76:30:77:40:1D:26"
+        - name: "GlobalSign Trusted Platform Module Root CA"
+          url: "https://secure.globalsign.com/cacert/gstpmroot.crt"
+          validation:
+            fingerprint:
+                sha256: "F2:7B:F0:2C:6E:00:C7:3D:91:5E:EB:6A:6A:2F:5F:BF:0C:31:AE:03:93:14:9E:6B:5C:31:E4:1B:11:38:41:C3"
+        - name: "STM TPM ECC Root CA 01"
+          url: "https://secure.globalsign.com/cacert/stmtpmeccroot01.crt"
+          validation:
+            fingerprint:
+                sha256: "C5:41:D7:E5:B9:E3:F9:35:62:1A:CB:D4:03:89:62:25:EC:64:10:36:C9:AE:3B:5F:7A:C7:93:A6:06:FF:9B:79"
+        - name: "STM TPM EK Root CA"
+          url: "https://secure.globalsign.com/cacert/stmtpmekroot.crt"
+          validation:
+            fingerprint:
+                sha256: "F8:E3:7A:86:B6:89:A2:0A:6C:C0:C4:0C:C3:F8:1F:B1:30:FA:9F:44:CE:7F:FA:60:D6:25:90:AA:F8:72:73:A9"
+        - name: "STSAFE ECC Root CA 02"
+          url: "https://sw-center.st.com/STSAFE/STSAFEEccRootCA02.crt"
+          validation:
+            fingerprint:
+                sha256: "FD:1E:7B:68:AC:CD:82:56:36:B2:7B:31:77:C6:74:02:D4:63:A7:F0:4C:97:B6:C4:7A:B7:05:FC:DC:1A:04:F6"
