@@ -9,6 +9,14 @@ vendors:
           validation:
             fingerprint:
                 sha256: "CF:EB:02:FE:CD:55:AD:7A:73:C6:E1:D1:19:85:D4:C4:7D:EE:24:8A:B6:3D:CB:66:09:1A:24:89:66:04:43:C3"
+    - id: "INTC"
+      name: "Intel"
+      certificates:
+        - name: "OnDie CA RootCA"
+          url: "https://tsci.intel.com/content/OnDieCA/certs/OnDie_CA_RootCA_Certificate.cer"
+          validation:
+            fingerprint:
+                sha256: "BE:B4:0B:B7:50:7B:33:96:72:26:AA:80:E0:84:74:9F:BB:65:93:89:3C:64:2E:81:8D:68:2E:9A:8D:07:FC:24"
     - id: "NTC"
       name: "Nuvoton Technology"
       certificates:
