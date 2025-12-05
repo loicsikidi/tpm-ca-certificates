@@ -10,7 +10,7 @@ release:
   github:
     owner: loicsikidi
     name: tpm-ca-certificates
-  draft: false
+  draft: true
   prerelease: false
   mode: append
   extra_files:
@@ -58,7 +58,7 @@ release:
 
     First, verify the **integrity** of the checksums file using Cosign:
 
-    > [!IMPORTANT]
+    > [!TIP]
     > Make sure to use **`cosign >= v2.4.3`** to support the [Sigstore bundle format](https://docs.sigstore.dev/about/bundle/).
 
     ```bash
@@ -103,4 +103,4 @@ changelog:
   filters:
     # Include only commits starting with "rot:" (prefix for "root of trust" changes)
     include:
-      - '^rot:' 
+      - '^rot' 
