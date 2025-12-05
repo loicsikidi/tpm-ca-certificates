@@ -21,8 +21,8 @@ in buildGoModule {
 
   ldflags = [ "-s" "-w" ];
 
-  # Disable tests in Nix build due to sandbox restrictions
-  doCheck = false;
+  doCheck = true;
+  checkFlags = [ "-v" "-timeout=30s" "-short" ];
 
   nativeBuildInputs = [ installShellFiles ];
 
