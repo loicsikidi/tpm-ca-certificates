@@ -39,7 +39,8 @@ The repository provides a CLI tool (`tpmtb`) designed to enable users to locally
 
 This deterministic generation process ensures transparency and verifiability — two generation processes executed under the same conditions must produce identical results.
 
-<!-- TODO: add link to user guide -->
+> [!NOTE]
+> See [Bundle Generation Backward Compatibility](./docs/specifications/03-bundle-generation-backward-compatibility.md) for more details on how we maintain reproducibility across versions.
 
 ### Integrity
 
@@ -51,16 +52,72 @@ This allows verification that:
 
 > [!NOTE]
 > This verification capability also applies to the `tpmtb` CLI binary and its OCI image.
-
-<!-- TODO: add link to artifact verification specification -->
+>
+> See the [Bundle Verification Specification](./docs/specifications/05-bundle-verification.md) for technical details.
 
 ## Quick Start
 
-<!-- TODO: add an example of how to download and verify trust bundle -->
+The easiest way to use this bundle is through the `tpmtb` (TPM Trust Bundle) CLI tool, which handles downloading, verification, and validation automatically.
+
+<details>
+<summary><b>Installation</b></summary>
+
+### Using Go
+
+```bash
+go install github.com/loicsikidi/tpm-ca-certificates/cmd/tpmtb@latest
+```
+
+### Using Docker
+
+```bash
+docker pull ghcr.io/loicsikidi/tpm-ca-certificates/tpmtb:latest
+```
+
+Or use it directly:
+
+```bash
+docker run --rm ghcr.io/loicsikidi/tpm-ca-certificates/tpmtb:latest --help
+```
+
+</details>
+
+### Download the Bundle
+
+Download the latest trust bundle with automatic integrity and provenance verification:
+
+```bash
+# this will download tpm-ca-certificates.pem to the current directory
+tpmtb bundle download
+```
+
+> [!TIP]
+> This command:
+> 1. Downloads the latest bundle from GitHub releases
+> 2. Verifies the bundle's signature using Sigstore
+> 3. Validates the provenance attestation against the public transparency log (Rekor)
+> 4. Saves the verified bundle to the specified output file
+>
+> The verification ensures that the bundle was genuinely produced by this repository's CI pipeline and hasn't been tampered with since publication.
+
+Now you can use `tpm-ca-certificates.pem` as the trusted root certificate bundle for your TPM interactions 🚀.
 
 ## Documentation
 
-- 
+- [Documentation Overview](docs/README.md) - Explore concepts, guides, and specifications
+
+## Roadmap
+
+- [ ] Improve certificate catalog
+  - We are actively looking to expand the number of TPM manufacturers and their root certificates included in the bundle. Contributions are welcome! Please refer to the [Contributing Guide](docs/guides/getting-started/04-contributing.md) for details on how you could help.
+- [ ] Enhance CI/CD pipeline
+  - Monitor certificate links for availability and integrity
+  - Monitor when a root CA is about to expire
+  - Monitor release verification process to ensure it continues to work as expected
+- [ ] Provide a golang-sdk to ease integration in Go applications
+- [ ] Gather feedback from early adopters to improve usability and address real-world needs
+   - Please open discussions or issues on GitHub to share your thoughts!
+- [ ] Add `tpmtb` in nixpkgs for easy installation via Nix
 
 ## License
 

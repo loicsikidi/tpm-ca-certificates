@@ -13,6 +13,7 @@ An attacker could exploit a vulnerability in the CLI binary to compromise system
 - The binary only interacts with the configuration file and TPM trust bundle
 - The binary does not handle sensitive data
 - The binary does not require elevated privileges to operate
+- The binary does not require any forms of authentication
 
 **Mitigation Measures**
 
@@ -42,16 +43,16 @@ To minimize this risk, we implement recommendations from the [Geomys Standard of
 ### 1. Code Review
 Every change requires review and approval. Currently, I am the sole approver, but if additional volunteers join, we will extend this to a quorum of 2 reviewers.
 
-### 2. Stability
-`tpmtb` will maintain backward compatibility once v1 is published, reducing the risk introduced by frequent breaking changes.
-
-### 3. Dependency Management
+### 2. Dependency Management
 Following the Geomys model: no automated dependency updates (no Dependabot). Dependencies are updated deliberately and reviewed carefully.
 
-### 4. Phishing-Resistant Authentication
+> [!NOTE]
+> [go-test.yaml](../../.github/workflows/go-test.yaml) CI workflow includes `govulncheck` to detect vulnerabilities in dependencies at a daily cadence.
+
+### 3. Phishing-Resistant Authentication
 All approvers MUST use WebAuthn 2FA on GitHub and on fallback accounts (e.g., domain registrar, Google account).
 
-### 5. Long-Lived Credentials
+### 4. Long-Lived Credentials
 Regular contributors MUST avoid persistent long-lived credentials, or make them non-extractable when possible. 
 
 Examples:
@@ -70,7 +71,7 @@ We appreciate the work of security researchers and honor embargoes of up to 90 d
 > [!NOTE]
 > Following mitigations are not part of the Geomys Standard of Care but are important additional measures.
 
-### 8. Transparency Logs
+### 8. Signatures & Attestations
 Release signatures are produced using keyless key pairs (via Sigstore/Cosign). This eliminates the complexity and risk of managing long-lived signing keys (secure storage, loss, rotation, compromise, etc.).
 
 ### 9. Tooling
@@ -80,6 +81,9 @@ We will provide tooling to verify bundles's trustworthiness by checking:
 - Signature validity
 
 This empowers users to independently validate that a bundle is trustworthy.
+
+> [!NOTE]
+> `tpmtb bundle verify` and `tpmtb bundle download` commands are implemented to facilitate this verification out of the box.
 
 ## What We Protect Against
 - **Supply chain attacks:** 
@@ -101,3 +105,26 @@ This empowers users to independently validate that a bundle is trustworthy.
 - Time gap between vendor compromise and daily monitoring detection
 - Reliance on vendor honesty and security practices
 - Small reviewer pool (currently 1, future goal: 2)
+
+## Known Limitations
+
+### GitHub Platform Dependency
+
+The current implementation has a direct dependency on GitHub's attestation service for bundle verification. This design choice:
+
+**Trade-offs:**
+- ✅ **Simplifies the initial iteration:** Leverages GitHub's mature attestation infrastructure without to much effort
+- ❌ **Complicates migration:** Moving the repository to another platform (GitLab, Gitea, etc.) would require reworking the entire verification workflow
+- ❌ **Vendor lock-in:** Creates coupling between the project's security model and GitHub's availability and policies
+
+**Future Considerations:**
+
+If platform independence becomes a requirement, we should evaluate [`slsa-verifier`](https://github.com/slsa-framework/slsa-verifier) as a potential solution. This tool provides platform-agnostic SLSA provenance verification and could enable:
+- Repository portability across different hosting platforms
+- Reduced dependency on GitHub-specific services
+- Broader ecosystem compatibility
+
+For now, the GitHub dependency is an acceptable trade-off given:
+- The project's early stage
+- GitHub's reliability and widespread adoption in the open source ecosystem
+- The complexity cost of implementing platform-agnostic verification from the start

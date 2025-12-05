@@ -1,4 +1,4 @@
-# Trust Model
+# Security Model
 
 This document describes the trust model and security principles behind the TPM Trust Bundle project. It explains the mechanisms that enable users to trust the content produced by this bundle.
 
@@ -15,9 +15,6 @@ This document describes the trust model and security principles behind the TPM T
 Every root CA certificate in this bundle MUST be traceable to its original source via a URL. This is a critical improvement over other projects (e.g., [tpm-key-attestation](https://github.com/cedarcode/tpm-key_attestation/commit/42c78b57726e1abb0167110932a313a51250a7b0)[^1]) where only raw certificate data is visible without provenance.
 
 > [!NOTE]
-> 
-
-> [!NOTE]
 > **Why this matters:** Anyone can audit where a certificate comes from and verify its legitimacy by following the source URL back to the vendor's official communication.
 
 ### 2. Security Countermeasures for URL-Based Distribution
@@ -30,12 +27,13 @@ While using URLs introduces potential attack vectors, we implement several count
 - **Hash-based integrity:** The configuration file contains hashes of all certificates to verify integrity after download
 
 > [!TIP]
-> - **Fingerprint verification:** The CLI is able to compare certificate fingerprints when vendors publish them (e.g., Nuvoton provides SHA-1 fingerprints) this is handy to further ensure the authenticity of the downloaded certificate.
+> - **Fingerprint verification:** The CLI is able to compare certificate fingerprints when vendors publish them (e.g., [Nuvoton](../../src/NTC/Nuvoton_TPM_EK_Certificate_Chain_Rev2.2.pdf) provides SHA-1 fingerprints) this is handy to further ensure the authenticity of the downloaded certificate.
 >
 > ```bash
 > # check fingerprint before adding the certificate to the configuration file
 > tpmtb config certificates add --fingerprint "sha1:7C:7B:3C:8A:46:5E:67:D2:8F:4D:B0:F3:5C:E1:20:C4:BB:4A:AC:CC" --url "https://www.nuvoton.com/security/NTC-TPM-EK-Cert/NPCTxxxECC521RootCA.cer"
 > ```
+
 ### 3. Human Review Process
 
 Given that TPM root CA information is scattered across vendor websites, PDFs, and various communication channels, human validation is essential.
@@ -54,18 +52,23 @@ https://trustedcomputinggroup.org/wp-content/uploads/TCG-TPM-Vendor-ID-Registry-
 
 Only vendors listed in this TCG registry are accepted in our configuration.
 
+> [!NOTE]
+> The `tpmtb` CLI tool includes an embedded copy of this registry to automate vendor ID validation during certificate addition.
+
 ### 5. Evidence Archive
 
-The `src/` directory serves as a centralized archive of evidence used to locate certificate URLs. This includes:
+The `src/` directory serves as a centralized archive of evidences used to locate certificate URLs. This includes:
 - Vendor PDFs
 - Screenshots of official web pages
-- Email communications
 - Technical documentation
 
 This archive enables:
 - Future audits of why a certificate was included
 - Verification that the source was legitimate at the time of addition
 - Historical tracking of vendor certificate changes
+
+> [!TIP]
+> Refer to the [src/README.md](../../src/README.md) for an index of vendors and their corresponding evidence.
 
 ### 6. Automated Monitoring
 
@@ -80,10 +83,16 @@ A daily scheduled job regenerates the configuration and performs several checks:
 - **Expiration alerts:** Flag certificates approaching expiration
 - **Automatic removal:** Expired certificates are removed from the bundle
 
+#### Release Verification
+- **Trust bundle verification:** Verify the latest release bundle using the configured trust mechanism
+- **Supply chain protection:** Ensure the repository hasn't been compromised through a supply chain attack
+- **End-to-end validation:** Confirm the entire release and verification workflow remains functional
+
 This continuous monitoring ensures:
 - Early detection of compromised vendor infrastructure
 - Proactive management of certificate lifecycle
 - Ongoing validation of the trust bundle's integrity
+- Protection against supply chain attacks on the repository itself
 
 ## The `tpmtb` CLI
 
@@ -97,5 +106,4 @@ To enforce these requirements and reduce human error, we created the `tpmtb` CLI
 
 The CLI ensures consistency and reduces the risk of configuration errors that could compromise the trust model.
 
-
-[^1]: I don't wish to incriminate them in any way, as this is not a prerogative of their project. Shoutout to Cedarcode for their great contribution on [TPM key attestation](https://github.com/cedarcode/tpm-key_attestation)!
+[^1]: Don't get me wrong, I don't want to incriminate them in any way, as this is not a prerogative of their project. Shout-out to Cedarcode for their great contribution on [TPM key attestation](https://github.com/cedarcode/tpm-key_attestation)!
