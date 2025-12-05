@@ -87,7 +87,7 @@ For reproducible, declarative installations, use Nix with the provided `shell.ni
 **Enter a Nix shell with tpmtb:**
 
 ```bash
-nix-shell -p '(import (fetchTarball "https://github.com/loicsikidi/tpm-ca-certificates/archive/main.tar.gz") {}).tpmtb'
+nix-shell -p '(import (fetchTarball "https://github.com/loicsikidi/tpm-ca-certificates/archive/main.tar.gz") {})'
 ```
 
 **Or create a `shell.nix` file in your project:**
@@ -96,11 +96,11 @@ nix-shell -p '(import (fetchTarball "https://github.com/loicsikidi/tpm-ca-certif
 { pkgs ? import <nixpkgs> {} }:
 
 let
-  tpm-ca-certs = import (fetchTarball "https://github.com/loicsikidi/tpm-ca-certificates/archive/main.tar.gz") {};
+  tpmtb = import (fetchTarball "https://github.com/loicsikidi/tpm-ca-certificates/archive/main.tar.gz") {};
 in
 pkgs.mkShell {
   buildInputs = [
-    tpm-ca-certs.tpmtb
+    tpmtb
   ];
 }
 ```
