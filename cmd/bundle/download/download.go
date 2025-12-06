@@ -119,7 +119,7 @@ func run(cmd *cobra.Command, args []string) error {
 	cli.DisplaySuccess("✅ Downloaded bundle to %s", bundlePath)
 
 	if skipVerify {
-		cli.DisplayWarning("⚠️  Verification skipped (--skip-verify)")
+		cli.DisplayWarning("⚠️ Verification skipped (--skip-verify)")
 		return nil
 	}
 
@@ -129,7 +129,7 @@ func run(cmd *cobra.Command, args []string) error {
 	defer func() {
 		if verificationSucceeded {
 			if err := cleanupFiles(checksumsPath, checksumsSigPath); err != nil {
-				cli.DisplayWarning("⚠️  Warning: failed to cleanup checksum files: %v", err)
+				cli.DisplayWarning("⚠️ Warning: failed to cleanup checksum files: %v", err)
 			}
 		} else {
 			// Cleanup everything on failure we might expect errors
@@ -182,7 +182,7 @@ func run(cmd *cobra.Command, args []string) error {
 
 	verificationSucceeded = true
 
-	cli.DisplaySuccess("✅ Bundle downloaded and verified: %s", bundlePath)
+	cli.DisplaySuccess("✅ Bundle verified: %s", bundlePath)
 	return nil
 }
 
