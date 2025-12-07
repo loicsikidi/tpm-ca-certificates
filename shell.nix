@@ -1,11 +1,11 @@
 {
   pkgs ?
     import (fetchTarball
-      "https://github.com/NixOS/nixpkgs/archive/ee09932cedcef15aaf476f9343d1dea2cb77e261.tar.gz")
+      "https://github.com/NixOS/nixpkgs/archive/ebc94f855ef25347c314258c10393a92794e7ab9.tar.gz")
     {},
 }: let
   helpers = import (builtins.fetchTarball
-    "https://github.com/loicsikidi/nix-shell-toolbox/archive/main.tar.gz") {
+    "https://github.com/loicsikidi/nix-shell-toolbox/tarball/main") {
     inherit pkgs;
   };
 in
