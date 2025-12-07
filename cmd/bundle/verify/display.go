@@ -7,7 +7,7 @@ import (
 	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/cli"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/policy"
-	"github.com/loicsikidi/tpm-ca-certificates/pkg/api"
+	"github.com/loicsikidi/tpm-ca-certificates/pkg/apiv1beta"
 	"github.com/sigstore/sigstore-go/pkg/verify"
 )
 
@@ -16,7 +16,7 @@ func displayDigest(digest, sourceFile string) {
 	fmt.Println()
 }
 
-func displaySuccess(result *api.VerifyResult, metadata *bundle.Metadata) {
+func displaySuccess(result *apiv1beta.VerifyResult, metadata *bundle.Metadata) {
 	cli.DisplaySuccess("✅ Cosign verification succeeded")
 	displayPolicyCriteria(result.Policy, metadata.Commit)
 	displayGithubAttestationSuccess(result.GithubAttestationResults)

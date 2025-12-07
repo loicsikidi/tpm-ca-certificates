@@ -7,6 +7,9 @@
   helpers = import (builtins.fetchTarball
     "https://github.com/loicsikidi/nix-shell-toolbox/tarball/main") {
     inherit pkgs;
+    hooksConfig = {
+      gotest.settings.flags = "-short -race";
+    };
   };
 in
   pkgs.mkShell {
@@ -17,4 +20,8 @@ in
       echo "Development environment ready!"
       echo "  - Go version: $(go version)"
     '';
+
+    env = {
+      CGO_ENABLED = "1";
+    };
   }

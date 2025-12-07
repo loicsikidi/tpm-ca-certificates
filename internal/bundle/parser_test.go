@@ -1,10 +1,68 @@
 package bundle
 
 import (
+	"strings"
 	"testing"
 
+	"github.com/loicsikidi/tpm-ca-certificates/internal/config/vendors"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/testutil"
 )
+
+func TestParseBundle(t *testing.T) {
+	t.Run("valid bundle from testdata", func(t *testing.T) {
+		bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
+		if err != nil {
+			t.Fatalf("Failed to read test bundle: %v", err)
+		}
+
+		catalog, err := ParseBundle(bundleData)
+		if err != nil {
+			t.Fatalf("ParseBundle() error = %v", err)
+		}
+
+		// The test bundle should have multiple vendors
+		if len(catalog) == 0 {
+			t.Error("Expected at least one vendor in catalog")
+		}
+
+		// Verify NTC vendor exists
+		if len(catalog[vendors.NTC]) != 1 {
+			t.Errorf("Expected 1 certificate for NTC vendor, got %d", len(catalog[vendors.NTC]))
+		}
+	})
+
+	t.Run("empty bundle", func(t *testing.T) {
+		_, err := ParseBundle([]byte(""))
+		if err == nil {
+			t.Fatal("Expected error for empty bundle")
+		}
+		if !strings.Contains(err.Error(), "no certificates found") {
+			t.Errorf("Expected 'no certificates found' error, got: %v", err)
+		}
+	})
+
+	t.Run("bundle with invalid vendor ID", func(t *testing.T) {
+		invalidBundle := `##
+## tpm-ca-certificates.pem
+##
+
+#
+# Certificate: Test Certificate
+# Owner: INVALID_VENDOR
+#
+-----BEGIN CERTIFICATE-----
+MIICaTCCAcugAwIBAgIBAjAKBggqhkjOPQQDBDBWMR4wHAYDVQQDExVOUENUeHh4
+-----END CERTIFICATE-----
+`
+		_, err := ParseBundle([]byte(invalidBundle))
+		if err == nil {
+			t.Fatal("Expected error for invalid vendor ID")
+		}
+		if !strings.Contains(err.Error(), "invalid vendor ID") {
+			t.Errorf("Expected 'invalid vendor ID' error, got: %v", err)
+		}
+	})
+}
 
 func TestParseMetadata(t *testing.T) {
 	tests := []struct {

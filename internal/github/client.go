@@ -17,7 +17,7 @@ var SourceRepo = Repo{Owner: "loicsikidi", Name: "tpm-ca-certificates"}
 
 const (
 	ReleaseBundleWorkflowPath = ".github/workflows/release-bundle.yaml"
-	githubAPIBaseURL          = "https://api.github.com"
+	githubAPIBaseURL          = "https://apiv1beta.github.com"
 	apiVersion                = "2022-11-28"
 )
 

@@ -10,7 +10,7 @@ import (
 	"github.com/loicsikidi/tpm-ca-certificates/internal/cli"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/cosign"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/digest"
-	"github.com/loicsikidi/tpm-ca-certificates/pkg/api"
+	"github.com/loicsikidi/tpm-ca-certificates/pkg/apiv1beta"
 	"github.com/spf13/cobra"
 )
 
@@ -74,7 +74,7 @@ func run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to parse bundle metadata: %w", err)
 	}
 
-	cfg := api.VerifyConfig{
+	cfg := apiv1beta.VerifyConfig{
 		Bundle:         bundleData,
 		BundleMetadata: metadata,
 	}
@@ -106,9 +106,9 @@ func run(cmd *cobra.Command, args []string) error {
 	displayTitle("Verification in progress...")
 	fmt.Println()
 
-	result, err := api.VerifyTrustedBundle(cmd.Context(), cfg)
+	result, err := apiv1beta.VerifyTrustedBundle(cmd.Context(), cfg)
 	if err != nil {
-		if errors.Is(err, api.ErrBundleVerificationFailed) {
+		if errors.Is(err, apiv1beta.ErrBundleVerificationFailed) {
 			cli.DisplayError("❌ Verification failed")
 		} else {
 			cli.DisplayError("An error occurred during verification")
