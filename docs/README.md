@@ -11,7 +11,8 @@ Welcome to the TPM CA Certificates documentation! This guide will help you navig
 | [Installation](guides/getting-started/01-installation.md) | Install the `tpmtb` CLI tool | Everyone |
 | [Retrieve and Verify Bundle](guides/getting-started/02-retrieve-and-verify-bundle.md) | Download and verify TPM trust bundles | Users, System Admins |
 | [Bundle Generation](guides/getting-started/03-generate-bundle.md) | Understand how bundles are created | Contributors, Security Engineers |
-| [Contributing](guides/getting-started/04-contributing.md) | Add new certificates to the project | Contributors |
+| [Using the SDK in Go](guides/getting-started/04-using-skd-in-go.md) | Integrate bundle retrieval in Go applications | Developers |
+| [Contributing](guides/getting-started/05-contributing.md) | Add new certificates to the project | Contributors |
 
 ## 🔐 Core Concepts
 
@@ -33,6 +34,7 @@ Welcome to the TPM CA Certificates documentation! This guide will help you navig
 | [Bundle Generation Backward Compatibility](specifications/03-bundle-generation-backward-compatibility.md) | Version compatibility and migration strategies |
 | [TPM Trust Bundle Format](specifications/04-tpm-trust-bundle-format.md) | Bundle structure, metadata, and PEM format |
 | [Bundle Verification](specifications/05-bundle-verification.md) | Verification process, Sigstore integration, and SLSA attestation |
+| [API Versioning](specifications/06-api-versioning.md) | Public API versioning strategy, channels, and stability guarantees |
 
 ## 🎯 Common Use Cases
 
@@ -72,13 +74,15 @@ docs/
 │       ├── 01-installation.md
 │       ├── 02-retrieve-and-verify-bundle.md
 │       ├── 03-generate-bundle.md
-│       └── 04-contributing.md
+│       ├── 04-using-skd-in-go.md
+│       └── 05-contributing.md
 └── specifications/       # Technical reference documentation
     ├── 01-configuration-file.md
     ├── 02-release-management.md
     ├── 03-bundle-generation-backward-compatibility.md
     ├── 04-tpm-trust-bundle-format.md
-    └── 05-bundle-verification.md
+    ├── 05-bundle-verification.md
+    └── 06-api-versioning.md
 ```
 
 ## 🆘 Getting Help
