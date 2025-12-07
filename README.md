@@ -104,7 +104,7 @@ Go to [documentation index](docs/README.md) to explore concepts, guides, and spe
 ## Roadmap
 
 - [ ] Improve certificate catalog
-  - ***We are actively looking to expand the number of root certificates included in the bundle. Contributions are welcome!*** Please refer to the [Contributing Guide](docs/guides/getting-started/04-contributing.md) for details on how you could help.
+  - ***We are actively looking to expand the number of root certificates included in the bundle. Contributions are welcome!*** Please refer to the [Contributing Guide](docs/guides/getting-started/05-contributing.md) for details on how you could help.
 - [ ] Enhance CI/CD pipeline
   - Monitor certificate links for availability and integrity
   - Monitor when a root CA is about to expire

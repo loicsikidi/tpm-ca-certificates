@@ -1,41 +1,77 @@
 package vendors
 
-import "fmt"
+import (
+	"fmt"
+	"slices"
+)
 
-// ValidVendorIDs contains the list of valid TPM vendor IDs from the TCG registry.
+// TPM Vendor IDs from the TCG registry.
 //
 // Source: TCG TPM Vendor ID Registry Family 1.2 and 2.0, Version 1.07, Revision 0.02
 // https://trustedcomputinggroup.org/wp-content/uploads/TCG-TPM-Vendor-ID-Registry-Family-1.2-and-2.0-Version-1.07-Revision-0.02_pub.pdf
-var ValidVendorIDs = []string{
-	"AMD",
-	"ANT",
-	"ATML",
-	"BRCM",
-	"CSCO",
-	"FLYS",
-	"GOOG",
-	"HPI",
-	"HPE",
-	"HISI",
-	"IBM",
-	"IFX",
-	"INTC",
-	"LEN",
-	"MSFT",
-	"NSG",
-	"NSM",
-	"NTC",
-	"NTZ",
-	"QCOM",
-	"ROCC",
-	"SEAL",
-	"SECE",
-	"SMSN",
-	"SMSC",
-	"SNS",
-	"STM",
-	"TXN",
-	"WEC",
+const (
+	AMD  ID = "AMD"
+	ANT  ID = "ANT"
+	ATML ID = "ATML"
+	BRCM ID = "BRCM"
+	CSCO ID = "CSCO"
+	FLYS ID = "FLYS"
+	GOOG ID = "GOOG"
+	HPI  ID = "HPI"
+	HPE  ID = "HPE"
+	HISI ID = "HISI"
+	IBM  ID = "IBM"
+	IFX  ID = "IFX"
+	INTC ID = "INTC"
+	LEN  ID = "LEN"
+	MSFT ID = "MSFT"
+	NSG  ID = "NSG"
+	NSM  ID = "NSM"
+	NTC  ID = "NTC"
+	NTZ  ID = "NTZ"
+	QCOM ID = "QCOM"
+	ROCC ID = "ROCC"
+	SEAL ID = "SEAL"
+	SECE ID = "SECE"
+	SMSN ID = "SMSN"
+	SMSC ID = "SMSC"
+	SNS  ID = "SNS"
+	STM  ID = "STM"
+	TXN  ID = "TXN"
+	WEC  ID = "WEC"
+)
+
+// ValidVendorIDs contains the list of valid TPM vendor IDs from the TCG registry.
+var ValidVendorIDs = []ID{
+	AMD,
+	ANT,
+	ATML,
+	BRCM,
+	CSCO,
+	FLYS,
+	GOOG,
+	HPI,
+	HPE,
+	HISI,
+	IBM,
+	IFX,
+	INTC,
+	LEN,
+	MSFT,
+	NSG,
+	NSM,
+	NTC,
+	NTZ,
+	QCOM,
+	ROCC,
+	SEAL,
+	SECE,
+	SMSN,
+	SMSC,
+	SNS,
+	STM,
+	TXN,
+	WEC,
 }
 
 // IsValidVendorID checks if the provided vendor ID is in the TCG registry.
@@ -46,12 +82,7 @@ var ValidVendorIDs = []string{
 //	    return fmt.Errorf("invalid vendor ID")
 //	}
 func IsValidVendorID(id string) bool {
-	for _, validID := range ValidVendorIDs {
-		if id == validID {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(ValidVendorIDs, ID(id))
 }
 
 // ValidateVendorID returns an error if the vendor ID is not valid.

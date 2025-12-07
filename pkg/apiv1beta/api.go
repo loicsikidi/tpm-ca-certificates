@@ -1,4 +1,4 @@
-package api
+package apiv1beta
 
 import (
 	"context"
@@ -51,15 +51,31 @@ func SetHttpClient(client *http.Client) {
 // GetConfig configures the bundle retrieval.
 type GetConfig struct {
 	// Date specifies the bundle release date in YYYY-MM-DD format.
-	// If empty, the latest release will be fetched.
+	//
+	// Optional. If empty, the latest release will be fetched.
 	Date string
 
+	// AutoUpdate configures automatic updates of the bundle.
+	//
+	// Optional. If not set, auto-update is enabled with a default interval of 24 hours.
+	AutoUpdate AutoUpdateConfig
+
+	// VendorIDs specifies the list of vendor IDs to filter when calling 'TrustedBundle.GetRoots()'.
+	//
+	// It can be helpful when your TPM chips comes from specific vendors and you want to adopt
+	// a least-privilege approach.
+	//
+	// Optional. If empty, all vendors will be included.
+	VendorIDs []VendorID
+
 	// SkipVerify disables bundle verification.
-	// When false (default), the bundle will be verified using Cosign and GitHub Attestations.
+	//
+	// Optional. By default the bundle will be verified using Cosign and GitHub Attestations.
 	SkipVerify bool
 
 	// HTTPClient is the HTTP client to use for requests.
-	// If nil, http.DefaultClient will be used.
+	//
+	// Optional. If nil, [http.DefaultClient] will be used.
 	HTTPClient *http.Client
 
 	// sourceRepo is the GitHub repository to fetch bundles from.
@@ -82,34 +98,22 @@ func (c *GetConfig) CheckAndSetDefaults() error {
 	if c.HTTPClient == nil {
 		c.HTTPClient = HttpClient()
 	}
+	if err := c.AutoUpdate.CheckAndSetDefaults(); err != nil {
+		return fmt.Errorf("invalid auto-update config: %w", err)
+	}
+	for _, vendorID := range c.VendorIDs {
+		if err := vendorID.Validate(); err != nil {
+			return fmt.Errorf("invalid vendor ID: %w", err)
+		}
+	}
 	return nil
 }
 
-// GetRawTrustedBundle retrieves and optionally verifies a TPM trust bundle from GitHub releases.
-//
-// The function downloads the bundle and its verification artifacts (checksums and signatures)
-// entirely in memory, without writing to disk. When verification is enabled (default),
-// it performs the same cryptographic verification as the CLI command using both Cosign
-// signatures and GitHub Attestations.
-//
-// Example:
-//
-//	// Get the latest verified bundle
-//	bundleData, err := rot.GetRawTrustedBundle(context.Background(), rot.GetConfig{})
-//	if err != nil {
-//	    log.Fatal(err)
-//	}
-//
-//	// Get a specific date's bundle without verification
-//	bundleData, err = rot.GetRawTrustedBundle(context.Background(), rot.GetConfig{
-//	    Date: "2025-12-03",
-//	    SkipVerify: true,
-//	})
-func GetRawTrustedBundle(ctx context.Context, cfg GetConfig) ([]byte, error) {
-	if err := cfg.CheckAndSetDefaults(); err != nil {
-		return nil, fmt.Errorf("invalid config: %w", err)
-	}
-
+// getRawTrustedBundle retrieves and optionally verifies a TPM trust bundle from transparency
+// log assets:
+//   - integrity: checksums.txt and checksums.txt.sigstore.json (stored in GitHub Releases)
+//   - provenance: GitHub Attestation (stored in GitHub API)
+func getRawTrustedBundle(ctx context.Context, cfg GetConfig) ([]byte, error) {
 	client := github.NewHTTPClient(cfg.HTTPClient)
 
 	releaseTag, err := getReleaseTag(ctx, client, cfg)
@@ -237,7 +241,7 @@ func (c *VerifyConfig) CheckAndSetDefaults() error {
 // Example:
 //
 //	// Verify with auto-detected metadata and auto-downloaded checksums
-//	err := rot.VerifyTrustedBundle(context.Background(), rot.VerifyConfig{
+//	err := apiv1beta.VerifyTrustedBundle(context.Background(), apiv1beta.VerifyConfig{
 //	    Bundle: bundleData,
 //	})
 //	if err != nil {
@@ -245,10 +249,9 @@ func (c *VerifyConfig) CheckAndSetDefaults() error {
 //	}
 //
 //	// Verify with explicit metadata and checksums
-//	err = rot.VerifyTrustedBundle(context.Background(), rot.VerifyConfig{
+//	err = apiv1beta.VerifyTrustedBundle(context.Background(), apiv1beta.VerifyConfig{
 //	    Bundle:            bundleData,
-//	    Date:              "2025-12-05",
-//	    Commit:            "abc123...",
+//	    BundleMetadata:    &bundle.Metadata{Date: "2025-12-05", Commit: "abc123"},
 //	    Checksum:          checksumData,
 //	    ChecksumSignature: checksumSigData,
 //	})
@@ -313,10 +316,79 @@ type assetConfig struct {
 	date   string
 }
 
+// getAsset downloads a specific asset from a GitHub release.
 func getAsset(ctx context.Context, cfg assetConfig) ([]byte, error) {
 	asset, err := cfg.client.DownloadAsset(ctx, cfg.repo, cfg.date, cfg.name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to download %s: %w", cfg.name, err)
 	}
 	return asset, nil
+}
+
+// GetTrustedBundle retrieves and parses a TPM trust bundle from GitHub releases.
+//
+// The function downloads the bundle, verifies it (unless SkipVerify is true),
+// parses it into a certificate catalog organized by vendor, and returns a [TrustedBundle]
+// interface that provides thread-safe access to the bundle data.
+//
+// If AutoUpdate is enabled, the bundle will automatically check for updates in the background
+// and update itself when a newer version is available.
+//
+// Example:
+//
+//	// Get the latest verified bundle with all certificates
+//	tb, err := apiv1beta.GetTrustedBundle(context.Background(), apiv1beta.GetConfig{})
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//	defer tb.Stop()
+//
+//	certPool := tb.GetRoots()
+//
+//	// Get a specific date's bundle filtered by vendor
+//	tb, err = apiv1beta.GetTrustedBundle(context.Background(), apiv1beta.GetConfig{
+//	    Date:      "2025-12-03",
+//	    VendorIDs: []apiv1beta.VendorID{apiv1beta.IFX, apiv1beta.NTC},
+//	})
+//
+//	// Enable auto-update every 6 hours
+//	tb, err = apiv1beta.GetTrustedBundle(context.Background(), apiv1beta.GetConfig{
+//	    AutoUpdate: apiv1beta.AutoUpdateConfig{
+//	        Interval: 6 * time.Hour,
+//	    },
+//	})
+func GetTrustedBundle(ctx context.Context, cfg GetConfig) (TrustedBundle, error) {
+	if err := cfg.CheckAndSetDefaults(); err != nil {
+		return nil, fmt.Errorf("invalid config: %w", err)
+	}
+
+	// Fetch raw bundle data
+	bundleData, err := getRawTrustedBundle(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	metadata, err := bundle.ParseMetadata(bundleData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse bundle metadata: %w", err)
+	}
+
+	catalog, err := bundle.ParseBundle(bundleData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse bundle: %w", err)
+	}
+
+	tb := &trustedBundle{
+		raw:          bundleData,
+		metadata:     metadata,
+		catalog:      catalog,
+		vendorFilter: cfg.VendorIDs,
+	}
+
+	// Start auto-update watcher if enabled
+	if !cfg.AutoUpdate.DisableAutoUpdate {
+		tb.startWatcher(ctx, cfg, cfg.AutoUpdate.Interval)
+	}
+
+	return tb, nil
 }

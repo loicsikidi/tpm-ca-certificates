@@ -8,7 +8,7 @@ import (
 
 	"github.com/loicsikidi/tpm-ca-certificates/internal/cli"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
-	"github.com/loicsikidi/tpm-ca-certificates/pkg/api"
+	"github.com/loicsikidi/tpm-ca-certificates/pkg/apiv1beta"
 	"github.com/spf13/cobra"
 )
 
@@ -79,21 +79,21 @@ func run(cmd *cobra.Command, args []string) error {
 		fmt.Println() // Add newline for clean output after prompt
 	}
 
-	// Use the pkg/api API to download and optionally verify the bundle
+	// Use the pkg/apiv1beta API to download and optionally verify the bundle
 	if date == "" {
 		fmt.Println("Fetching latest release...")
 	} else {
 		fmt.Printf("Fetching release %s...\n", date)
 	}
 
-	cfg := api.GetConfig{
+	cfg := apiv1beta.GetConfig{
 		Date:       date,
 		SkipVerify: skipVerify,
 	}
 
-	bundleData, err := api.GetRawTrustedBundle(cmd.Context(), cfg)
+	trustedBundle, err := apiv1beta.GetTrustedBundle(cmd.Context(), cfg)
 	if err != nil {
-		if errors.Is(err, api.ErrBundleVerificationFailed) {
+		if errors.Is(err, apiv1beta.ErrBundleVerificationFailed) {
 			cli.DisplayError("❌ Bundle verification failed")
 		}
 		return err
@@ -105,7 +105,7 @@ func run(cmd *cobra.Command, args []string) error {
 		cli.DisplaySuccess("✅ Bundle verified")
 	}
 
-	if err := os.WriteFile(bundlePath, bundleData, 0644); err != nil {
+	if err := os.WriteFile(bundlePath, trustedBundle.GetRaw(), 0644); err != nil {
 		return fmt.Errorf("failed to write bundle to disk: %w", err)
 	}
 
