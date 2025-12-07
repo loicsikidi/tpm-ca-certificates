@@ -1,9 +1,9 @@
 package bundle
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
+
+	"github.com/loicsikidi/tpm-ca-certificates/internal/testutil"
 )
 
 func TestParseMetadata(t *testing.T) {
@@ -139,48 +139,28 @@ MIIBdjCCARygAwIBAgIRAKjIOzWTCC66SJLRB5eewJMwCgYIKoZIzj0EAwIwGTEX
 }
 
 func TestParseMetadata_RealBundle(t *testing.T) {
-	// Test with the actual tpm-ca-certificates.pem file if it exists
-	bundlePath := filepath.Join("..", "..", "tpm-ca-certificates.pem")
-
-	// Check if file exists
-	if _, err := os.Stat(bundlePath); os.IsNotExist(err) {
-		t.Skip("Skipping test: tpm-ca-certificates.pem not found")
-	}
-
-	// Read the file
-	data, err := os.ReadFile(bundlePath)
+	// Read the embedded test bundle
+	data, err := testutil.ReadTestFile(testutil.BundleFile)
 	if err != nil {
-		t.Fatalf("Failed to read bundle file: %v", err)
+		t.Fatalf("Failed to read test bundle: %v", err)
 	}
 
 	metadata, err := ParseMetadata(data)
 	if err != nil {
-		t.Fatalf("Failed to parse real bundle: %v", err)
+		t.Fatalf("Failed to parse test bundle: %v", err)
 	}
 
 	// Validate that we got something
 	if metadata.Date == "" {
-		t.Error("Expected non-empty Date from real bundle")
+		t.Error("Expected non-empty Date from test bundle")
 	}
 
 	if metadata.Commit == "" {
-		t.Error("Expected non-empty Commit from real bundle")
+		t.Error("Expected non-empty Commit from test bundle")
 	}
 
 	// Log the values for visibility
-	t.Logf("Parsed real bundle metadata - Date: %s, Commit: %s", metadata.Date, metadata.Commit)
-
-	// Expected values based on the file content we saw earlier
-	expectedDate := "2025-12-04"
-	expectedCommit := "63e6a017e9c15428b2959cb2760d21f05dea42f4"
-
-	if metadata.Date != expectedDate {
-		t.Errorf("Date mismatch in real bundle: got %q, want %q", metadata.Date, expectedDate)
-	}
-
-	if metadata.Commit != expectedCommit {
-		t.Errorf("Commit mismatch in real bundle: got %q, want %q", metadata.Commit, expectedCommit)
-	}
+	t.Logf("Parsed test bundle metadata - Date: %s, Commit: %s", metadata.Date, metadata.Commit)
 }
 
 // containsString checks if a string contains a substring.

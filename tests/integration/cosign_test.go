@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/loicsikidi/tpm-ca-certificates/internal/github"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/testutil"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/cosign"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/policy"
 )
@@ -35,21 +36,16 @@ func TestCosignVerification(t *testing.T) {
 	ctx := context.Background()
 	cfg := testPolicyConfig()
 
-	testdataDir := "testdata"
-	bundlePath := filepath.Join(testdataDir, "tpm-ca-certificates.pem")
-	checksumPath := filepath.Join(testdataDir, "checksums.txt")
-	signaturePath := filepath.Join(testdataDir, "checksums.txt.sigstore.json")
-
 	t.Run("VerifyValidSignature", func(t *testing.T) {
-		checksumData, err := os.ReadFile(checksumPath)
+		checksumData, err := testutil.ReadTestFile(testutil.ChecksumFile)
 		if err != nil {
 			t.Fatalf("Failed to read checksum file: %v", err)
 		}
-		signatureData, err := os.ReadFile(signaturePath)
+		signatureData, err := testutil.ReadTestFile(testutil.ChecksumSigstoreFile)
 		if err != nil {
 			t.Fatalf("Failed to read signature file: %v", err)
 		}
-		bundleData, err := os.ReadFile(bundlePath)
+		bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
 		if err != nil {
 			t.Fatalf("Failed to read bundle file: %v", err)
 		}
@@ -64,11 +60,11 @@ func TestCosignVerification(t *testing.T) {
 	})
 
 	t.Run("VerifyInvalidChecksum", func(t *testing.T) {
-		checksumData, err := os.ReadFile(checksumPath)
+		checksumData, err := testutil.ReadTestFile(testutil.ChecksumFile)
 		if err != nil {
 			t.Fatalf("Failed to read checksum file: %v", err)
 		}
-		signatureData, err := os.ReadFile(signaturePath)
+		signatureData, err := testutil.ReadTestFile(testutil.ChecksumSigstoreFile)
 		if err != nil {
 			t.Fatalf("Failed to read signature file: %v", err)
 		}
@@ -87,11 +83,11 @@ func TestCosignVerification(t *testing.T) {
 	})
 
 	t.Run("VerifyInvalidSignatureData", func(t *testing.T) {
-		checksumData, err := os.ReadFile(checksumPath)
+		checksumData, err := testutil.ReadTestFile(testutil.ChecksumFile)
 		if err != nil {
 			t.Fatalf("Failed to read checksum file: %v", err)
 		}
-		bundleData, err := os.ReadFile(bundlePath)
+		bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
 		if err != nil {
 			t.Fatalf("Failed to read bundle file: %v", err)
 		}
@@ -110,23 +106,31 @@ func TestCosignVerification(t *testing.T) {
 }
 
 func TestFindChecksumFiles(t *testing.T) {
-	testdataDir := "testdata"
-	bundlePath := filepath.Join(testdataDir, "tpm-ca-certificates.pem")
-
 	t.Run("AutoDetectSuccess", func(t *testing.T) {
-		checksumPath, signaturePath, found := cosign.FindChecksumFiles(bundlePath)
+		// Write test files to temp dir
+		tmpDir := t.TempDir()
+		bundlePath := filepath.Join(tmpDir, "tpm-ca-certificates.pem")
+		checksumPath := filepath.Join(tmpDir, "checksums.txt")
+		signaturePath := filepath.Join(tmpDir, "checksums.txt.sigstore.json")
+
+		bundleData, _ := testutil.ReadTestFile(testutil.BundleFile)
+		checksumData, _ := testutil.ReadTestFile(testutil.ChecksumFile)
+		signatureData, _ := testutil.ReadTestFile(testutil.ChecksumSigstoreFile)
+
+		os.WriteFile(bundlePath, bundleData, 0644)
+		os.WriteFile(checksumPath, checksumData, 0644)
+		os.WriteFile(signaturePath, signatureData, 0644)
+
+		foundChecksumPath, foundSignaturePath, found := cosign.FindChecksumFiles(bundlePath)
 		if !found {
 			t.Fatal("Expected to find checksum files, but none were found")
 		}
 
-		expectedChecksumPath := filepath.Join(testdataDir, "checksums.txt")
-		expectedSignaturePath := filepath.Join(testdataDir, "checksums.txt.sigstore.json")
-
-		if checksumPath != expectedChecksumPath {
-			t.Errorf("Expected checksums path %s, got %s", expectedChecksumPath, checksumPath)
+		if foundChecksumPath != checksumPath {
+			t.Errorf("Expected checksums path %s, got %s", checksumPath, foundChecksumPath)
 		}
-		if signaturePath != expectedSignaturePath {
-			t.Errorf("Expected signature path %s, got %s", expectedSignaturePath, signaturePath)
+		if foundSignaturePath != signaturePath {
+			t.Errorf("Expected signature path %s, got %s", signaturePath, foundSignaturePath)
 		}
 	})
 
@@ -149,9 +153,15 @@ func TestFindChecksumFiles(t *testing.T) {
 }
 
 func TestValidateChecksumFilesExist(t *testing.T) {
-	testdataDir := "testdata"
-	checksumPath := filepath.Join(testdataDir, "checksums.txt")
-	signaturePath := filepath.Join(testdataDir, "checksums.txt.sigstore.json")
+	tmpDir := t.TempDir()
+	checksumPath := filepath.Join(tmpDir, "checksums.txt")
+	signaturePath := filepath.Join(tmpDir, "checksums.txt.sigstore.json")
+
+	checksumData, _ := testutil.ReadTestFile(testutil.ChecksumFile)
+	signatureData, _ := testutil.ReadTestFile(testutil.ChecksumSigstoreFile)
+
+	os.WriteFile(checksumPath, checksumData, 0644)
+	os.WriteFile(signaturePath, signatureData, 0644)
 
 	t.Run("BothFilesExist", func(t *testing.T) {
 		err := cosign.ValidateChecksumFilesExist(checksumPath, signaturePath)
@@ -182,16 +192,12 @@ func TestValidateChecksumFilesExist(t *testing.T) {
 }
 
 func TestValidateChecksum(t *testing.T) {
-	testdataDir := "testdata"
-	bundlePath := filepath.Join(testdataDir, "tpm-ca-certificates.pem")
-	checksumPath := filepath.Join(testdataDir, "checksums.txt")
-
 	t.Run("ValidChecksum", func(t *testing.T) {
-		checksumData, err := os.ReadFile(checksumPath)
+		checksumData, err := testutil.ReadTestFile(testutil.ChecksumFile)
 		if err != nil {
 			t.Fatalf("Failed to read checksum file: %v", err)
 		}
-		bundleData, err := os.ReadFile(bundlePath)
+		bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
 		if err != nil {
 			t.Fatalf("Failed to read bundle file: %v", err)
 		}
@@ -203,7 +209,7 @@ func TestValidateChecksum(t *testing.T) {
 	})
 
 	t.Run("InvalidChecksum", func(t *testing.T) {
-		checksumData, err := os.ReadFile(checksumPath)
+		checksumData, err := testutil.ReadTestFile(testutil.ChecksumFile)
 		if err != nil {
 			t.Fatalf("Failed to read checksum file: %v", err)
 		}
@@ -221,7 +227,7 @@ func TestValidateChecksum(t *testing.T) {
 	})
 
 	t.Run("ArtifactNotInChecksumFile", func(t *testing.T) {
-		checksumData, err := os.ReadFile(checksumPath)
+		checksumData, err := testutil.ReadTestFile(testutil.ChecksumFile)
 		if err != nil {
 			t.Fatalf("Failed to read checksum file: %v", err)
 		}
