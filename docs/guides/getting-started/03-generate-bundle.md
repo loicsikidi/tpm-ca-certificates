@@ -172,7 +172,7 @@ If something breaks (compromised vendor site, expired certificate, etc.), the te
 
 Now that you understand bundle generation:
 
-- 💻 Learn [Using the SDK in Go](./04-using-skd-in-go.md) to integrate bundle retrieval in your applications
+- 💻 Learn [Using the SDK in Go](./04-using-sdk-in-go.md) to integrate bundle retrieval in your applications
 
 ## Additional Resources
 
