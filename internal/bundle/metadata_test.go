@@ -108,20 +108,8 @@ MIIBdjCCARygAwIBAgIRAKjIOzWTCC66SJLRB5eewJMwCgYIKoZIzj0EAwIwGTEX
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create temporary file with test data
-			tmpFile, err := os.CreateTemp("", "bundle-*.pem")
-			if err != nil {
-				t.Fatalf("Failed to create temp file: %v", err)
-			}
-			defer os.Remove(tmpFile.Name())
-
-			if _, err := tmpFile.WriteString(tt.bundleData); err != nil {
-				t.Fatalf("Failed to write test data: %v", err)
-			}
-			tmpFile.Close()
-
-			// Parse metadata
-			metadata, err := ParseMetadata(tmpFile.Name())
+			// Parse metadata from bytes
+			metadata, err := ParseMetadata([]byte(tt.bundleData))
 
 			// Check error expectations
 			if tt.wantErrMsg != "" {
@@ -150,17 +138,6 @@ MIIBdjCCARygAwIBAgIRAKjIOzWTCC66SJLRB5eewJMwCgYIKoZIzj0EAwIwGTEX
 	}
 }
 
-func TestParseMetadata_FileNotFound(t *testing.T) {
-	_, err := ParseMetadata("/nonexistent/path/bundle.pem")
-	if err == nil {
-		t.Fatal("Expected error for nonexistent file, got nil")
-	}
-
-	if !containsString(err.Error(), "failed to open bundle file") {
-		t.Errorf("Expected error about opening file, got: %v", err)
-	}
-}
-
 func TestParseMetadata_RealBundle(t *testing.T) {
 	// Test with the actual tpm-ca-certificates.pem file if it exists
 	bundlePath := filepath.Join("..", "..", "tpm-ca-certificates.pem")
@@ -170,7 +147,13 @@ func TestParseMetadata_RealBundle(t *testing.T) {
 		t.Skip("Skipping test: tpm-ca-certificates.pem not found")
 	}
 
-	metadata, err := ParseMetadata(bundlePath)
+	// Read the file
+	data, err := os.ReadFile(bundlePath)
+	if err != nil {
+		t.Fatalf("Failed to read bundle file: %v", err)
+	}
+
+	metadata, err := ParseMetadata(data)
 	if err != nil {
 		t.Fatalf("Failed to parse real bundle: %v", err)
 	}

@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/cli"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/policy"
+	"github.com/loicsikidi/tpm-ca-certificates/pkg/api"
 	"github.com/sigstore/sigstore-go/pkg/verify"
 )
 
@@ -14,30 +16,31 @@ func displayDigest(digest, sourceFile string) {
 	fmt.Println()
 }
 
-func displayChecksumFiles(checksumsFile, checksumsSignature string) {
-	fmt.Printf("Checksums file: %s\n", checksumsFile)
-	fmt.Printf("Signature file: %s\n", checksumsSignature)
-	fmt.Println()
-
+func displaySuccess(result *api.VerifyResult, metadata *bundle.Metadata) {
+	cli.DisplaySuccess("✅ Cosign verification succeeded")
+	displayPolicyCriteria(result.Policy, metadata.Commit)
+	displayGithubAttestationSuccess(result.GithubAttestationResults)
+	cli.DisplaySuccess("✅ Bundle verified successfully")
 }
-func displayGithubAttestationSuccess(verifiedAttestations []verifiedAttestation) {
+
+func displayGithubAttestationSuccess(verifiedAttestations []*verify.VerificationResult) {
 	cli.DisplaySuccess("✅ GitHub verification succeeded")
 
 	fmt.Printf("The following %d attestation(s) matched the policy criteria\n", len(verifiedAttestations))
 	fmt.Println()
 
-	for _, va := range verifiedAttestations {
-		fmt.Printf("- Attestation #%d\n", va.index)
-		metadata := displayAttestationMetadata(va.result)
+	for index, va := range verifiedAttestations {
+		fmt.Printf("- Attestation #%d\n", index)
+		metadata := displayAttestationMetadata(va)
 		fmt.Print(metadata)
 		fmt.Println()
 	}
 }
 
-func displayBundleMetadata(date, commit string) {
+func displayBundleMetadata(metadata *bundle.Metadata) {
 	fmt.Println("Bundle Metadata:")
-	fmt.Printf("  - Date:   %s\n", date)
-	fmt.Printf("  - Commit: %s\n", commit)
+	fmt.Printf("  - Date:   %s\n", metadata.Date)
+	fmt.Printf("  - Commit: %s\n", metadata.Commit)
 	fmt.Println()
 }
 

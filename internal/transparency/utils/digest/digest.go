@@ -6,36 +6,16 @@ import (
 	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
-	"io"
-	"os"
 )
 
-// ComputeSHA256 computes the SHA-256 digest of a file.
+// ComputeSHA256 computes the SHA-256 digest from a byte slice.
 //
 // The returned digest is in the format "sha256:HEX" where HEX is the lowercase
 // hexadecimal representation of the hash.
-//
-// Example:
-//
-//	digest, err := ComputeSHA256("bundle.pem")
-//	if err != nil {
-//	    return err
-//	}
-//	fmt.Println(digest) // "sha256:abc123..."
-func ComputeSHA256(filePath string) (string, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return "", fmt.Errorf("failed to open file: %w", err)
-	}
-	defer file.Close()
-
-	hash := sha256.New()
-	if _, err := io.Copy(hash, file); err != nil {
-		return "", fmt.Errorf("failed to compute hash: %w", err)
-	}
-
-	digest := hex.EncodeToString(hash.Sum(nil))
-	return fmt.Sprintf("sha256:%s", digest), nil
+func ComputeSHA256(data []byte) string {
+	hash := sha256.Sum256(data)
+	digest := hex.EncodeToString(hash[:])
+	return fmt.Sprintf("sha256:%s", digest)
 }
 
 // Sha1Hash computes the SHA1 hash of the input data.

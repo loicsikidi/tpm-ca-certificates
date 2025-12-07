@@ -41,7 +41,20 @@ func TestCosignVerification(t *testing.T) {
 	signaturePath := filepath.Join(testdataDir, "checksums.txt.sigstore.json")
 
 	t.Run("VerifyValidSignature", func(t *testing.T) {
-		result, err := cosign.VerifyChecksum(ctx, cfg, checksumPath, signaturePath, bundlePath)
+		checksumData, err := os.ReadFile(checksumPath)
+		if err != nil {
+			t.Fatalf("Failed to read checksum file: %v", err)
+		}
+		signatureData, err := os.ReadFile(signaturePath)
+		if err != nil {
+			t.Fatalf("Failed to read signature file: %v", err)
+		}
+		bundleData, err := os.ReadFile(bundlePath)
+		if err != nil {
+			t.Fatalf("Failed to read bundle file: %v", err)
+		}
+
+		result, err := cosign.VerifyChecksum(ctx, cfg, checksumData, signatureData, bundleData, "tpm-ca-certificates.pem")
 		if err != nil {
 			t.Fatalf("Expected successful verification, got error: %v", err)
 		}
@@ -51,45 +64,47 @@ func TestCosignVerification(t *testing.T) {
 	})
 
 	t.Run("VerifyInvalidChecksum", func(t *testing.T) {
-		// Create a temporary file with different content
-		tmpFile, err := os.CreateTemp("", "invalid-bundle-*.pem")
+		checksumData, err := os.ReadFile(checksumPath)
 		if err != nil {
-			t.Fatalf("Failed to create temp file: %v", err)
+			t.Fatalf("Failed to read checksum file: %v", err)
 		}
-		defer os.Remove(tmpFile.Name())
+		signatureData, err := os.ReadFile(signaturePath)
+		if err != nil {
+			t.Fatalf("Failed to read signature file: %v", err)
+		}
 
-		if _, err := tmpFile.WriteString("invalid content\n"); err != nil {
-			t.Fatalf("Failed to write to temp file: %v", err)
-		}
-		tmpFile.Close()
+		// Create invalid bundle data
+		invalidData := []byte("invalid content\n")
 
 		// Verification should fail because checksum doesn't match
-		_, err = cosign.VerifyChecksum(ctx, cfg, checksumPath, signaturePath, tmpFile.Name())
+		_, err = cosign.VerifyChecksum(ctx, cfg, checksumData, signatureData, invalidData, "tpm-ca-certificates.pem")
 		if err == nil {
 			t.Fatal("Expected verification to fail with invalid checksum, but it succeeded")
 		}
-		if !contains(err.Error(), "not found in checksums file") {
-			t.Errorf("Expected error about artifact not found in checksums, got: %v", err)
+		if !contains(err.Error(), "checksum mismatch") {
+			t.Errorf("Expected error about checksum mismatch, got: %v", err)
 		}
 	})
 
-	t.Run("VerifyMissingSignatureFile", func(t *testing.T) {
-		_, err := cosign.VerifyChecksum(ctx, cfg, checksumPath, "nonexistent.json", bundlePath)
+	t.Run("VerifyInvalidSignatureData", func(t *testing.T) {
+		checksumData, err := os.ReadFile(checksumPath)
+		if err != nil {
+			t.Fatalf("Failed to read checksum file: %v", err)
+		}
+		bundleData, err := os.ReadFile(bundlePath)
+		if err != nil {
+			t.Fatalf("Failed to read bundle file: %v", err)
+		}
+
+		// Use invalid signature data
+		invalidSignature := []byte("invalid json")
+
+		_, err = cosign.VerifyChecksum(ctx, cfg, checksumData, invalidSignature, bundleData, "tpm-ca-certificates.pem")
 		if err == nil {
-			t.Fatal("Expected verification to fail with missing signature file, but it succeeded")
+			t.Fatal("Expected verification to fail with invalid signature data, but it succeeded")
 		}
 		if !contains(err.Error(), "failed to load signature bundle") {
 			t.Errorf("Expected error about loading signature bundle, got: %v", err)
-		}
-	})
-
-	t.Run("VerifyMissingChecksumFile", func(t *testing.T) {
-		_, err := cosign.VerifyChecksum(ctx, cfg, "nonexistent.txt", signaturePath, bundlePath)
-		if err == nil {
-			t.Fatal("Expected verification to fail with missing checksum file, but it succeeded")
-		}
-		if !contains(err.Error(), "failed to open checksums file") {
-			t.Errorf("Expected error about opening checksums file, got: %v", err)
 		}
 	})
 }
@@ -172,52 +187,53 @@ func TestValidateChecksum(t *testing.T) {
 	checksumPath := filepath.Join(testdataDir, "checksums.txt")
 
 	t.Run("ValidChecksum", func(t *testing.T) {
-		err := cosign.ValidateChecksum(checksumPath, bundlePath)
+		checksumData, err := os.ReadFile(checksumPath)
+		if err != nil {
+			t.Fatalf("Failed to read checksum file: %v", err)
+		}
+		bundleData, err := os.ReadFile(bundlePath)
+		if err != nil {
+			t.Fatalf("Failed to read bundle file: %v", err)
+		}
+
+		err = cosign.ValidateChecksum(checksumData, bundleData, "tpm-ca-certificates.pem")
 		if err != nil {
 			t.Errorf("Expected checksum validation to succeed, got error: %v", err)
 		}
 	})
 
 	t.Run("InvalidChecksum", func(t *testing.T) {
-		// Create a temp file with different content
-		tmpFile, err := os.CreateTemp("", "invalid-*.pem")
+		checksumData, err := os.ReadFile(checksumPath)
 		if err != nil {
-			t.Fatalf("Failed to create temp file: %v", err)
+			t.Fatalf("Failed to read checksum file: %v", err)
 		}
-		defer os.Remove(tmpFile.Name())
 
-		if _, err := tmpFile.WriteString("wrong content\n"); err != nil {
-			t.Fatalf("Failed to write to temp file: %v", err)
-		}
-		tmpFile.Close()
+		// Use invalid artifact data
+		invalidData := []byte("wrong content\n")
 
-		err = cosign.ValidateChecksum(checksumPath, tmpFile.Name())
+		err = cosign.ValidateChecksum(checksumData, invalidData, "tpm-ca-certificates.pem")
 		if err == nil {
 			t.Fatal("Expected checksum validation to fail")
 		}
-		if !contains(err.Error(), "not found in checksums file") {
-			t.Errorf("Expected error about artifact not found, got: %v", err)
+		if !contains(err.Error(), "checksum mismatch") {
+			t.Errorf("Expected error about checksum mismatch, got: %v", err)
 		}
 	})
 
 	t.Run("ArtifactNotInChecksumFile", func(t *testing.T) {
-		// Create a temp file that's not in the checksums.txt
-		tmpFile, err := os.CreateTemp("", "unknown-artifact-*.bin")
+		checksumData, err := os.ReadFile(checksumPath)
 		if err != nil {
-			t.Fatalf("Failed to create temp file: %v", err)
+			t.Fatalf("Failed to read checksum file: %v", err)
 		}
-		defer os.Remove(tmpFile.Name())
 
-		if _, err := tmpFile.WriteString("some content\n"); err != nil {
-			t.Fatalf("Failed to write to temp file: %v", err)
-		}
-		tmpFile.Close()
+		// Use an artifact name that's not in the checksums file
+		someData := []byte("some content\n")
 
-		err = cosign.ValidateChecksum(checksumPath, tmpFile.Name())
+		err = cosign.ValidateChecksum(checksumData, someData, "unknown-artifact.bin")
 		if err == nil {
 			t.Fatal("Expected checksum validation to fail for unknown artifact")
 		}
-		if !contains(err.Error(), "not found in checksums file") {
+		if !contains(err.Error(), "not found in checksums data") {
 			t.Errorf("Expected error about artifact not found, got: %v", err)
 		}
 	})

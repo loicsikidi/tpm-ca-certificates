@@ -1,9 +1,9 @@
 package cosign
 
 import (
+	"bytes"
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/policy"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/verifier"
@@ -22,10 +22,9 @@ import (
 //  5. Computes the actual checksum of the artifact and compares it
 //
 // Returns the verification result which contains certificate extensions with commit information.
-func VerifyChecksum(ctx context.Context, cfg policy.Config, checksumPath, signaturePath, artifactPath string) (*verify.VerificationResult, error) {
-	// Load the Sigstore bundle from the signature file
-	b, err := bundle.LoadJSONFromPath(signaturePath)
-	if err != nil {
+func VerifyChecksum(ctx context.Context, cfg policy.Config, checksumData, signatureData, artifactData []byte, artifactName string) (*verify.VerificationResult, error) {
+	var b bundle.Bundle
+	if err := b.UnmarshalJSON(signatureData); err != nil {
 		return nil, fmt.Errorf("failed to load signature bundle: %w", err)
 	}
 
@@ -35,27 +34,18 @@ func VerifyChecksum(ctx context.Context, cfg policy.Config, checksumPath, signat
 		return nil, fmt.Errorf("failed to create verifier: %w", err)
 	}
 
-	checksumFile, err := os.Open(checksumPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open checksums file: %w", err)
-	}
-	defer checksumFile.Close()
-
-	// Build the verification policy using the shared policy package
-	// This ensures consistency with GitHub Attestation verification
-	policyBuilder, err := policy.BuildCosignPolicy(checksumFile, cfg)
+	policyBuilder, err := policy.BuildCosignPolicy(bytes.NewReader(checksumData), cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build policy: %w", err)
 	}
 
-	// Verify the bundle against the policy
-	result, err := sev.Verify(b, policyBuilder)
+	result, err := sev.Verify(&b, policyBuilder)
 	if err != nil {
 		return nil, fmt.Errorf("signature verification failed: %w", err)
 	}
 
 	// Now verify that the artifact's checksum matches the one in the checksums file
-	if err := ValidateChecksum(checksumPath, artifactPath); err != nil {
+	if err := ValidateChecksum(checksumData, artifactData, artifactName); err != nil {
 		return nil, fmt.Errorf("checksum validation failed: %w", err)
 	}
 
