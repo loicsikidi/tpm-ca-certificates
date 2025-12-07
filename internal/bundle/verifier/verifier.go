@@ -13,38 +13,40 @@ import (
 	"github.com/sigstore/sigstore-go/pkg/verify"
 )
 
+const (
+	bundleFilename = "tpm-ca-certificates.pem"
+)
+
 // Config contains configuration for bundle verification.
 type Config struct {
-	// BundlePath is the path to the bundle file to verify
-	BundlePath string
-
 	// Date is the bundle generation date (YYYY-MM-DD format)
+	//
+	// Required.
 	Date string
 
 	// Commit is the git commit hash (40-character hex string)
+	//
+	// Required.
 	Commit string
 
-	// ChecksumsFile is the path to checksums.txt (optional, will auto-detect if empty)
-	ChecksumsFile string
-
-	// ChecksumsSignature is the path to checksums.txt.sigstore.json (optional, will auto-detect if empty)
-	ChecksumsSignature string
-
 	// SourceRepo is the source repository
+	//
+	// (optional, will use default if nil)
 	SourceRepo *github.Repo
 
 	// WorkflowFilename is the GitHub Actions workflow file name
+	//
+	// (optional, default: [github.ReleaseBundleWorkflowPath])
 	WorkflowFilename string
 
-	// GitHubClient is the GitHub API client (optional, will create default if nil)
+	// GitHubClient is the GitHub API client
+	//
+	// (optional, will use default if nil)
 	GitHubClient *github.HTTPClient
 }
 
 // CheckAndSetDefaults validates and sets default values.
 func (c *Config) CheckAndSetDefaults() error {
-	if c.BundlePath == "" {
-		return fmt.Errorf("bundle path cannot be empty")
-	}
 	if c.Date == "" {
 		return fmt.Errorf("date cannot be empty")
 	}
@@ -52,7 +54,10 @@ func (c *Config) CheckAndSetDefaults() error {
 		return fmt.Errorf("commit cannot be empty")
 	}
 	if c.SourceRepo == nil {
-		c.SourceRepo = &github.SourceRepo
+		c.SourceRepo = &github.Repo{
+			Owner: github.SourceRepo.Owner,
+			Name:  github.SourceRepo.Name,
+		}
 	}
 	if err := c.SourceRepo.CheckAndSetDefaults(); err != nil {
 		return fmt.Errorf("invalid source repository: %w", err)
@@ -62,12 +67,6 @@ func (c *Config) CheckAndSetDefaults() error {
 	}
 	if c.GitHubClient == nil {
 		c.GitHubClient = github.NewHTTPClient(nil)
-	}
-
-	// Validate checksum files (both or neither must be provided)
-	if (c.ChecksumsFile != "" && c.ChecksumsSignature == "") ||
-		(c.ChecksumsFile == "" && c.ChecksumsSignature != "") {
-		return fmt.Errorf("both checksums-file and checksums-signature must be provided together")
 	}
 
 	return nil
@@ -88,38 +87,33 @@ func New(cfg Config) (*Verifier, error) {
 
 // VerifyResult contains the results of bundle verification.
 type VerifyResult struct {
+	// Policy is the policy used for verification
+	Policy policy.Config
+
 	// CosignResult is the result from Cosign verification
 	CosignResult *verify.VerificationResult
 
-	// AttestationResults contains all verified attestations
-	AttestationResults []*verify.VerificationResult
-
-	// ChecksumsFile is the path to the checksums file used
-	ChecksumsFile string
-
-	// ChecksumsSignature is the path to the checksums signature file used
-	ChecksumsSignature string
+	// GithubAttestationResults contains all verified attestations
+	GithubAttestationResults []*verify.VerificationResult
 }
 
 // Verify performs full bundle verification (Cosign + GitHub Attestations).
-func (v *Verifier) Verify(ctx context.Context, digest string) (*VerifyResult, error) {
-	result := &VerifyResult{}
+func (v *Verifier) Verify(ctx context.Context, bundleData, checksumsData, checksumsSigData []byte, digest string) (*VerifyResult, error) {
+	result := &VerifyResult{Policy: v.GetPolicyConfig()}
 
 	// Phase 1: Cosign verification
-	cosignResult, checksumsFile, checksumsSignature, err := v.verifyCosign(ctx)
+	cosignResult, err := v.verifyCosign(ctx, bundleData, checksumsData, checksumsSigData)
 	if err != nil {
 		return nil, fmt.Errorf("cosign verification failed: %w", err)
 	}
 	result.CosignResult = cosignResult
-	result.ChecksumsFile = checksumsFile
-	result.ChecksumsSignature = checksumsSignature
 
 	// Phase 2: GitHub Attestation verification
 	attestationResults, err := v.verifyGitHubAttestations(ctx, digest)
 	if err != nil {
 		return nil, fmt.Errorf("github attestation verification failed: %w", err)
 	}
-	result.AttestationResults = attestationResults
+	result.GithubAttestationResults = attestationResults
 
 	return result, nil
 }
@@ -133,36 +127,21 @@ func (v *Verifier) GetPolicyConfig() policy.Config {
 }
 
 // verifyCosign performs Cosign signature verification.
-func (v *Verifier) verifyCosign(ctx context.Context) (*verify.VerificationResult, string, string, error) {
-	checksumsFile := v.config.ChecksumsFile
-	checksumsSignature := v.config.ChecksumsSignature
-
-	// Auto-detect checksum files if not provided
-	if checksumsFile == "" && checksumsSignature == "" {
-		var found bool
-		checksumsFile, checksumsSignature, found = cosign.FindChecksumFiles(v.config.BundlePath)
-		if !found {
-			return nil, "", "", fmt.Errorf("checksum files not found in the same directory as bundle")
-		}
-	} else {
-		// Validate that both files exist
-		if err := cosign.ValidateChecksumFilesExist(checksumsFile, checksumsSignature); err != nil {
-			return nil, "", "", err
-		}
-	}
-
-	// Verify checksum
-	result, err := cosign.VerifyChecksum(ctx, v.GetPolicyConfig(), checksumsFile, checksumsSignature, v.config.BundlePath)
+func (v *Verifier) verifyCosign(ctx context.Context, bundleData, checksumsData, checksumsSigData []byte) (*verify.VerificationResult, error) {
+	result, err := cosign.VerifyChecksum(ctx, v.GetPolicyConfig(), checksumsData, checksumsSigData, bundleData, bundleFilename)
 	if err != nil {
-		return nil, checksumsFile, checksumsSignature, err
+		return nil, err
 	}
 
-	// Verify commit matches
 	if err := verifyCosignCommit(result, v.config.Commit); err != nil {
-		return nil, checksumsFile, checksumsSignature, fmt.Errorf("commit verification failed: %w", err)
+		return nil, fmt.Errorf("commit verification failed: %w", err)
 	}
 
-	return result, checksumsFile, checksumsSignature, nil
+	if err := verifyRekorTimestampDate(result, v.config.Date); err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
 
 // verifyGitHubAttestations performs GitHub Attestation verification.

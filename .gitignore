@@ -20,6 +20,7 @@ go.work
 # Build artifacts
 dist/
 tpmtb
+tpm-ca-certificates
 
 # Generated files during bundle release
 # Notes: 

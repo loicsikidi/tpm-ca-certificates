@@ -2,8 +2,9 @@ package bundle
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
-	"os"
+	"io"
 	"strings"
 )
 
@@ -13,37 +14,15 @@ type Metadata struct {
 	Commit string
 }
 
-// ParseMetadata reads a TPM trust bundle file and extracts the global metadata.
-//
-// The function expects the bundle to follow the format specified in
-// docs/specifications/04-tpm-trust-bundle-format.md with metadata in the header:
-//
-//	##
-//	## tpm-ca-certificates.pem
-//	##
-//	## Date: 2025-12-04
-//	## Commit: 63e6a017e9c15428b2959cb2760d21f05dea42f4
-//	##
-//
-// Returns an error if the file cannot be read or if the bundle does not contain
-// the required metadata fields.
-//
-// Example:
-//
-//	metadata, err := bundle.ParseMetadata("tpm-ca-certificates.pem")
-//	if err != nil {
-//	    log.Fatal(err)
-//	}
-//	fmt.Printf("Date: %s, Commit: %s\n", metadata.Date, metadata.Commit)
-func ParseMetadata(bundlePath string) (*Metadata, error) {
-	file, err := os.Open(bundlePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open bundle file: %w", err)
-	}
-	defer file.Close()
+// ParseMetadata parses a TPM trust bundle from bytes and extracts the global metadata.
+func ParseMetadata(data []byte) (*Metadata, error) {
+	return ParseMetadataFromReader(bytes.NewReader(data))
+}
 
+// ParseMetadataFromReader reads a TPM trust bundle from an [io.Reader] and extracts the global metadata.
+func ParseMetadataFromReader(reader io.Reader) (*Metadata, error) {
 	var metadata Metadata
-	scanner := bufio.NewScanner(file)
+	scanner := bufio.NewScanner(reader)
 
 	// Parse the header comments (lines starting with ##)
 	for scanner.Scan() {
@@ -66,7 +45,7 @@ func ParseMetadata(bundlePath string) (*Metadata, error) {
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("failed to read bundle file: %w", err)
+		return nil, fmt.Errorf("failed to read bundle: %w", err)
 	}
 
 	// Validate that we found the required metadata

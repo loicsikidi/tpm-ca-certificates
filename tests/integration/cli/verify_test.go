@@ -2,25 +2,20 @@ package integration
 
 import (
 	"context"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle/verifier"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/github"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/testutil"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/digest"
 )
 
 var testRepo = github.SourceRepo
 
 const (
-	// Test repository with known attestations
-	testBundlePath    = "testdata/tpm-ca-certificates.pem"
-	testChecksumsPath = "testdata/checksums.txt"
-	testChecksumsSig  = "testdata/checksums.txt.sigstore.json"
-	testTag           = "2025-12-03"
-	testCommit        = "7422b99b8b097ba8d80b4b7d3f27c13b78e35a7f"
-	testWorkflow      = github.ReleaseBundleWorkflowPath
+	testTag      = "2025-12-03"
+	testCommit   = "7422b99b8b097ba8d80b4b7d3f27c13b78e35a7f"
+	testWorkflow = github.ReleaseBundleWorkflowPath
 
 	// Expected digest for the test bundle
 	// This is the actual digest of tpm-ca-certificates.pem from the 2025-12-03 release
@@ -40,13 +35,14 @@ func TestVerifyIntegration(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	// Step 1: Compute digest
-	t.Log("Step 1: Computing bundle digest...")
-	bundleDigest, err := digest.ComputeSHA256(testBundlePath)
+	// Step 1: Read bundle and compute digest
+	t.Log("Step 1: Reading bundle and computing digest...")
+	bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
 	if err != nil {
-		t.Fatalf("Failed to compute digest: %v", err)
+		t.Fatalf("Failed to read bundle: %v", err)
 	}
 
+	bundleDigest := digest.ComputeSHA256(bundleData)
 	if bundleDigest != expectedDigest {
 		t.Errorf("Unexpected digest: got %s, want %s", bundleDigest, expectedDigest)
 	}
@@ -54,14 +50,20 @@ func TestVerifyIntegration(t *testing.T) {
 
 	// Step 2: Create verifier
 	t.Log("Step 2: Creating bundle verifier...")
+	checksumData, err := testutil.ReadTestFile(testutil.ChecksumFile)
+	if err != nil {
+		t.Fatalf("Failed to read checksums: %v", err)
+	}
+	checksumSigData, err := testutil.ReadTestFile(testutil.ChecksumSigstoreFile)
+	if err != nil {
+		t.Fatalf("Failed to read checksum signature: %v", err)
+	}
+
 	cfg := verifier.Config{
-		BundlePath:         testBundlePath,
-		Date:               testTag,
-		Commit:             testCommit,
-		ChecksumsFile:      testChecksumsPath,
-		ChecksumsSignature: testChecksumsSig,
-		SourceRepo:         &testRepo,
-		WorkflowFilename:   testWorkflow,
+		Date:             testTag,
+		Commit:           testCommit,
+		SourceRepo:       &testRepo,
+		WorkflowFilename: testWorkflow,
 	}
 
 	v, err := verifier.New(cfg)
@@ -72,7 +74,7 @@ func TestVerifyIntegration(t *testing.T) {
 
 	// Step 3: Verify bundle
 	t.Log("Step 3: Verifying bundle...")
-	result, err := v.Verify(context.Background(), bundleDigest)
+	result, err := v.Verify(context.Background(), bundleData, checksumData, checksumSigData, bundleDigest)
 	if err != nil {
 		t.Fatalf("Verification failed: %v", err)
 	}
@@ -81,13 +83,13 @@ func TestVerifyIntegration(t *testing.T) {
 	if result.CosignResult == nil {
 		t.Error("Cosign result is nil")
 	}
-	if len(result.AttestationResults) == 0 {
+	if len(result.GithubAttestationResults) == 0 {
 		t.Error("No attestation results")
 	}
 
 	t.Logf("✓ Verification succeeded")
 	t.Logf("  - Cosign: verified")
-	t.Logf("  - Attestations: %d verified", len(result.AttestationResults))
+	t.Logf("  - Attestations: %d verified", len(result.GithubAttestationResults))
 }
 
 // TestVerifyWithInvalidCommit verifies that verification fails when commit doesn't match.
@@ -96,22 +98,29 @@ func TestVerifyWithInvalidCommit(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	bundleDigest, err := digest.ComputeSHA256(testBundlePath)
+	bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
 	if err != nil {
-		t.Fatalf("Failed to compute digest: %v", err)
+		t.Fatalf("Failed to read bundle: %v", err)
 	}
+	checksumData, err := testutil.ReadTestFile(testutil.ChecksumFile)
+	if err != nil {
+		t.Fatalf("Failed to read checksums: %v", err)
+	}
+	checksumSigData, err := testutil.ReadTestFile(testutil.ChecksumSigstoreFile)
+	if err != nil {
+		t.Fatalf("Failed to read checksum signature: %v", err)
+	}
+
+	bundleDigest := digest.ComputeSHA256(bundleData)
 
 	// Use a wrong commit
 	wrongCommit := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
 	cfg := verifier.Config{
-		BundlePath:         testBundlePath,
-		Date:               testTag,
-		Commit:             wrongCommit, // Wrong commit
-		ChecksumsFile:      testChecksumsPath,
-		ChecksumsSignature: testChecksumsSig,
-		SourceRepo:         &testRepo,
-		WorkflowFilename:   testWorkflow,
+		Date:             testTag,
+		Commit:           wrongCommit, // Wrong commit
+		SourceRepo:       &testRepo,
+		WorkflowFilename: testWorkflow,
 	}
 
 	v, err := verifier.New(cfg)
@@ -120,7 +129,7 @@ func TestVerifyWithInvalidCommit(t *testing.T) {
 	}
 
 	// Verification should fail due to commit mismatch
-	_, err = v.Verify(context.Background(), bundleDigest)
+	_, err = v.Verify(context.Background(), bundleData, checksumData, checksumSigData, bundleDigest)
 	if err == nil {
 		t.Error("Expected verification to fail with wrong commit, but it succeeded")
 	} else {
@@ -134,22 +143,29 @@ func TestVerifyWithInvalidDate(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	bundleDigest, err := digest.ComputeSHA256(testBundlePath)
+	bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
 	if err != nil {
-		t.Fatalf("Failed to compute digest: %v", err)
+		t.Fatalf("Failed to read bundle: %v", err)
 	}
+	checksumData, err := testutil.ReadTestFile(testutil.ChecksumFile)
+	if err != nil {
+		t.Fatalf("Failed to read checksums: %v", err)
+	}
+	checksumSigData, err := testutil.ReadTestFile(testutil.ChecksumSigstoreFile)
+	if err != nil {
+		t.Fatalf("Failed to read checksum signature: %v", err)
+	}
+
+	bundleDigest := digest.ComputeSHA256(bundleData)
 
 	// Use a wrong date
 	wrongDate := "2024-01-01"
 
 	cfg := verifier.Config{
-		BundlePath:         testBundlePath,
-		Date:               wrongDate, // Wrong date
-		Commit:             testCommit,
-		ChecksumsFile:      testChecksumsPath,
-		ChecksumsSignature: testChecksumsSig,
-		SourceRepo:         &testRepo,
-		WorkflowFilename:   testWorkflow,
+		Date:             wrongDate, // Wrong date
+		Commit:           testCommit,
+		SourceRepo:       &testRepo,
+		WorkflowFilename: testWorkflow,
 	}
 
 	v, err := verifier.New(cfg)
@@ -158,7 +174,7 @@ func TestVerifyWithInvalidDate(t *testing.T) {
 	}
 
 	// Verification should fail due to date mismatch
-	_, err = v.Verify(context.Background(), bundleDigest)
+	_, err = v.Verify(context.Background(), bundleData, checksumData, checksumSigData, bundleDigest)
 	if err == nil {
 		t.Error("Expected verification to fail with wrong date, but it succeeded")
 	} else {
@@ -168,46 +184,13 @@ func TestVerifyWithInvalidDate(t *testing.T) {
 
 // TestDigestComputation validates the digest computation separately.
 func TestDigestComputation(t *testing.T) {
-	bundleDigest, err := digest.ComputeSHA256(testBundlePath)
+	bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
 	if err != nil {
-		t.Fatalf("Failed to compute digest: %v", err)
+		t.Fatalf("Failed to read bundle: %v", err)
 	}
 
+	bundleDigest := digest.ComputeSHA256(bundleData)
 	if bundleDigest != expectedDigest {
 		t.Errorf("Digest mismatch:\ngot:  %s\nwant: %s", bundleDigest, expectedDigest)
 	}
-}
-
-// TestBundleLocation tests that the bundle can be found in different locations.
-func TestBundleLocation(t *testing.T) {
-	// Test with file in current directory
-	t.Run("current_directory", func(t *testing.T) {
-		tmpFile, err := os.CreateTemp(".", "test-bundle-*.pem")
-		if err != nil {
-			t.Fatalf("Failed to create temp file: %v", err)
-		}
-		defer os.Remove(tmpFile.Name())
-		tmpFile.WriteString("test content")
-		tmpFile.Close()
-
-		_, err = digest.ComputeSHA256(tmpFile.Name())
-		if err != nil {
-			t.Errorf("Failed to compute digest for file in current dir: %v", err)
-		}
-	})
-
-	// Test with file in subdirectory
-	t.Run("subdirectory", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		bundlePath := filepath.Join(tmpDir, "bundle.pem")
-
-		if err := os.WriteFile(bundlePath, []byte("test content"), 0644); err != nil {
-			t.Fatalf("Failed to create test file: %v", err)
-		}
-
-		_, err := digest.ComputeSHA256(bundlePath)
-		if err != nil {
-			t.Errorf("Failed to compute digest for file in subdirectory: %v", err)
-		}
-	})
 }

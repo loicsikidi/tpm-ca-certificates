@@ -1,23 +1,19 @@
 package download
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 
-	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
-	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle/verifier"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/cli"
-	"github.com/loicsikidi/tpm-ca-certificates/internal/github"
-	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/digest"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
+	"github.com/loicsikidi/tpm-ca-certificates/pkg/api"
 	"github.com/spf13/cobra"
 )
 
 const (
 	bundleFilename = "tpm-ca-certificates.pem"
-	checksumsFile  = "checksums.txt"
-	checksumsSig   = "checksums.txt.sigstore.json"
 )
 
 var (
@@ -68,40 +64,11 @@ verify its authenticity using the same verification process as the verify comman
 }
 
 func run(cmd *cobra.Command, args []string) error {
-	client := github.NewHTTPClient(nil)
-
-	releaseTag := date
-	if releaseTag == "" {
-		fmt.Println("Fetching latest release...")
-		opts := github.ReleasesOptions{
-			PageSize:         50, // to be safe if many versioned releases exist in comparison to bundle releases
-			ReturnFirstValue: true,
-			SortOrder:        github.SortOrderDesc,
-		}
-		releases, err := client.GetReleases(cmd.Context(), github.SourceRepo, opts)
-		if err != nil {
-			return fmt.Errorf("failed to fetch releases: %w", err)
-		}
-		if len(releases) == 0 {
-			return fmt.Errorf("no releases found")
-		}
-		releaseTag = releases[0].TagName
-		fmt.Printf("Latest release: %s\n", releaseTag)
-	} else {
-		// If date is specified, verify the release exists
-		fmt.Printf("Checking if release %s exists...\n", releaseTag)
-		if err := client.ReleaseExists(cmd.Context(), github.SourceRepo, releaseTag); err != nil {
-			return err
-		}
-	}
-
 	if !utils.DirExists(outputDir) {
 		return fmt.Errorf("output directory %s does not exist", outputDir)
 	}
 
 	bundlePath := filepath.Join(outputDir, bundleFilename)
-	checksumsPath := filepath.Join(outputDir, checksumsFile)
-	checksumsSigPath := filepath.Join(outputDir, checksumsSig)
 
 	if utils.FileExists(bundlePath) && !force {
 		cli.DisplayWarning("File %s already exists.", bundlePath)
@@ -112,87 +79,37 @@ func run(cmd *cobra.Command, args []string) error {
 		fmt.Println() // Add newline for clean output after prompt
 	}
 
-	fmt.Printf("Downloading %s from release %s...\n\n", bundleFilename, releaseTag)
-	if err := client.DownloadAsset(cmd.Context(), github.SourceRepo, releaseTag, bundleFilename, bundlePath); err != nil {
-		return fmt.Errorf("failed to download bundle: %w", err)
+	// Use the pkg/api API to download and optionally verify the bundle
+	if date == "" {
+		fmt.Println("Fetching latest release...")
+	} else {
+		fmt.Printf("Fetching release %s...\n", date)
 	}
-	cli.DisplaySuccess("✅ Downloaded bundle to %s", bundlePath)
+
+	cfg := api.GetConfig{
+		Date:       date,
+		SkipVerify: skipVerify,
+	}
+
+	bundleData, err := api.GetRawTrustedBundle(cmd.Context(), cfg)
+	if err != nil {
+		if errors.Is(err, api.ErrBundleVerificationFailed) {
+			cli.DisplayError("❌ Bundle verification failed")
+		}
+		return err
+	}
 
 	if skipVerify {
-		cli.DisplayWarning("⚠️  Verification skipped (--skip-verify)")
-		return nil
+		cli.DisplayWarning("⚠️ Verification skipped (--skip-verify)")
+	} else {
+		cli.DisplaySuccess("✅ Bundle verified")
 	}
 
-	// Setup cleanup for verification files
-	// Track verification success to decide what to cleanup
-	var verificationSucceeded bool
-	defer func() {
-		if verificationSucceeded {
-			if err := cleanupFiles(checksumsPath, checksumsSigPath); err != nil {
-				cli.DisplayWarning("⚠️  Warning: failed to cleanup checksum files: %v", err)
-			}
-		} else {
-			// Cleanup everything on failure we might expect errors
-			// because some files might not exist if failure happened early
-			// so we ignore errors on purpose here
-			cleanupFiles(bundlePath, checksumsPath, checksumsSigPath) //nolint:errcheck
-		}
-	}()
-
-	fmt.Println("Downloading checksum files...")
-	if err := client.DownloadAsset(cmd.Context(), github.SourceRepo, releaseTag, checksumsFile, checksumsPath); err != nil {
-		return fmt.Errorf("failed to download checksums: %w", err)
-	}
-	if err := client.DownloadAsset(cmd.Context(), github.SourceRepo, releaseTag, checksumsSig, checksumsSigPath); err != nil {
-		return fmt.Errorf("failed to download checksums signature: %w", err)
+	if err := os.WriteFile(bundlePath, bundleData, 0644); err != nil {
+		return fmt.Errorf("failed to write bundle to disk: %w", err)
 	}
 
-	metadata, err := bundle.ParseMetadata(bundlePath)
-	if err != nil {
-		return fmt.Errorf("failed to parse bundle metadata: %w", err)
-	}
+	cli.DisplaySuccess("✅ Downloaded bundle to %s", bundlePath)
 
-	bundleDigest, err := digest.ComputeSHA256(bundlePath)
-	if err != nil {
-		return fmt.Errorf("failed to compute digest: %w", err)
-	}
-
-	fmt.Println("Verifying bundle...")
-	fmt.Println()
-
-	cfg := verifier.Config{
-		BundlePath:         bundlePath,
-		Date:               metadata.Date,
-		Commit:             metadata.Commit,
-		ChecksumsFile:      checksumsPath,
-		ChecksumsSignature: checksumsSigPath,
-		SourceRepo:         &github.SourceRepo,
-		WorkflowFilename:   github.ReleaseBundleWorkflowPath,
-	}
-
-	v, err := verifier.New(cfg)
-	if err != nil {
-		return fmt.Errorf("failed to create verifier: %w", err)
-	}
-
-	_, err = v.Verify(cmd.Context(), bundleDigest)
-	if err != nil {
-		return fmt.Errorf("verification failed: %w", err)
-	}
-
-	verificationSucceeded = true
-
-	cli.DisplaySuccess("✅ Bundle downloaded and verified: %s", bundlePath)
 	return nil
-}
-
-// cleanupFiles removes the specified files, ignoring errors.
-func cleanupFiles(paths ...string) error {
-	var firstErr error
-	for _, path := range paths {
-		if err := os.Remove(path); err != nil && firstErr == nil {
-			firstErr = err
-		}
-	}
-	return firstErr
 }

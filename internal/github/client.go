@@ -21,12 +21,18 @@ const (
 	apiVersion                = "2022-11-28"
 )
 
+// httpClient defines the minimal interface for an HTTP client.
+// This allows for easier testing and mocking.
+type httpClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
 // HTTPClient wraps the standard http.Client to implement attestation fetching.
 //
 // This client makes direct calls to the GitHub REST API without requiring
 // the gh CLI or authentication for public repositories.
 type HTTPClient struct {
-	client *http.Client
+	client httpClient
 }
 
 // NewHTTPClient creates a new GitHub attestation client.
@@ -257,14 +263,37 @@ func (c *HTTPClient) ReleaseExists(ctx context.Context, repo Repo, tag string) e
 // Example:
 //
 //	client := NewHTTPClient(nil)
-//	err := client.DownloadAsset("loicsikidi", "tpm-ca-certificates", "2025-12-03", "tpm-ca-certificates.pem", "/tmp/bundle.pem")
-func (c *HTTPClient) DownloadAsset(ctx context.Context, repo Repo, tag, assetName, destination string) error {
+//	err := client.DownloadAsset(ctx, repo, "2025-12-03", "tpm-ca-certificates.pem", "/tmp/bundle.pem")
+func (c *HTTPClient) DownloadAssetToFile(ctx context.Context, repo Repo, tag, assetName, destination string) error {
+	data, err := c.DownloadAsset(ctx, repo, tag, assetName)
+	if err != nil {
+		return err
+	}
+
+	// Write to destination file
+	if err := os.WriteFile(destination, data, 0644); err != nil {
+		return fmt.Errorf("failed to write file: %w", err)
+	}
+
+	return nil
+}
+
+// DownloadAsset downloads a release asset to memory.
+//
+// The asset is identified by its name within a specific release tag.
+// Returns the asset content as a byte slice.
+//
+// Example:
+//
+//	client := NewHTTPClient(nil)
+//	data, err := client.DownloadAsset(ctx, repo, "2025-12-03", "tpm-ca-certificates.pem")
+func (c *HTTPClient) DownloadAsset(ctx context.Context, repo Repo, tag, assetName string) ([]byte, error) {
 	// First, fetch the release to get the asset URL
 	url := fmt.Sprintf("%s/repos/%s/releases/tags/%s", githubAPIBaseURL, repo.String(), tag)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	req.Header.Set("Accept", "application/vnd.github+json")
@@ -272,21 +301,20 @@ func (c *HTTPClient) DownloadAsset(ctx context.Context, repo Repo, tag, assetNam
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to fetch release: %w", err)
+		return nil, fmt.Errorf("failed to fetch release: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("GitHub API returned status %d: %s", resp.StatusCode, string(body))
+		return nil, fmt.Errorf("GitHub API returned status %d: %s", resp.StatusCode, string(body))
 	}
 
 	var release Release
 	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
-		return fmt.Errorf("failed to decode release: %w", err)
+		return nil, fmt.Errorf("failed to decode release: %w", err)
 	}
 
-	// Find the asset by name
 	var assetURL string
 	for _, asset := range release.Assets {
 		if asset.Name == assetName {
@@ -296,43 +324,30 @@ func (c *HTTPClient) DownloadAsset(ctx context.Context, repo Repo, tag, assetNam
 	}
 
 	if assetURL == "" {
-		return fmt.Errorf("asset %q not found in release %q", assetName, tag)
+		return nil, fmt.Errorf("asset %q not found in release %q", assetName, tag)
 	}
 
-	// Download the asset
-	return c.downloadFile(ctx, assetURL, destination)
-}
-
-// downloadFile downloads a file from a URL to a destination path.
-func (c *HTTPClient) downloadFile(ctx context.Context, url, destination string) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, assetURL, nil)
 	if err != nil {
-		return fmt.Errorf("failed to create download request: %w", err)
+		return nil, fmt.Errorf("failed to create download request: %w", err)
 	}
 
-	resp, err := c.client.Do(req)
+	resp, err = c.client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to download file: %w", err)
+		return nil, fmt.Errorf("failed to download file: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("download failed with status %d", resp.StatusCode)
+		return nil, fmt.Errorf("download failed with status %d", resp.StatusCode)
 	}
 
-	// Create the destination file
-	out, err := os.Create(destination)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("failed to create destination file: %w", err)
-	}
-	defer out.Close()
-
-	// Copy the content
-	if _, err := io.Copy(out, resp.Body); err != nil {
-		return fmt.Errorf("failed to write file: %w", err)
+		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
 
-	return nil
+	return data, nil
 }
 
 var dateTagRegex = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)

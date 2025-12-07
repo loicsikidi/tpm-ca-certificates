@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/loicsikidi/tpm-ca-certificates/internal/github"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/testutil"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/cosign"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/policy"
 )
@@ -35,13 +36,21 @@ func TestCosignVerification(t *testing.T) {
 	ctx := context.Background()
 	cfg := testPolicyConfig()
 
-	testdataDir := "testdata"
-	bundlePath := filepath.Join(testdataDir, "tpm-ca-certificates.pem")
-	checksumPath := filepath.Join(testdataDir, "checksums.txt")
-	signaturePath := filepath.Join(testdataDir, "checksums.txt.sigstore.json")
-
 	t.Run("VerifyValidSignature", func(t *testing.T) {
-		result, err := cosign.VerifyChecksum(ctx, cfg, checksumPath, signaturePath, bundlePath)
+		checksumData, err := testutil.ReadTestFile(testutil.ChecksumFile)
+		if err != nil {
+			t.Fatalf("Failed to read checksum file: %v", err)
+		}
+		signatureData, err := testutil.ReadTestFile(testutil.ChecksumSigstoreFile)
+		if err != nil {
+			t.Fatalf("Failed to read signature file: %v", err)
+		}
+		bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
+		if err != nil {
+			t.Fatalf("Failed to read bundle file: %v", err)
+		}
+
+		result, err := cosign.VerifyChecksum(ctx, cfg, checksumData, signatureData, bundleData, "tpm-ca-certificates.pem")
 		if err != nil {
 			t.Fatalf("Expected successful verification, got error: %v", err)
 		}
@@ -51,67 +60,77 @@ func TestCosignVerification(t *testing.T) {
 	})
 
 	t.Run("VerifyInvalidChecksum", func(t *testing.T) {
-		// Create a temporary file with different content
-		tmpFile, err := os.CreateTemp("", "invalid-bundle-*.pem")
+		checksumData, err := testutil.ReadTestFile(testutil.ChecksumFile)
 		if err != nil {
-			t.Fatalf("Failed to create temp file: %v", err)
+			t.Fatalf("Failed to read checksum file: %v", err)
 		}
-		defer os.Remove(tmpFile.Name())
+		signatureData, err := testutil.ReadTestFile(testutil.ChecksumSigstoreFile)
+		if err != nil {
+			t.Fatalf("Failed to read signature file: %v", err)
+		}
 
-		if _, err := tmpFile.WriteString("invalid content\n"); err != nil {
-			t.Fatalf("Failed to write to temp file: %v", err)
-		}
-		tmpFile.Close()
+		// Create invalid bundle data
+		invalidData := []byte("invalid content\n")
 
 		// Verification should fail because checksum doesn't match
-		_, err = cosign.VerifyChecksum(ctx, cfg, checksumPath, signaturePath, tmpFile.Name())
+		_, err = cosign.VerifyChecksum(ctx, cfg, checksumData, signatureData, invalidData, "tpm-ca-certificates.pem")
 		if err == nil {
 			t.Fatal("Expected verification to fail with invalid checksum, but it succeeded")
 		}
-		if !contains(err.Error(), "not found in checksums file") {
-			t.Errorf("Expected error about artifact not found in checksums, got: %v", err)
+		if !contains(err.Error(), "checksum mismatch") {
+			t.Errorf("Expected error about checksum mismatch, got: %v", err)
 		}
 	})
 
-	t.Run("VerifyMissingSignatureFile", func(t *testing.T) {
-		_, err := cosign.VerifyChecksum(ctx, cfg, checksumPath, "nonexistent.json", bundlePath)
+	t.Run("VerifyInvalidSignatureData", func(t *testing.T) {
+		checksumData, err := testutil.ReadTestFile(testutil.ChecksumFile)
+		if err != nil {
+			t.Fatalf("Failed to read checksum file: %v", err)
+		}
+		bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
+		if err != nil {
+			t.Fatalf("Failed to read bundle file: %v", err)
+		}
+
+		// Use invalid signature data
+		invalidSignature := []byte("invalid json")
+
+		_, err = cosign.VerifyChecksum(ctx, cfg, checksumData, invalidSignature, bundleData, "tpm-ca-certificates.pem")
 		if err == nil {
-			t.Fatal("Expected verification to fail with missing signature file, but it succeeded")
+			t.Fatal("Expected verification to fail with invalid signature data, but it succeeded")
 		}
 		if !contains(err.Error(), "failed to load signature bundle") {
 			t.Errorf("Expected error about loading signature bundle, got: %v", err)
 		}
 	})
-
-	t.Run("VerifyMissingChecksumFile", func(t *testing.T) {
-		_, err := cosign.VerifyChecksum(ctx, cfg, "nonexistent.txt", signaturePath, bundlePath)
-		if err == nil {
-			t.Fatal("Expected verification to fail with missing checksum file, but it succeeded")
-		}
-		if !contains(err.Error(), "failed to open checksums file") {
-			t.Errorf("Expected error about opening checksums file, got: %v", err)
-		}
-	})
 }
 
 func TestFindChecksumFiles(t *testing.T) {
-	testdataDir := "testdata"
-	bundlePath := filepath.Join(testdataDir, "tpm-ca-certificates.pem")
-
 	t.Run("AutoDetectSuccess", func(t *testing.T) {
-		checksumPath, signaturePath, found := cosign.FindChecksumFiles(bundlePath)
+		// Write test files to temp dir
+		tmpDir := t.TempDir()
+		bundlePath := filepath.Join(tmpDir, "tpm-ca-certificates.pem")
+		checksumPath := filepath.Join(tmpDir, "checksums.txt")
+		signaturePath := filepath.Join(tmpDir, "checksums.txt.sigstore.json")
+
+		bundleData, _ := testutil.ReadTestFile(testutil.BundleFile)
+		checksumData, _ := testutil.ReadTestFile(testutil.ChecksumFile)
+		signatureData, _ := testutil.ReadTestFile(testutil.ChecksumSigstoreFile)
+
+		os.WriteFile(bundlePath, bundleData, 0644)
+		os.WriteFile(checksumPath, checksumData, 0644)
+		os.WriteFile(signaturePath, signatureData, 0644)
+
+		foundChecksumPath, foundSignaturePath, found := cosign.FindChecksumFiles(bundlePath)
 		if !found {
 			t.Fatal("Expected to find checksum files, but none were found")
 		}
 
-		expectedChecksumPath := filepath.Join(testdataDir, "checksums.txt")
-		expectedSignaturePath := filepath.Join(testdataDir, "checksums.txt.sigstore.json")
-
-		if checksumPath != expectedChecksumPath {
-			t.Errorf("Expected checksums path %s, got %s", expectedChecksumPath, checksumPath)
+		if foundChecksumPath != checksumPath {
+			t.Errorf("Expected checksums path %s, got %s", checksumPath, foundChecksumPath)
 		}
-		if signaturePath != expectedSignaturePath {
-			t.Errorf("Expected signature path %s, got %s", expectedSignaturePath, signaturePath)
+		if foundSignaturePath != signaturePath {
+			t.Errorf("Expected signature path %s, got %s", signaturePath, foundSignaturePath)
 		}
 	})
 
@@ -134,9 +153,15 @@ func TestFindChecksumFiles(t *testing.T) {
 }
 
 func TestValidateChecksumFilesExist(t *testing.T) {
-	testdataDir := "testdata"
-	checksumPath := filepath.Join(testdataDir, "checksums.txt")
-	signaturePath := filepath.Join(testdataDir, "checksums.txt.sigstore.json")
+	tmpDir := t.TempDir()
+	checksumPath := filepath.Join(tmpDir, "checksums.txt")
+	signaturePath := filepath.Join(tmpDir, "checksums.txt.sigstore.json")
+
+	checksumData, _ := testutil.ReadTestFile(testutil.ChecksumFile)
+	signatureData, _ := testutil.ReadTestFile(testutil.ChecksumSigstoreFile)
+
+	os.WriteFile(checksumPath, checksumData, 0644)
+	os.WriteFile(signaturePath, signatureData, 0644)
 
 	t.Run("BothFilesExist", func(t *testing.T) {
 		err := cosign.ValidateChecksumFilesExist(checksumPath, signaturePath)
@@ -167,57 +192,54 @@ func TestValidateChecksumFilesExist(t *testing.T) {
 }
 
 func TestValidateChecksum(t *testing.T) {
-	testdataDir := "testdata"
-	bundlePath := filepath.Join(testdataDir, "tpm-ca-certificates.pem")
-	checksumPath := filepath.Join(testdataDir, "checksums.txt")
-
 	t.Run("ValidChecksum", func(t *testing.T) {
-		err := cosign.ValidateChecksum(checksumPath, bundlePath)
+		checksumData, err := testutil.ReadTestFile(testutil.ChecksumFile)
+		if err != nil {
+			t.Fatalf("Failed to read checksum file: %v", err)
+		}
+		bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
+		if err != nil {
+			t.Fatalf("Failed to read bundle file: %v", err)
+		}
+
+		err = cosign.ValidateChecksum(checksumData, bundleData, "tpm-ca-certificates.pem")
 		if err != nil {
 			t.Errorf("Expected checksum validation to succeed, got error: %v", err)
 		}
 	})
 
 	t.Run("InvalidChecksum", func(t *testing.T) {
-		// Create a temp file with different content
-		tmpFile, err := os.CreateTemp("", "invalid-*.pem")
+		checksumData, err := testutil.ReadTestFile(testutil.ChecksumFile)
 		if err != nil {
-			t.Fatalf("Failed to create temp file: %v", err)
+			t.Fatalf("Failed to read checksum file: %v", err)
 		}
-		defer os.Remove(tmpFile.Name())
 
-		if _, err := tmpFile.WriteString("wrong content\n"); err != nil {
-			t.Fatalf("Failed to write to temp file: %v", err)
-		}
-		tmpFile.Close()
+		// Use invalid artifact data
+		invalidData := []byte("wrong content\n")
 
-		err = cosign.ValidateChecksum(checksumPath, tmpFile.Name())
+		err = cosign.ValidateChecksum(checksumData, invalidData, "tpm-ca-certificates.pem")
 		if err == nil {
 			t.Fatal("Expected checksum validation to fail")
 		}
-		if !contains(err.Error(), "not found in checksums file") {
-			t.Errorf("Expected error about artifact not found, got: %v", err)
+		if !contains(err.Error(), "checksum mismatch") {
+			t.Errorf("Expected error about checksum mismatch, got: %v", err)
 		}
 	})
 
 	t.Run("ArtifactNotInChecksumFile", func(t *testing.T) {
-		// Create a temp file that's not in the checksums.txt
-		tmpFile, err := os.CreateTemp("", "unknown-artifact-*.bin")
+		checksumData, err := testutil.ReadTestFile(testutil.ChecksumFile)
 		if err != nil {
-			t.Fatalf("Failed to create temp file: %v", err)
+			t.Fatalf("Failed to read checksum file: %v", err)
 		}
-		defer os.Remove(tmpFile.Name())
 
-		if _, err := tmpFile.WriteString("some content\n"); err != nil {
-			t.Fatalf("Failed to write to temp file: %v", err)
-		}
-		tmpFile.Close()
+		// Use an artifact name that's not in the checksums file
+		someData := []byte("some content\n")
 
-		err = cosign.ValidateChecksum(checksumPath, tmpFile.Name())
+		err = cosign.ValidateChecksum(checksumData, someData, "unknown-artifact.bin")
 		if err == nil {
 			t.Fatal("Expected checksum validation to fail for unknown artifact")
 		}
-		if !contains(err.Error(), "not found in checksums file") {
+		if !contains(err.Error(), "not found in checksums data") {
 			t.Errorf("Expected error about artifact not found, got: %v", err)
 		}
 	})

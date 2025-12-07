@@ -1,26 +1,22 @@
 package verify
 
 import (
-	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
-	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle/verifier"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/cli"
-	"github.com/loicsikidi/tpm-ca-certificates/internal/github"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/cosign"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/digest"
-	"github.com/sigstore/sigstore-go/pkg/verify"
+	"github.com/loicsikidi/tpm-ca-certificates/pkg/api"
 	"github.com/spf13/cobra"
 )
 
 var (
 	checksumsFile      string
 	checksumsSignature string
-	bundleDate         string
-	bundleCommit       string
 )
 
 // NewCommand creates the verify command.
@@ -36,163 +32,116 @@ func NewCommand() *cobra.Command {
 The verify command performs two types of verification (both required):
 
 1. Cosign Signature Verification (Phase 1):
-   - Auto-detects checksums.txt and checksums.txt.sigstore.json locally
-   - If not found, downloads them from GitHub release matching the bundle date
-   - Verifies Cosign v3 keyless signature
+   - Retrieve smartly checksums.txt and checksums.txt.sigstore.json (if not given)
+   - Verifies signature bundle format using Sigstore
    - Validates checksum matches the bundle
-   - Uses Sigstore Public Good infrastructure
 
 2. GitHub Attestation Verification (Phase 2):
    - Fetches attestations from GitHub API
-   - Verifies SLSA provenance
+   - Verifies SLSA provenance using Sigstore
    - Validates certificate identity (OIDC issuer, source repository)
 
 Both verifications must succeed for the bundle to be considered valid.`,
-		Example: `  # Verify bundle with default settings (date and commit from bundle metadata)
+		Example: `  # Verify bundle with default settings
   tpmtb bundle verify tpm-ca-certificates.pem
 
   # Verify with explicit checksum files
-  tpmtb bundle verify tpm-ca-certificates.pem --checksums-file checksums.txt --checksums-signature checksums.txt.sigstore.json
-
-  # Override bundle metadata with explicit date and commit
-  tpmtb bundle verify tpm-ca-certificates.pem --date 2025-01-03 --commit a703c9c414fcad56351b5b6326a7d0cbaf2f0b9c`,
+  tpmtb bundle verify tpm-ca-certificates.pem --checksums-file checksums.txt --checksums-signature checksums.txt.sigstore.json`,
 		Args:         cobra.ExactArgs(1),
 		SilenceUsage: true,
 		RunE:         run,
 	}
 
 	cmd.Flags().StringVar(&checksumsFile, "checksums-file", "",
-		"Path to checksums.txt file (required, default: auto-detect by searching in the same directory as the bundle)")
+		"Path to checksums.txt file (optional, default: auto-detect or download)")
 	cmd.Flags().StringVar(&checksumsSignature, "checksums-signature", "",
-		"Path to checksums.txt.sigstore.json file (required, default: auto-detect by searching in the same directory as the bundle)")
-	cmd.Flags().StringVar(&bundleDate, "date", "",
-		"Bundle generation date (YYYY-MM-DD) - overrides bundle metadata if specified")
-	cmd.Flags().StringVar(&bundleCommit, "commit", "",
-		"Git commit hash (40-character hex string) - overrides bundle metadata if specified")
-
+		"Path to checksums.txt.sigstore.json file (optional, default: auto-detect or download)")
 	return cmd
-}
-
-type verifiedAttestation struct {
-	index  int
-	result *verify.VerificationResult
 }
 
 func run(cmd *cobra.Command, args []string) error {
 	bundlePath := args[0]
 	bundleFilename := filepath.Base(bundlePath)
 
-	effectiveDate := bundleDate
-	effectiveCommit := bundleCommit
-
-	if (effectiveDate != "" && effectiveCommit == "") || (effectiveDate == "" && effectiveCommit != "") {
-		return fmt.Errorf("both --date and --commit flags must be provided together")
-	}
-
-	if effectiveDate == "" && effectiveCommit == "" {
-		metadata, err := bundle.ParseMetadata(bundlePath)
-		if err != nil {
-			return fmt.Errorf("failed to parse bundle metadata: %w", err)
-		}
-		effectiveDate = metadata.Date
-		effectiveCommit = metadata.Commit
-	}
-
-	displayBundleMetadata(effectiveDate, effectiveCommit)
-
-	digest, err := digest.ComputeSHA256(bundlePath)
+	// Read bundle from disk
+	bundleData, err := os.ReadFile(bundlePath)
 	if err != nil {
-		return fmt.Errorf("failed to compute digest: %w", err)
+		return fmt.Errorf("failed to read bundle file: %w", err)
 	}
-	displayDigest(digest, bundleFilename)
 
-	// Handle checksum files auto-detection and download
-	effectiveChecksumsFile := checksumsFile
-	effectiveChecksumsSignature := checksumsSignature
+	metadata, err := bundle.ParseMetadata(bundleData)
+	if err != nil {
+		return fmt.Errorf("failed to parse bundle metadata: %w", err)
+	}
 
-	if effectiveChecksumsFile == "" && effectiveChecksumsSignature == "" {
-		var found bool
-		effectiveChecksumsFile, effectiveChecksumsSignature, found = cosign.FindChecksumFiles(bundlePath)
+	cfg := api.VerifyConfig{
+		Bundle:         bundleData,
+		BundleMetadata: metadata,
+	}
+
+	displayBundleMetadata(metadata)
+
+	displayDigest(digest.ComputeSHA256(bundleData), bundleFilename)
+
+	skipReadFiles := false
+	if checksumsFile == "" && checksumsSignature == "" {
+		fmt.Println("Auto-detecting checksum files...")
+		checksumPath, checksumSigPath, found := cosign.FindChecksumFiles(bundlePath)
 		if !found {
-			fmt.Println("Checksum files not found locally, attempting to download from GitHub...")
-			effectiveChecksumsFile, effectiveChecksumsSignature, err = downloadChecksumFiles(cmd.Context(), effectiveDate, bundlePath)
-			if err != nil {
-				return fmt.Errorf("failed to download checksum files: %w", err)
-			}
-			defer func() {
-				os.Remove(effectiveChecksumsFile)      //nolint:errcheck
-				os.Remove(effectiveChecksumsSignature) //nolint:errcheck
-			}()
+			fmt.Println("Checksum files not found locally, will be downloaded from GitHub...")
+			skipReadFiles = true
 		}
+		checksumsFile, checksumsSignature = checksumPath, checksumSigPath
+	}
+	if !skipReadFiles {
+		result, err := readChecksumsData(checksumsFile, checksumsSignature)
+		if err != nil {
+			return err
+		}
+		cfg.Checksum = result.checksumData
+		cfg.ChecksumSignature = result.checksumSigData
 	}
 
-	// Create verifier configuration
-	cfg := verifier.Config{
-		BundlePath:         bundlePath,
-		Date:               effectiveDate,
-		Commit:             effectiveCommit,
-		ChecksumsFile:      effectiveChecksumsFile,
-		ChecksumsSignature: effectiveChecksumsSignature,
-		SourceRepo:         &github.SourceRepo,
-		WorkflowFilename:   github.ReleaseBundleWorkflowPath,
-	}
+	fmt.Println()
+	displayTitle("Verification in progress...")
+	fmt.Println()
 
-	v, err := verifier.New(cfg)
+	result, err := api.VerifyTrustedBundle(cmd.Context(), cfg)
 	if err != nil {
-		return fmt.Errorf("failed to create verifier: %w", err)
-	}
-
-	displayTitle("Phase 1: Cosign Signature Verification")
-	result, err := v.Verify(cmd.Context(), digest)
-	if err != nil {
-		cli.DisplayError("❌ Verification failed")
+		if errors.Is(err, api.ErrBundleVerificationFailed) {
+			cli.DisplayError("❌ Verification failed")
+		} else {
+			cli.DisplayError("An error occurred during verification")
+		}
 		return err
 	}
 
-	displayChecksumFiles(result.ChecksumsFile, result.ChecksumsSignature)
-	cli.DisplaySuccess("✅ Cosign verification succeeded")
-
-	displayTitle("Phase 2: GitHub Attestation Verification")
-	fmt.Printf("Loaded %d attestation(s) from GitHub API\n", len(result.AttestationResults))
-	fmt.Println()
-
-	displayPolicyCriteria(v.GetPolicyConfig(), effectiveCommit)
-
-	var verifiedAttestations []verifiedAttestation
-	for i, attResult := range result.AttestationResults {
-		verifiedAttestations = append(verifiedAttestations, verifiedAttestation{
-			index:  i + 1,
-			result: attResult,
-		})
-	}
-
-	displayGithubAttestationSuccess(verifiedAttestations)
+	displaySuccess(result, metadata)
 
 	return nil
 }
 
-// downloadChecksumFiles downloads checksums.txt and checksums.txt.sigstore.json
-// from GitHub release matching the bundle date.
-func downloadChecksumFiles(ctx context.Context, releaseTag, bundlePath string) (string, string, error) {
-	client := github.NewHTTPClient(nil)
+type checksumsData struct {
+	checksumData    []byte
+	checksumSigData []byte
+}
 
-	if err := client.ReleaseExists(ctx, github.SourceRepo, releaseTag); err != nil {
-		return "", "", fmt.Errorf("release %s not found: %w", releaseTag, err)
+func readChecksumsData(checksumsFile, checksumsSignature string) (*checksumsData, error) {
+	var data checksumsData
+	var err error
+
+	if checksumsFile != "" {
+		data.checksumData, err = os.ReadFile(checksumsFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read checksums file: %w", err)
+		}
 	}
 
-	bundleDir := filepath.Dir(bundlePath)
-	checksumsFile := filepath.Join(bundleDir, "checksums.txt")
-	checksumsSignature := filepath.Join(bundleDir, "checksums.txt.sigstore.json")
-
-	if err := client.DownloadAsset(ctx, github.SourceRepo, releaseTag, "checksums.txt", checksumsFile); err != nil {
-		return "", "", fmt.Errorf("failed to download checksums.txt: %w", err)
+	if checksumsSignature != "" {
+		data.checksumSigData, err = os.ReadFile(checksumsSignature)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read checksums signature file: %w", err)
+		}
 	}
-
-	if err := client.DownloadAsset(ctx, github.SourceRepo, releaseTag, "checksums.txt.sigstore.json", checksumsSignature); err != nil {
-		os.Remove(checksumsFile) //nolint:errcheck
-		return "", "", fmt.Errorf("failed to download checksums.txt.sigstore.json: %w", err)
-	}
-
-	fmt.Printf("Downloaded checksum files from release %s\n", releaseTag)
-	return checksumsFile, checksumsSignature, nil
+	return &data, nil
 }
