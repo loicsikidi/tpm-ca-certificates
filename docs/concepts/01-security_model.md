@@ -12,10 +12,12 @@ This document describes the trust model and security principles behind the TPM T
 
 ### 1. Auditability Through Source URLs
 
-Every root CA certificate in this bundle MUST be traceable to its original source via a URL. This is a critical improvement over other projects (e.g., [tpm-key-attestation](https://github.com/cedarcode/tpm-key_attestation/commit/42c78b57726e1abb0167110932a313a51250a7b0)[^1]) where only raw certificate data is visible without provenance.
+Every root CA certificate in this bundle MUST be traceable to its original source via a URL. This is a critical improvement over other projects (e.g., [keylime](https://github.com/keylime/keylime/tree/dc75773679b1862e3b571f513e5aa9904efaf136/tpm_cert_store) or [tpm-key-attestation](https://github.com/cedarcode/tpm-key_attestation/commit/42c78b57726e1abb0167110932a313a51250a7b0)[^1]) where only raw certificate data is visible without provenance.
 
 > [!NOTE]
-> **Why this matters:** Anyone can audit where a certificate comes from and verify its legitimacy by following the source URL back to the vendor's official communication.
+> **Why this matters:**
+> - **Auditability:** Anyone can audit where a certificate comes from and verify its legitimacy by following the source URL back to the vendor's official communication.
+> - **Separation of concerns:** This approach allows `tpm-ca-certificates` to centralize certificate sourcing information and take responsibility for maintaining up-to-date certificate URLs, freeing downstream projects from tracking vendor changes and certificate locations.
 
 ### 2. Security Countermeasures for URL-Based Distribution
 
@@ -106,4 +108,4 @@ To enforce these requirements and reduce human error, we created the `tpmtb` CLI
 
 The CLI ensures consistency and reduces the risk of configuration errors that could compromise the trust model.
 
-[^1]: Don't get me wrong, I don't want to incriminate them in any way, as this is not a prerogative of their project. Shout-out to Cedarcode for their great contribution on [TPM key attestation](https://github.com/cedarcode/tpm-key_attestation)!
+[^1]: Don't get me wrong, I don't want to incriminate them in any way, as this is not a prerogative of both projects. Shout-out to [keylime](https://github.com/keylime) and [Cedarcode](https://github.com/cedarcode) for their great contribution on the TPM ecosystem!
