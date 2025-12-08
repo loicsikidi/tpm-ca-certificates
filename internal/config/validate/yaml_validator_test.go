@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/loicsikidi/tpm-ca-certificates/internal/fingerprint"
 )
 
 func TestYAMLValidator_ValidateFile(t *testing.T) {
@@ -270,9 +272,9 @@ func TestIsValidFingerprintFormat(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := isValidFingerprintFormat(tt.input)
+			got := fingerprint.IsValid(tt.input)
 			if got != tt.want {
-				t.Errorf("isValidFingerprintFormat(%q) = %v, want %v", tt.input, got, tt.want)
+				t.Errorf("fingerprint.IsValid(%q) = %v, want %v", tt.input, got, tt.want)
 			}
 		})
 	}

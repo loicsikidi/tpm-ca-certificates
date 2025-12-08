@@ -9,6 +9,7 @@ import (
 
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config/vendors"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/fingerprint"
 	"go.yaml.in/yaml/v4"
 )
 
@@ -250,49 +251,27 @@ func (v *YAMLValidator) validateFingerprintFormat(cfg *config.TPMRootsConfig) {
 		for j, cert := range vendor.Certificates {
 			fp := cert.Validation.Fingerprint
 
-			if fp.SHA1 != "" && !isValidFingerprintFormat(fp.SHA1) {
+			if fp.SHA1 != "" && !fingerprint.IsValid(fp.SHA1) {
 				path := fmt.Sprintf("vendors[%d].certificates[%d].validation.fingerprint.sha1", i, j)
 				v.addError(path, fmt.Sprintf("fingerprint not in uppercase with colons: got %q", fp.SHA1))
 			}
 
-			if fp.SHA256 != "" && !isValidFingerprintFormat(fp.SHA256) {
+			if fp.SHA256 != "" && !fingerprint.IsValid(fp.SHA256) {
 				path := fmt.Sprintf("vendors[%d].certificates[%d].validation.fingerprint.sha256", i, j)
 				v.addError(path, fmt.Sprintf("fingerprint not in uppercase with colons: got %q", fp.SHA256))
 			}
 
-			if fp.SHA384 != "" && !isValidFingerprintFormat(fp.SHA384) {
+			if fp.SHA384 != "" && !fingerprint.IsValid(fp.SHA384) {
 				path := fmt.Sprintf("vendors[%d].certificates[%d].validation.fingerprint.sha384", i, j)
 				v.addError(path, fmt.Sprintf("fingerprint not in uppercase with colons: got %q", fp.SHA384))
 			}
 
-			if fp.SHA512 != "" && !isValidFingerprintFormat(fp.SHA512) {
+			if fp.SHA512 != "" && !fingerprint.IsValid(fp.SHA512) {
 				path := fmt.Sprintf("vendors[%d].certificates[%d].validation.fingerprint.sha512", i, j)
 				v.addError(path, fmt.Sprintf("fingerprint not in uppercase with colons: got %q", fp.SHA512))
 			}
 		}
 	}
-}
-
-// isValidFingerprintFormat checks if a fingerprint is in the correct format (uppercase with colons).
-func isValidFingerprintFormat(fp string) bool {
-	cleaned := strings.ReplaceAll(fp, ":", "")
-
-	// Check all characters are hex and uppercase
-	for _, c := range cleaned {
-		if (c < '0' || c > '9') && (c < 'A' || c > 'F') {
-			return false
-		}
-	}
-
-	// Check colons are in the right places
-	parts := strings.Split(fp, ":")
-	for _, part := range parts {
-		if len(part) != 2 {
-			return false
-		}
-	}
-
-	return true
 }
 
 // validateQuotes checks that string values are double-quoted in the YAML.

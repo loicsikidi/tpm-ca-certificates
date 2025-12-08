@@ -33,18 +33,18 @@ func ParseMetadataFromReader(reader io.Reader) (*Metadata, error) {
 		line := scanner.Text()
 
 		// Stop when we reach the end of the global metadata section
-		if !strings.HasPrefix(line, "##") {
+		if !strings.HasPrefix(line, GlobalMetadataPrefix) {
 			break
 		}
 
 		// Look for "## Date: YYYY-MM-DD"
-		if strings.HasPrefix(line, "## Date: ") {
-			metadata.Date = strings.TrimSpace(strings.TrimPrefix(line, "## Date:"))
+		if strings.HasPrefix(line, MetadataKeyDate.String()) {
+			metadata.Date = strings.TrimSpace(strings.TrimPrefix(line, MetadataKeyDate.String()))
 		}
 
 		// Look for "## Commit: <hash>"
-		if strings.HasPrefix(line, "## Commit: ") {
-			metadata.Commit = strings.TrimSpace(strings.TrimPrefix(line, "## Commit:"))
+		if strings.HasPrefix(line, MetadataKeyCommit.String()) {
+			metadata.Commit = strings.TrimSpace(strings.TrimPrefix(line, MetadataKeyCommit.String()))
 		}
 	}
 
@@ -54,11 +54,11 @@ func ParseMetadataFromReader(reader io.Reader) (*Metadata, error) {
 
 	// Validate that we found the required metadata
 	if metadata.Date == "" {
-		return nil, fmt.Errorf("bundle does not contain required 'Date' metadata in header")
+		return nil, fmt.Errorf("bundle does not contain required '%s' metadata in header", MetadataKeyDate.Key())
 	}
 
 	if metadata.Commit == "" {
-		return nil, fmt.Errorf("bundle does not contain required 'Commit' metadata in header")
+		return nil, fmt.Errorf("bundle does not contain required '%s' metadata in header", MetadataKeyCommit.Key())
 	}
 
 	return &metadata, nil
@@ -96,13 +96,13 @@ func ParseBundleFromReader(reader io.Reader) (map[vendors.ID][]*x509.Certificate
 		line := scanner.Text()
 
 		// Skip global metadata (lines starting with ##)
-		if strings.HasPrefix(line, "##") {
+		if strings.HasPrefix(line, GlobalMetadataPrefix) {
 			continue
 		}
 
 		// Parse certificate metadata (lines starting with #)
-		if strings.HasPrefix(line, "# Owner: ") {
-			ownerStr := strings.TrimSpace(strings.TrimPrefix(line, "# Owner:"))
+		if strings.HasPrefix(line, CertMetadataKeyOwner.String()) {
+			ownerStr := strings.TrimSpace(strings.TrimPrefix(line, CertMetadataKeyOwner.String()))
 			currentOwner = vendors.ID(ownerStr)
 			if err := currentOwner.Validate(); err != nil {
 				return nil, fmt.Errorf("invalid vendor ID in certificate metadata: %w", err)
@@ -111,12 +111,12 @@ func ParseBundleFromReader(reader io.Reader) (map[vendors.ID][]*x509.Certificate
 		}
 
 		// Skip other metadata lines
-		if strings.HasPrefix(line, "#") {
+		if strings.HasPrefix(line, CertMetadataPrefix) {
 			continue
 		}
 
 		// Handle PEM blocks
-		if strings.HasPrefix(line, "-----BEGIN CERTIFICATE-----") {
+		if strings.HasPrefix(line, PEMBeginMarker) {
 			inPEMBlock = true
 			pemBlock.Reset()
 			pemBlock.WriteString(line)
@@ -128,7 +128,7 @@ func ParseBundleFromReader(reader io.Reader) (map[vendors.ID][]*x509.Certificate
 			pemBlock.WriteString(line)
 			pemBlock.WriteString("\n")
 
-			if strings.HasPrefix(line, "-----END CERTIFICATE-----") {
+			if strings.HasPrefix(line, PEMEndMarker) {
 				inPEMBlock = false
 
 				block, _ := pem.Decode([]byte(pemBlock.String()))
