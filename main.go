@@ -1,12 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/loicsikidi/tpm-ca-certificates/cmd/bundle"
 	"github.com/loicsikidi/tpm-ca-certificates/cmd/config"
 	"github.com/loicsikidi/tpm-ca-certificates/cmd/version"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/cli"
 	"github.com/spf13/cobra"
 )
 
@@ -34,7 +34,7 @@ Notes:
 	rootCmd.AddCommand(config.NewCommand())
 
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		cli.DisplayError("Error: %v\n", err)
 		os.Exit(1)
 	}
 }

@@ -1,6 +1,9 @@
 package cli
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+)
 
 type color string
 
@@ -21,11 +24,15 @@ func DisplaySuccess(msg string, args ...any) {
 }
 
 func DisplayError(msg string, args ...any) {
-	fmt.Println(colorize(colorRed, fmt.Sprintf(msg, args...)))
+	fmt.Fprint(os.Stderr, colorize(colorRed, fmt.Sprintf(msg, args...)))
 	fmt.Println()
 }
 
 func DisplayWarning(msg string, args ...any) {
-	fmt.Println(colorize(colorYellow, fmt.Sprintf(msg, args...)))
+	fmt.Fprint(os.Stderr, colorize(colorYellow, fmt.Sprintf(msg, args...)))
 	fmt.Println()
+}
+
+func DisplayStderr(msg string, args ...any) {
+	fmt.Fprintf(os.Stderr, msg, args...)
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/loicsikidi/tpm-ca-certificates/internal/cli"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config/validate"
 	"github.com/spf13/cobra"
 )
@@ -58,19 +59,19 @@ func run(cmd *cobra.Command, args []string) error {
 
 	if len(errors) == 0 {
 		if !quiet {
-			fmt.Printf("✅  %s is valid\n", configPath)
+			cli.DisplaySuccess("✅ %s is valid", configPath)
 		}
 		return nil
 	}
 
 	if !quiet {
-		fmt.Fprintf(os.Stderr, "❌ %s has validation errors:\n\n", configPath)
+		cli.DisplayError("❌ %s has validation errors:", configPath)
 		for _, verr := range errors {
-			fmt.Fprintf(os.Stderr, "  Line %d: %s\n", verr.Line, verr.Message)
+			cli.DisplayStderr("  Line %d: %s\n", verr.Line, verr.Message)
 		}
 
 		if len(errors) >= 10 {
-			fmt.Fprintf(os.Stderr, "\n(showing first 10 errors)\n")
+			cli.DisplayStderr("\n(showing first 10 errors)\n")
 		}
 	}
 
