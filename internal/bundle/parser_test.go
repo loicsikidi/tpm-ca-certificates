@@ -26,8 +26,8 @@ func TestParseBundle(t *testing.T) {
 		}
 
 		// Verify NTC vendor exists
-		if len(catalog[vendors.NTC]) != 1 {
-			t.Errorf("Expected 1 certificate for NTC vendor, got %d", len(catalog[vendors.NTC]))
+		if len(catalog[vendors.NTC]) != 8 {
+			t.Errorf("Expected 8 certificates for NTC vendor, got %d", len(catalog[vendors.NTC]))
 		}
 	})
 
