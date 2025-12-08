@@ -5,6 +5,7 @@
 | Version |    Date    |   Author    |   Description    |
 |---------|------------|-------------|------------------|
 | alpha   | 2025-11-26 | Loïc Sikidi | Initial version  |
+| alpha   | 2025-12-08 | Loïc Sikidi | Clarify date format for validity dates (zero-padded day) |
 
 ## Overview
 
@@ -132,8 +133,8 @@ Certificate metadata uses a single-hash (`#`) prefix:
 | `Issuer` | Certificate issuer DN | `CN=NPCTxxx ECC521 RootCA,O=Nuvoton Technology Corporation,C=TW` |
 | `Serial Number` | Certificate serial number (decimal and hex) | `2 (0x2)` |
 | `Subject` | Certificate subject DN | `CN=NPCTxxx ECC521 RootCA,O=Nuvoton Technology Corporation,C=TW` |
-| `Not Valid Before` | Certificate validity start date | `Thu Apr 27 16:36:58 2023` |
-| `Not Valid After` | Certificate validity end date | `Sun Apr 27 16:36:58 2053` |
+| `Not Valid Before` | Certificate validity start date | `Wed Apr 03 16:36:58 2023` |
+| `Not Valid After` | Certificate validity end date | `Mon May 07 16:36:58 2053` |
 | `Fingerprint (SHA-256)` | SHA-256 fingerprint (colon-separated hex) | `08:3E:7B:D1:3E:8F:E0:BB:9B:0C:64:DB:9E:0C:83:56:68:1D:F6:57:14:D2:D5:C4:92:5E:B9:8A:E1:36:9D:40` |
 | `Fingerprint (SHA1)` | SHA-1 fingerprint (colon-separated hex) | `7C:7B:3C:8A:46:5E:67:D2:8F:4D:B0:F3:5C:E1:20:C4:BB:4A:AC:CC` |
 
@@ -150,8 +151,8 @@ Certificate metadata uses a single-hash (`#`) prefix:
 # Issuer: CN=NPCTxxx ECC521 RootCA,O=Nuvoton Technology Corporation,C=TW
 # Serial Number: 2 (0x2)
 # Subject: CN=NPCTxxx ECC521 RootCA,O=Nuvoton Technology Corporation,C=TW
-# Not Valid Before: Thu Apr 27 16:36:58 2023
-# Not Valid After : Sun Apr 27 16:36:58 2053
+# Not Valid Before: Wed Apr 03 16:36:58 2023
+# Not Valid After : Mon May 07 16:36:58 2053
 # Fingerprint (SHA-256): 08:3E:7B:D1:3E:8F:E0:BB:9B:0C:64:DB:9E:0C:83:56:68:1D:F6:57:14:D2:D5:C4:92:5E:B9:8A:E1:36:9D:40
 # Fingerprint (SHA1): 7C:7B:3C:8A:46:5E:67:D2:8F:4D:B0:F3:5C:E1:20:C4:BB:4A:AC:CC
 -----BEGIN CERTIFICATE-----
@@ -213,8 +214,8 @@ Users can verify a bundle by:
 # Issuer: CN=NPCTxxx ECC521 RootCA,O=Nuvoton Technology Corporation,C=TW
 # Serial Number: 2 (0x2)
 # Subject: CN=NPCTxxx ECC521 RootCA,O=Nuvoton Technology Corporation,C=TW
-# Not Valid Before: Thu Apr 27 16:36:58 2023
-# Not Valid After : Sun Apr 27 16:36:58 2053
+# Not Valid Before: Wed Apr 03 16:36:58 2023
+# Not Valid After : Mon May 07 16:36:58 2053
 # Fingerprint (SHA-256): 08:3E:7B:D1:3E:8F:E0:BB:9B:0C:64:DB:9E:0C:83:56:68:1D:F6:57:14:D2:D5:C4:92:5E:B9:8A:E1:36:9D:40
 # Fingerprint (SHA1): 7C:7B:3C:8A:46:5E:67:D2:8F:4D:B0:F3:5C:E1:20:C4:BB:4A:AC:CC
 -----BEGIN CERTIFICATE-----

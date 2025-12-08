@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/github"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/testutil"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/cosign"
@@ -19,12 +20,12 @@ func contains(s, substr string) bool {
 }
 
 // testPolicyConfig returns a valid policy.Config for testing purposes.
-func testPolicyConfig() policy.Config {
+func testPolicyConfig(metadata *bundle.Metadata) policy.Config {
 	return policy.Config{
 		SourceRepo:    &github.SourceRepo,
 		OIDCIssuer:    "https://token.actions.githubusercontent.com",
 		BuildWorkflow: github.ReleaseBundleWorkflowPath,
-		Tag:           "2025-12-03",
+		Tag:           metadata.Date,
 	}
 }
 
@@ -33,24 +34,29 @@ func TestCosignVerification(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
+	checksumData, err := testutil.ReadTestFile(testutil.ChecksumFile)
+	if err != nil {
+		t.Fatalf("Failed to read checksum file: %v", err)
+	}
+	signatureData, err := testutil.ReadTestFile(testutil.ChecksumSigstoreFile)
+	if err != nil {
+		t.Fatalf("Failed to read signature file: %v", err)
+	}
+	bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
+	if err != nil {
+		t.Fatalf("Failed to read bundle file: %v", err)
+	}
+
+	metadata, err := bundle.ParseMetadata(bundleData)
+	if err != nil {
+		t.Fatalf("Failed to parse bundle metadata: %v", err)
+	}
+
 	ctx := context.Background()
-	cfg := testPolicyConfig()
+	cfg := testPolicyConfig(metadata)
 
 	t.Run("VerifyValidSignature", func(t *testing.T) {
-		checksumData, err := testutil.ReadTestFile(testutil.ChecksumFile)
-		if err != nil {
-			t.Fatalf("Failed to read checksum file: %v", err)
-		}
-		signatureData, err := testutil.ReadTestFile(testutil.ChecksumSigstoreFile)
-		if err != nil {
-			t.Fatalf("Failed to read signature file: %v", err)
-		}
-		bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
-		if err != nil {
-			t.Fatalf("Failed to read bundle file: %v", err)
-		}
-
-		result, err := cosign.VerifyChecksum(ctx, cfg, checksumData, signatureData, bundleData, "tpm-ca-certificates.pem")
+		result, err := cosign.VerifyChecksum(ctx, cfg, checksumData, signatureData, bundleData, testutil.BundleFile)
 		if err != nil {
 			t.Fatalf("Expected successful verification, got error: %v", err)
 		}
@@ -60,20 +66,11 @@ func TestCosignVerification(t *testing.T) {
 	})
 
 	t.Run("VerifyInvalidChecksum", func(t *testing.T) {
-		checksumData, err := testutil.ReadTestFile(testutil.ChecksumFile)
-		if err != nil {
-			t.Fatalf("Failed to read checksum file: %v", err)
-		}
-		signatureData, err := testutil.ReadTestFile(testutil.ChecksumSigstoreFile)
-		if err != nil {
-			t.Fatalf("Failed to read signature file: %v", err)
-		}
-
 		// Create invalid bundle data
 		invalidData := []byte("invalid content\n")
 
 		// Verification should fail because checksum doesn't match
-		_, err = cosign.VerifyChecksum(ctx, cfg, checksumData, signatureData, invalidData, "tpm-ca-certificates.pem")
+		_, err = cosign.VerifyChecksum(ctx, cfg, checksumData, signatureData, invalidData, testutil.BundleFile)
 		if err == nil {
 			t.Fatal("Expected verification to fail with invalid checksum, but it succeeded")
 		}
@@ -83,19 +80,10 @@ func TestCosignVerification(t *testing.T) {
 	})
 
 	t.Run("VerifyInvalidSignatureData", func(t *testing.T) {
-		checksumData, err := testutil.ReadTestFile(testutil.ChecksumFile)
-		if err != nil {
-			t.Fatalf("Failed to read checksum file: %v", err)
-		}
-		bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
-		if err != nil {
-			t.Fatalf("Failed to read bundle file: %v", err)
-		}
-
 		// Use invalid signature data
 		invalidSignature := []byte("invalid json")
 
-		_, err = cosign.VerifyChecksum(ctx, cfg, checksumData, invalidSignature, bundleData, "tpm-ca-certificates.pem")
+		_, err = cosign.VerifyChecksum(ctx, cfg, checksumData, invalidSignature, bundleData, testutil.BundleFile)
 		if err == nil {
 			t.Fatal("Expected verification to fail with invalid signature data, but it succeeded")
 		}
@@ -202,7 +190,7 @@ func TestValidateChecksum(t *testing.T) {
 			t.Fatalf("Failed to read bundle file: %v", err)
 		}
 
-		err = cosign.ValidateChecksum(checksumData, bundleData, "tpm-ca-certificates.pem")
+		err = cosign.ValidateChecksum(checksumData, bundleData, testutil.BundleFile)
 		if err != nil {
 			t.Errorf("Expected checksum validation to succeed, got error: %v", err)
 		}
@@ -217,7 +205,7 @@ func TestValidateChecksum(t *testing.T) {
 		// Use invalid artifact data
 		invalidData := []byte("wrong content\n")
 
-		err = cosign.ValidateChecksum(checksumData, invalidData, "tpm-ca-certificates.pem")
+		err = cosign.ValidateChecksum(checksumData, invalidData, testutil.BundleFile)
 		if err == nil {
 			t.Fatal("Expected checksum validation to fail")
 		}

@@ -13,14 +13,14 @@ import (
 var testRepo = github.SourceRepo
 
 const (
-	testTag      = "2025-12-03"
-	testCommit   = "7422b99b8b097ba8d80b4b7d3f27c13b78e35a7f"
+	testTag      = "2025-12-05"
+	testCommit   = "1e869770ff7c125a45735f30a959df2bb3e7b465"
 	testWorkflow = github.ReleaseBundleWorkflowPath
 
 	// Expected digest for the test bundle
 	// This is the actual digest of tpm-ca-certificates.pem from the 2025-12-03 release
 	// (includes the metadata header with Date and Commit)
-	expectedDigest = "sha256:604f64f1e807646b979f4c23f9a0be9da98d2f76132d54254cb79c4b4b4e4046"
+	expectedDigest = "sha256:f5c7f9e9c59d65f1a889b1cdc712a3ea674df84bd8dc15081165b41ac2496ed2"
 )
 
 // TestVerifyIntegration validates the complete verification workflow
