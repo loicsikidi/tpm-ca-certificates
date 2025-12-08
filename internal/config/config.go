@@ -43,6 +43,15 @@ func (c *TPMRootsConfig) CheckAndSetDefault() error {
 	return nil
 }
 
+// TotalCertificates returns the total number of certificates defined across all vendors.
+func (c *TPMRootsConfig) TotalCertificates() int {
+	total := 0
+	for _, vendor := range c.Vendors {
+		total += len(vendor.Certificates)
+	}
+	return total
+}
+
 // Vendor represents a TPM vendor with their certificates.
 type Vendor struct {
 	ID           string        `yaml:"id"`

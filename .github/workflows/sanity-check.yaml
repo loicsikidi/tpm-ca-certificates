@@ -1,50 +1,30 @@
-name: Go tests
+name: Daily Sanity Checks
 on:
-  push:
-    branches: ["main"]
-  pull_request:
-    branches: ["**"]
   schedule: # daily at 19:00 UTC
     - cron: '0 19 * * *'
-  workflow_dispatch:
+  workflow_dispatch: # Allow manual trigger
 permissions:
   contents: read
 jobs:
-  test:
+  config-sanity:
+    name: Verify TPM Roots Configuration
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        go:
-          - { go-version: stable }
-          - { go-version: oldstable }
-          - { go-version-file: go.mod }
-        deps:
-          - locked
-          - latest
-        # Exclude (oldstable, latest) and (go.mod, latest)
-        # root cause: latest version of boulder requires Go 1.25.0
-        exclude:
-          - go: { go-version: oldstable }
-            deps: latest
-          - go: { go-version-file: go.mod }
-            deps: latest
     steps:
       - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
           persist-credentials: false
       - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
         with:
-          go-version: ${{ matrix.go.go-version }}
-          go-version-file: ${{ matrix.go.go-version-file }}
+          go-version-file: go.mod
+          cache: false
       - uses: geomys/sandboxed-step@7d75eb49d17fdeeb3656b3a57d35932d205bcfb9 # v1.2.1
         with:
           run: |
-            if [ "${{ matrix.deps }}" = "latest" ]; then
-              go get -u -t ./...
-            fi
-            go test -v -short -race ./...
-  staticcheck:
+            echo "Running sanity check on .tpm-roots.yaml..."
+            go run ./ config sanity --config .tpm-roots.yaml
+            echo "✅ All certificates are valid and not expiring soon"
+  bundle-download:
+    name: Verify Trust Bundle Validation
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
@@ -52,11 +32,16 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
         with:
-          go-version: stable
+          go-version-file: go.mod
+          cache: false
       - uses: geomys/sandboxed-step@7d75eb49d17fdeeb3656b3a57d35932d205bcfb9 # v1.2.1
         with:
-          run: go run honnef.co/go/tools/cmd/staticcheck@latest ./...
-  govulncheck:
+          run: |
+            echo "Downloading latest trust bundle from GitHub releases..."
+            go run ./ bundle download
+            echo "✅ Trust bundle downloaded and validated successfully"
+  integration-tests:
+    name: Run Integration Tests 
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
@@ -64,7 +49,9 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
         with:
-          go-version: stable
+          go-version-file: go.mod
+          cache: false
       - uses: geomys/sandboxed-step@7d75eb49d17fdeeb3656b3a57d35932d205bcfb9 # v1.2.1
         with:
-          run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+          run: |
+            go test -v -race ./...

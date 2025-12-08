@@ -100,7 +100,7 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 
 	if skipVerify {
-		cli.DisplayWarning("⚠️ Verification skipped (--skip-verify)")
+		cli.DisplayWarning("⚠️  Verification skipped (--skip-verify)")
 	} else {
 		cli.DisplaySuccess("✅ Bundle verified")
 	}

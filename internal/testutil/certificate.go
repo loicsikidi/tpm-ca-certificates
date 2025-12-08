@@ -15,6 +15,25 @@ import (
 
 func GenerateTestCertDER(t *testing.T) ([]byte, string) {
 	t.Helper()
+	return generateTestCertWithExpiry(t, time.Now().Add(365*24*time.Hour))
+}
+
+// GenerateTestCertExpiringSoon generates a test certificate that expires in the specified number of days.
+func GenerateTestCertExpiringSoon(t *testing.T, daysUntilExpiry int) ([]byte, string) {
+	t.Helper()
+	expiryDate := time.Now().Add(time.Duration(daysUntilExpiry) * 24 * time.Hour)
+	return generateTestCertWithExpiry(t, expiryDate)
+}
+
+// GenerateTestCertExpired generates a test certificate that has already expired.
+func GenerateTestCertExpired(t *testing.T) ([]byte, string) {
+	t.Helper()
+	expiryDate := time.Now().Add(-10 * 24 * time.Hour)
+	return generateTestCertWithExpiry(t, expiryDate)
+}
+
+func generateTestCertWithExpiry(t *testing.T, notAfter time.Time) ([]byte, string) {
+	t.Helper()
 
 	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
@@ -26,8 +45,8 @@ func GenerateTestCertDER(t *testing.T) ([]byte, string) {
 		Subject: pkix.Name{
 			Organization: []string{"Test Org"},
 		},
-		NotBefore:             time.Now(),
-		NotAfter:              time.Now().Add(365 * 24 * time.Hour),
+		NotBefore:             time.Now().Add(-24 * time.Hour),
+		NotAfter:              notAfter,
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,

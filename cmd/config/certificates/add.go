@@ -170,7 +170,7 @@ func RunAdd(opts *AddOptions) error {
 
 	// Warn if multiple URLs provided with -n flag
 	if len(urls) > 1 && opts.Name != "" {
-		cli.DisplayWarning("⚠️ Multiple URLs provided, ignoring -n flag (names will be deduced from certificate CN)")
+		cli.DisplayWarning("⚠️  Multiple URLs provided, ignoring -n flag (names will be deduced from certificate CN)")
 	}
 
 	// Determine worker count
@@ -213,7 +213,7 @@ func RunAdd(opts *AddOptions) error {
 				continue
 			}
 			if len(urls) == 1 {
-				cli.DisplayWarning("⚠️ No name provided, using certificate CN: %s", certName)
+				cli.DisplayWarning("⚠️  No name provided, using certificate CN: %s", certName)
 			}
 		}
 
@@ -360,7 +360,7 @@ func downloadCertificatesParallel(urls []string, fingerprints []string, hashAlgo
 
 			// Show warning only for single URL (not cluttering output for multi-URL)
 			if len(urls) == 1 {
-				cli.DisplayWarning("⚠️ No fingerprint provided, calculating %s fingerprint automatically", strings.ToUpper(hashAlgo))
+				cli.DisplayWarning("⚠️  No fingerprint provided, calculating %s fingerprint automatically", strings.ToUpper(hashAlgo))
 			}
 		}
 		result.fingerprint = fpValidation
