@@ -75,7 +75,7 @@ jobs:
             if ! go run ./ bundle generate \
               --config .tpm-roots.yaml \
               --output test-bundle.pem \
-              --date 0000-00-00 \
+              --date 1970-01-01 \
               --commit 0000000000000000000000000000000000000000; then
               echo "bundle generate command failed ⛔"
               exit 1
