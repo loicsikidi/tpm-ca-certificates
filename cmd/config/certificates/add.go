@@ -17,6 +17,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	sha1   = "sha1"
+	sha256 = "sha256"
+	sha384 = "sha384"
+	sha512 = "sha512"
+)
+
 // AddOptions holds options for the add command.
 type AddOptions struct {
 	ConfigPath    string
@@ -91,22 +98,58 @@ type certDownloadResult struct {
 
 // RunAdd executes the add command with the given options.
 func RunAdd(opts *AddOptions) error {
-	if err := vendors.ValidateVendorID(opts.VendorID); err != nil {
+	hashAlgo, urls, fingerprints, err := validateAndPrepareInputs(opts)
+	if err != nil {
 		return err
 	}
 
+	cfg, vendorIdx, err := loadConfigAndFindVendor(opts.ConfigPath, opts.VendorID)
+	if err != nil {
+		return err
+	}
+
+	workers := opts.Concurrency
+	if workers == 0 {
+		workers = concurrency.DetectCPUCount()
+	}
+	results := downloadCertificatesParallel(urls, fingerprints, hashAlgo, workers)
+
+	successfulCerts, failures := processDownloadResults(results, cfg.Vendors[vendorIdx].Certificates, opts.Name, hashAlgo, len(urls))
+
+	if len(successfulCerts) > 0 {
+		for _, cert := range successfulCerts {
+			cfg.Vendors[vendorIdx].Certificates = InsertCertificateAlphabetically(
+				cfg.Vendors[vendorIdx].Certificates,
+				cert,
+			)
+		}
+
+		if err := saveAndFormatConfig(opts.ConfigPath, cfg); err != nil {
+			return err
+		}
+	}
+
+	return displayResults(successfulCerts, failures, len(urls), opts.VendorID)
+}
+
+// validateAndPrepareInputs validates options and prepares URLs and fingerprints.
+func validateAndPrepareInputs(opts *AddOptions) (hashAlgo string, urls, fingerprints []string, err error) {
+	if err := vendors.ValidateVendorID(opts.VendorID); err != nil {
+		return "", nil, nil, err
+	}
+
 	if opts.Concurrency > concurrency.MaxWorkers {
-		return fmt.Errorf("concurrency value %d exceeds maximum allowed (%d)", opts.Concurrency, concurrency.MaxWorkers)
+		return "", nil, nil, fmt.Errorf("concurrency value %d exceeds maximum allowed (%d)", opts.Concurrency, concurrency.MaxWorkers)
 	}
 
-	hashAlgo := strings.ToLower(opts.HashAlgorithm)
-	validAlgos := []string{"sha1", "sha256", "sha384", "sha512"}
+	hashAlgo = strings.ToLower(opts.HashAlgorithm)
+	validAlgos := []string{sha1, sha256, sha384, sha512}
 	if !slices.Contains(validAlgos, hashAlgo) {
-		return fmt.Errorf("invalid hash algorithm '%s', must be one of: %s", opts.HashAlgorithm, strings.Join(validAlgos, ", "))
+		return "", nil, nil, fmt.Errorf("invalid hash algorithm '%s', must be one of: %s", opts.HashAlgorithm, strings.Join(validAlgos, ", "))
 	}
 
+	// Parse and validate fingerprints if provided
 	if opts.Fingerprint != "" {
-		// Parse all fingerprints and check they match the specified algorithm
 		fpRaw := strings.SplitSeq(opts.Fingerprint, ",")
 		for fp := range fpRaw {
 			trimmed := strings.TrimSpace(fp)
@@ -115,34 +158,18 @@ func RunAdd(opts *AddOptions) error {
 			}
 			alg, _, err := ParseFingerprint(trimmed)
 			if err != nil {
-				return fmt.Errorf("invalid fingerprint format: %w", err)
+				return "", nil, nil, fmt.Errorf("invalid fingerprint format: %w", err)
 			}
 			if strings.ToLower(alg) != hashAlgo {
-				return fmt.Errorf("fingerprint algorithm '%s' does not match specified hash algorithm '%s'", alg, hashAlgo)
+				return "", nil, nil, fmt.Errorf("fingerprint algorithm '%s' does not match specified hash algorithm '%s'", alg, hashAlgo)
 			}
+			fingerprints = append(fingerprints, trimmed)
 		}
 	}
 
-	cfg, err := config.LoadConfig(opts.ConfigPath)
-	if err != nil {
-		return fmt.Errorf("failed to load config: %w", err)
-	}
-
-	vendorIdx := -1
-	for i, v := range cfg.Vendors {
-		if v.ID == opts.VendorID {
-			vendorIdx = i
-			break
-		}
-	}
-	if vendorIdx == -1 {
-		return fmt.Errorf("vendor with ID '%s' not found", opts.VendorID)
-	}
-
-	// Parse URLs (trim whitespace)
-	urlsRaw := strings.Split(opts.URL, ",")
-	urls := make([]string, 0, len(urlsRaw))
-	for _, u := range urlsRaw {
+	// Parse URLs
+	urlsRaw := strings.SplitSeq(opts.URL, ",")
+	for u := range urlsRaw {
 		trimmed := strings.TrimSpace(u)
 		if trimmed != "" {
 			urls = append(urls, trimmed)
@@ -150,22 +177,11 @@ func RunAdd(opts *AddOptions) error {
 	}
 
 	if len(urls) == 0 {
-		return fmt.Errorf("no valid URLs provided")
+		return "", nil, nil, fmt.Errorf("no valid URLs provided")
 	}
 
-	var fingerprints []string
-	if opts.Fingerprint != "" {
-		fpRaw := strings.Split(opts.Fingerprint, ",")
-		for _, fp := range fpRaw {
-			trimmed := strings.TrimSpace(fp)
-			if trimmed != "" {
-				fingerprints = append(fingerprints, trimmed)
-			}
-		}
-
-		if len(fingerprints) != len(urls) {
-			return fmt.Errorf("number of fingerprints (%d) doesn't match number of URLs (%d)", len(fingerprints), len(urls))
-		}
+	if len(fingerprints) > 0 && len(fingerprints) != len(urls) {
+		return "", nil, nil, fmt.Errorf("number of fingerprints (%d) doesn't match number of URLs (%d)", len(fingerprints), len(urls))
 	}
 
 	// Warn if multiple URLs provided with -n flag
@@ -173,114 +189,110 @@ func RunAdd(opts *AddOptions) error {
 		cli.DisplayWarning("⚠️  Multiple URLs provided, ignoring -n flag (names will be deduced from certificate CN)")
 	}
 
-	// Determine worker count
-	workers := opts.Concurrency
-	if workers == 0 {
-		workers = concurrency.DetectCPUCount()
+	return hashAlgo, urls, fingerprints, nil
+}
+
+// loadConfigAndFindVendor loads the configuration and finds the vendor index.
+func loadConfigAndFindVendor(configPath, vendorID string) (*config.TPMRootsConfig, int, error) {
+	cfg, err := config.LoadConfig(configPath)
+	if err != nil {
+		return nil, -1, fmt.Errorf("failed to load config: %w", err)
 	}
 
-	// Download certificates in parallel (works for single URL too)
-	results := downloadCertificatesParallel(urls, fingerprints, hashAlgo, workers)
+	vendorIdx := -1
+	for i, v := range cfg.Vendors {
+		if v.ID == vendorID {
+			vendorIdx = i
+			break
+		}
+	}
+	if vendorIdx == -1 {
+		return nil, -1, fmt.Errorf("vendor with ID '%s' not found", vendorID)
+	}
 
-	// Process results
-	var successCount, failCount int
+	return cfg, vendorIdx, nil
+}
+
+type downloadFailure struct {
+	url string
+	err error
+}
+
+// processDownloadResults processes download results and creates certificate entries.
+func processDownloadResults(results []certDownloadResult, existingCerts []config.Certificate, providedName, hashAlgo string, urlCount int) ([]config.Certificate, []downloadFailure) {
 	var successfulCerts []config.Certificate
-	var failures []struct {
-		url string
-		err error
-	}
+	var failures []downloadFailure
 
 	for _, result := range results {
 		if result.err != nil {
-			failCount++
-			failures = append(failures, struct {
-				url string
-				err error
-			}{result.url, result.err})
+			failures = append(failures, downloadFailure{result.url, result.err})
 			continue
 		}
 
 		// Determine certificate name
-		certName := opts.Name
+		certName := providedName
 		if certName == "" {
 			certName = extractCertificateName(result.cert)
 			if certName == "" {
-				failCount++
-				failures = append(failures, struct {
-					url string
-					err error
-				}{result.url, fmt.Errorf("certificate CN is empty, please provide a name with -n flag")})
+				failures = append(failures, downloadFailure{result.url, fmt.Errorf("certificate CN is empty, please provide a name with -n flag")})
 				continue
 			}
-			if len(urls) == 1 {
+			if urlCount == 1 {
 				cli.DisplayWarning("⚠️  No name provided, using certificate CN: %s", certName)
 			}
 		}
 
-		// Check if certificate already exists (by URL)
-		if certificateExists(cfg.Vendors[vendorIdx].Certificates, result.url) {
-			failCount++
-			failures = append(failures, struct {
-				url string
-				err error
-			}{result.url, fmt.Errorf("certificate already exists")})
+		if err := certificateExists(existingCerts, result, hashAlgo); err != nil {
+			failures = append(failures, downloadFailure{result.url, err})
 			continue
 		}
 
-		// Create certificate entry with fingerprint in appropriate field
-		var fingerprintValidation config.Fingerprint
-		switch hashAlgo {
-		case "sha1":
-			fingerprintValidation.SHA1 = result.fingerprint
-		case "sha256":
-			fingerprintValidation.SHA256 = result.fingerprint
-		case "sha384":
-			fingerprintValidation.SHA384 = result.fingerprint
-		case "sha512":
-			fingerprintValidation.SHA512 = result.fingerprint
-		}
-
+		fingerprintValidation := config.NewFingerprint(hashAlgo, result.fingerprint)
 		newCert := config.Certificate{
 			Name: certName,
 			URL:  result.url,
 			Validation: config.Validation{
-				Fingerprint: fingerprintValidation,
+				Fingerprint: *fingerprintValidation,
 			},
 		}
 
 		successfulCerts = append(successfulCerts, newCert)
-		successCount++
 	}
 
-	// Add successful certificates to config
-	for _, cert := range successfulCerts {
-		cfg.Vendors[vendorIdx].Certificates = InsertCertificateAlphabetically(
-			cfg.Vendors[vendorIdx].Certificates,
-			cert,
-		)
+	return successfulCerts, failures
+}
+
+// saveAndFormatConfig saves and formats the configuration file.
+func saveAndFormatConfig(configPath string, cfg *config.TPMRootsConfig) error {
+	if err := config.SaveConfig(configPath, cfg); err != nil {
+		return fmt.Errorf("failed to save configuration: %w", err)
 	}
 
-	// Save and format configuration if at least one certificate was added
-	if successCount > 0 {
-		if err := config.SaveConfig(opts.ConfigPath, cfg); err != nil {
-			return fmt.Errorf("failed to save configuration: %w", err)
-		}
-
-		formatter := format.NewFormatter()
-		if err := formatter.FormatFile(opts.ConfigPath, opts.ConfigPath); err != nil {
-			return fmt.Errorf("failed to format configuration: %w", err)
-		}
+	formatter := format.NewFormatter()
+	if err := formatter.FormatFile(configPath, configPath); err != nil {
+		return fmt.Errorf("failed to format configuration: %w", err)
 	}
 
-	// Print results
-	if len(urls) == 1 {
+	return nil
+}
+
+// displayResults displays the results of the add operation.
+func displayResults(successfulCerts []config.Certificate, failures []downloadFailure, totalURLs int, vendorID string) error {
+	successCount := len(successfulCerts)
+	failCount := len(failures)
+
+	if totalURLs == 1 {
 		// Single URL: simple output
 		if successCount > 0 {
-			cli.DisplaySuccess("✅ Certificate '%s' added successfully to vendor '%s'", successfulCerts[0].Name, opts.VendorID)
+			cli.DisplaySuccess("✅ Certificate '%s' added successfully to vendor '%s'", successfulCerts[0].Name, vendorID)
+			return nil
+		}
+		if failCount > 0 {
+			cli.DisplayError("❌ Failed to add certificate: %v", failures[0].err)
 		}
 	} else {
 		// Multiple URLs: detailed output
-		cli.DisplaySuccess("✅ %d/%d certificates added successfully to vendor '%s'", successCount, len(urls), opts.VendorID)
+		cli.DisplaySuccess("✅ %d/%d certificates added successfully to vendor '%s'", successCount, totalURLs, vendorID)
 
 		if successCount > 0 {
 			fmt.Printf("\nSuccessfully added:\n")
@@ -351,12 +363,7 @@ func downloadCertificatesParallel(urls []string, fingerprints []string, hashAlgo
 			fpValidation = hash
 		} else {
 			// Calculate fingerprint using specified algorithm
-			hashStr, err := CalculateFingerprint(cert.Raw, hashAlgo)
-			if err != nil {
-				result.err = fmt.Errorf("failed to calculate fingerprint: %w", err)
-				return result
-			}
-			fpValidation = hashStr
+			fpValidation = CalculateFingerprint(cert.Raw, hashAlgo)
 
 			// Show warning only for single URL (not cluttering output for multi-URL)
 			if len(urls) == 1 {
@@ -374,14 +381,61 @@ func extractCertificateName(cert *x509.Certificate) string {
 	return strings.TrimSpace(cert.Subject.CommonName)
 }
 
-// certificateExists checks if a certificate with the given URL already exists in the list.
-func certificateExists(certs []config.Certificate, url string) bool {
+// certificateExists checks if a certificate already exists in in the config
+//
+// Checks:
+//   - by URL
+//   - by fingerprint
+func certificateExists(certs []config.Certificate, result certDownloadResult, hashAlgo string) error {
+	if err := checkCertificateURL(certs, result.url); err != nil {
+		return err
+	}
+	return checkCertificateFingerprint(certs, result, hashAlgo)
+}
+
+func checkCertificateURL(certs []config.Certificate, url string) error {
 	for _, cert := range certs {
 		if cert.URL == url {
-			return true
+			return fmt.Errorf("certificate already exists (duplicate URL)")
 		}
 	}
-	return false
+	return nil
+}
+
+func checkCertificateFingerprint(certs []config.Certificate, result certDownloadResult, hashAlgo string) error {
+	for _, cert := range certs {
+		fp := result.fingerprint
+		targetHashAlg, targetFP := getFingerprint(cert)
+		if targetHashAlg != hashAlgo {
+			fp = CalculateFingerprint(result.cert.Raw, targetHashAlg)
+		}
+		if strings.EqualFold(fp, targetFP) {
+			return fmt.Errorf("certificate already exists (duplicate fingerprint, matches '%s')", cert.Name)
+		}
+	}
+	return nil
+}
+
+// getFingerprint retrieves the fingerprint and its hash algorithm from a certificate.
+func getFingerprint(cert config.Certificate) (string, string) {
+	var hash, fp string
+	switch {
+	case cert.Validation.Fingerprint.SHA1 != "":
+		hash = sha1
+		fp = cert.Validation.Fingerprint.SHA1
+	case cert.Validation.Fingerprint.SHA384 != "":
+		hash = sha384
+		fp = cert.Validation.Fingerprint.SHA384
+	case cert.Validation.Fingerprint.SHA512 != "":
+		hash = sha512
+		fp = cert.Validation.Fingerprint.SHA512
+	case cert.Validation.Fingerprint.SHA256 != "":
+		fallthrough
+	default:
+		hash = sha256
+		fp = cert.Validation.Fingerprint.SHA256
+	}
+	return hash, fp
 }
 
 // ParseFingerprint parses a fingerprint string in format "HASH_ALG:HASH".
@@ -396,7 +450,7 @@ func ParseFingerprint(fp string) (string, string, error) {
 
 	// Validate algorithm
 	validAlgs := map[string]bool{
-		"sha1": true, "sha256": true, "sha384": true, "sha512": true,
+		sha1: true, sha256: true, sha384: true, sha512: true,
 	}
 	if !validAlgs[alg] {
 		return "", "", fmt.Errorf("unsupported hash algorithm '%s', must be one of: sha1, sha256, sha384, sha512", parts[0])
@@ -419,50 +473,32 @@ func formatFingerprint(hexStr string) string {
 
 // verifyFingerprint checks if the provided fingerprint matches the certificate.
 func verifyFingerprint(cert *x509.Certificate, alg, expectedHash string) error {
-	var actualHash string
-
-	switch strings.ToLower(alg) {
-	case "sha1":
-		hash := digest.Sha1Hash(cert.Raw)
-		actualHash = strings.ToUpper(formatFingerprint(hex.EncodeToString(hash)))
-	case "sha256":
-		hash := digest.Sha256Hash(cert.Raw)
-		actualHash = strings.ToUpper(formatFingerprint(hex.EncodeToString(hash)))
-	case "sha384":
-		hash := digest.Sha384Hash(cert.Raw)
-		actualHash = strings.ToUpper(formatFingerprint(hex.EncodeToString(hash)))
-	case "sha512":
-		hash := digest.Sha512Hash(cert.Raw)
-		actualHash = strings.ToUpper(formatFingerprint(hex.EncodeToString(hash)))
-	default:
-		return fmt.Errorf("unsupported hash algorithm: %s", alg)
-	}
-
+	actualHash := CalculateFingerprint(cert.Raw, alg)
 	if actualHash != strings.ToUpper(expectedHash) {
 		return fmt.Errorf("fingerprint mismatch: expected %s, got %s", expectedHash, actualHash)
 	}
-
 	return nil
 }
 
 // CalculateFingerprint calculates the fingerprint of data using the specified hash algorithm.
-func CalculateFingerprint(data []byte, algorithm string) (string, error) {
+func CalculateFingerprint(data []byte, algorithm string) string {
 	var hashBytes []byte
 
 	switch strings.ToLower(algorithm) {
-	case "sha1":
+	case sha1:
 		hashBytes = digest.Sha1Hash(data)
-	case "sha256":
+	case sha256:
 		hashBytes = digest.Sha256Hash(data)
-	case "sha384":
+	case sha384:
 		hashBytes = digest.Sha384Hash(data)
-	case "sha512":
+	case sha512:
 		hashBytes = digest.Sha512Hash(data)
 	default:
-		return "", fmt.Errorf("unsupported hash algorithm: %s", algorithm)
+		// This should not happen due to prior validation
+		panic("unsupported hash algorithm: " + algorithm)
 	}
 
-	return strings.ToUpper(formatFingerprint(hex.EncodeToString(hashBytes))), nil
+	return strings.ToUpper(formatFingerprint(hex.EncodeToString(hashBytes)))
 }
 
 // InsertCertificateAlphabetically inserts a certificate in alphabetical order by name.
