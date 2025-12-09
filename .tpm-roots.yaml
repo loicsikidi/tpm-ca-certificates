@@ -9,6 +9,36 @@ vendors:
           validation:
             fingerprint:
                 sha256: "CF:EB:02:FE:CD:55:AD:7A:73:C6:E1:D1:19:85:D4:C4:7D:EE:24:8A:B6:3D:CB:66:09:1A:24:89:66:04:43:C3"
+        - name: "Infineon OPTIGA(TM) ECC Root CA 2"
+          url: "https://pki.infineon.com/OptigaEccRootCA2/OptigaEccRootCA2.crt"
+          validation:
+            fingerprint:
+                sha256: "EE:0C:82:75:55:C4:E9:01:20:37:DF:42:57:BB:8A:AA:26:08:4A:17:B1:3E:DE:41:CD:78:95:C8:D6:C1:11:90"
+        - name: "Infineon OPTIGA(TM) ECC Root CA 3"
+          url: "https://pki.infineon.com/OptigaEccRootCA3/OptigaEccRootCA3.crt"
+          validation:
+            fingerprint:
+                sha256: "5A:84:CC:34:76:22:1C:CE:5B:E8:1A:F8:D7:55:D1:75:FE:A0:3D:20:8B:34:12:A2:31:71:0C:56:77:45:42:FD"
+        - name: "Infineon OPTIGA(TM) RSA Root CA"
+          url: "https://pki.infineon.com/OptigaRsaRootCA/OptigaRsaRootCA.crt"
+          validation:
+            fingerprint:
+                sha256: "89:9E:35:47:4C:98:07:EB:4C:7F:2F:7A:12:DA:00:28:FB:25:0C:D0:21:54:D0:00:9F:CA:7D:9C:66:57:4F:3B"
+        - name: "Infineon OPTIGA(TM) RSA Root CA 2"
+          url: "https://pki.infineon.com/OptigaRsaRootCA2/OptigaRsaRootCA2.crt"
+          validation:
+            fingerprint:
+                sha256: "B4:13:C7:15:80:AF:3E:C5:EF:E8:3F:AD:31:DB:2D:4A:F4:61:23:55:E3:B0:1E:50:90:3B:10:76:3D:73:88:94"
+        - name: "Infineon OPTIGA(TM) RSA Root CA 3"
+          url: "https://pki.infineon.com/OptigaRsaRootCA3/OptigaRsaRootCA3.crt"
+          validation:
+            fingerprint:
+                sha256: "97:6B:05:79:C0:16:74:1B:00:03:BF:80:55:E9:20:AB:08:F7:2A:BC:81:95:47:B3:48:0B:0C:14:1E:95:6B:70"
+        - name: "Infineon OPTIGA(TM) RSA Root CA 3"
+          url: "https://pki.infineon.com/OptigaRsaRootCA3/OptigaRsaRootCA3.crt"
+          validation:
+            fingerprint:
+                sha256: "97:6B:05:79:C0:16:74:1B:00:03:BF:80:55:E9:20:AB:08:F7:2A:BC:81:95:47:B3:48:0B:0C:14:1E:95:6B:70"
     - id: "INTC"
       name: "Intel"
       certificates:
@@ -88,3 +118,8 @@ vendors:
           validation:
             fingerprint:
                 sha256: "FD:1E:7B:68:AC:CD:82:56:36:B2:7B:31:77:C6:74:02:D4:63:A7:F0:4C:97:B6:C4:7A:B7:05:FC:DC:1A:04:F6"
+        - name: "STSAFE RSA Root CA 02"
+          url: "https://sw-center.st.com/STSAFE/STSAFERsaRootCA02.crt"
+          validation:
+            fingerprint:
+                sha256: "C8:F1:79:94:33:56:E1:3D:9D:84:B1:00:20:1C:EF:AB:BF:40:88:80:24:1E:53:29:E6:0D:95:0C:E1:DE:A6:23"
