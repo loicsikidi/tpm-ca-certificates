@@ -3,7 +3,6 @@ package generate
 import (
 	"fmt"
 	"os"
-	"regexp"
 
 	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/concurrency"
@@ -77,10 +76,10 @@ func run(cmd *cobra.Command, args []string) error {
 	var bundleDate, bundleCommit string
 
 	if date != "" && commit != "" {
-		if err := validateDate(date); err != nil {
+		if err := bundle.ValidateDate(date); err != nil {
 			return fmt.Errorf("invalid --date flag: %w", err)
 		}
-		if err := validateCommit(commit); err != nil {
+		if err := bundle.ValidateCommit(commit); err != nil {
 			return fmt.Errorf("invalid --commit flag: %w", err)
 		}
 		bundleDate = date
@@ -123,30 +122,12 @@ func resolveGitMetadata() (string, string, error) {
 	if info.Tag == "" {
 		return "", "", fmt.Errorf("no git tag found for current commit (tag is required in YYYY-MM-DD format, or use --date and --commit flags)")
 	}
-	if err := validateDate(info.Tag); err != nil {
+	if err := bundle.ValidateDate(info.Tag); err != nil {
 		return "", "", fmt.Errorf("git tag %q is not in YYYY-MM-DD format (use --date and --commit flags to specify manually): %w", info.Tag, err)
 	}
-	if err := validateCommit(info.Commit); err != nil {
+	if err := bundle.ValidateCommit(info.Commit); err != nil {
 		return "", "", fmt.Errorf("git commit %q is not a valid commit hash (use --date and --commit flags to specify manually): %w", info.Commit, err)
 	}
 
 	return info.Tag, info.Commit, nil
-}
-
-// validateDate checks if the date is in YYYY-MM-DD format.
-func validateDate(d string) error {
-	dateRegex := regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
-	if !dateRegex.MatchString(d) {
-		return fmt.Errorf("date must be in YYYY-MM-DD format, got: %s", d)
-	}
-	return nil
-}
-
-// validateCommit checks if the commit is a valid 40-character hex string.
-func validateCommit(c string) error {
-	commitRegex := regexp.MustCompile(`^[0-9a-f]{40}$`)
-	if !commitRegex.MatchString(c) {
-		return fmt.Errorf("commit must be a 40-character hex string, got: %s", c)
-	}
-	return nil
 }

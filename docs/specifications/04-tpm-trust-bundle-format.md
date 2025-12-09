@@ -6,6 +6,7 @@
 |---------|------------|-------------|------------------|
 | alpha   | 2025-11-26 | Loïc Sikidi | Initial version  |
 | alpha   | 2025-12-08 | Loïc Sikidi | Clarify date format for validity dates (zero-padded day) |
+| alpha   | 2025-12-08 | Loïc Sikidi | Clarify "Not Valid After" field alignment formatting |
 
 ## Overview
 
@@ -123,6 +124,7 @@ Certificate metadata uses a single-hash (`#`) prefix:
 - No empty lines between metadata entries (except "Owner" header)
 - No empty line before the PEM certificate block
 - Keys use Title Case with spaces allowed (e.g., "Issued At", "Owner", "Not Valid Before")
+- The "Not Valid After" field uses " : " (space-colon-space) for visual alignment with "Not Valid Before"
 
 ### Common Metadata Fields
 
