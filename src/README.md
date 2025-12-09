@@ -13,7 +13,7 @@ This directory contains the evidence and documentation proving how the URLs for 
 
 ### Accessibility Score Legend
 
-The score indicates how easily the certificate information was found:
-- **A**: Easy to find (<15 minutes)
-- **B**: Required some effort (15-30 minutes)
-- **C**: Required significant effort (>1 hour)
+The score reflects the availability and quality of resources for finding certificates:
+- **A**: Comprehensive documentation available (PDF or centralized document with links to all root and intermediate certificates)
+- **B**: Partial documentation available (document centralizing some resources, but incomplete)
+- **C**: Scattered information (treasure hunt required, no centralized resource)
