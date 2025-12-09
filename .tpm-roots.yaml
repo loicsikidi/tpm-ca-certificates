@@ -88,3 +88,8 @@ vendors:
           validation:
             fingerprint:
                 sha256: "FD:1E:7B:68:AC:CD:82:56:36:B2:7B:31:77:C6:74:02:D4:63:A7:F0:4C:97:B6:C4:7A:B7:05:FC:DC:1A:04:F6"
+        - name: "STSAFE RSA Root CA 02"
+          url: "https://sw-center.st.com/STSAFE/STSAFERsaRootCA02.crt"
+          validation:
+            fingerprint:
+                sha256: "C8:F1:79:94:33:56:E1:3D:9D:84:B1:00:20:1C:EF:AB:BF:40:88:80:24:1E:53:29:E6:0D:95:0C:E1:DE:A6:23"

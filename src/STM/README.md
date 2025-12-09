@@ -9,6 +9,7 @@
 | STM TPM ECC Root CA 01 | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
 | STM TPM EK Root CA | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
 | STSAFE ECC Root CA 02 | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
+| STSAFE RSA Root CA 02 | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
 
 ## References
 
