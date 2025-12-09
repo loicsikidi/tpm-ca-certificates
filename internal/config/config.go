@@ -128,6 +128,22 @@ func (f *Fingerprint) CheckAndSetDefault() error {
 	return nil
 }
 
+// NewFingerprint creates a with given hash algorithm and value.
+func NewFingerprint(hashAlgo string, value string) *Fingerprint {
+	fp := &Fingerprint{}
+	switch hashAlgo {
+	case "sha1":
+		fp.SHA1 = value
+	case "sha256":
+		fp.SHA256 = value
+	case "sha384":
+		fp.SHA384 = value
+	case "sha512":
+		fp.SHA512 = value
+	}
+	return fp
+}
+
 // GetFingerprintValue returns the most secure fingerprint value and its corresponding hash algorithm.
 //
 // Priority order (most to least secure): SHA512, SHA384, SHA256, SHA1.
