@@ -2,12 +2,17 @@ package validate
 
 import (
 	"crypto/x509"
-	"encoding/hex"
 	"fmt"
 	"strings"
 
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/fingerprint"
 )
+
+// normalizeFingerprint removes colons and converts to uppercase for comparison.
+func normalizeFingerprint(fp string) string {
+	return strings.ToUpper(strings.ReplaceAll(fp, ":", ""))
+}
 
 // ValidateFingerprint validates a certificate against the most secure fingerprint available.
 //
@@ -24,61 +29,23 @@ import (
 //	    log.Fatal("Certificate validation failed:", err)
 //	}
 func ValidateFingerprint(cert *x509.Certificate, fp config.Fingerprint) error {
-	expectedFP, hashFunc := fp.GetFingerprintValue()
+	expectedFP, hashAlg := fp.GetFingerprintValue()
+	actualFP := fingerprint.New(cert.Raw, hashAlg)
 
-	expected, err := parseFingerprint(expectedFP)
-	if err != nil {
-		return fmt.Errorf("invalid fingerprint format: %w", err)
-	}
-
-	hashFunc.Write(cert.Raw)
-	actual := hashFunc.Sum(nil)
-
-	if !bytesEqual(actual, expected) {
-		return fmt.Errorf("fingerprint mismatch: expected %s, got %s",
-			formatFingerprint(expected), formatFingerprint(actual))
+	if normalizeFingerprint(expectedFP) != normalizeFingerprint(actualFP) {
+		return fmt.Errorf("fingerprint mismatch: expected %s, got %s", expectedFP, actualFP)
 	}
 
 	return nil
 }
 
-// parseFingerprint converts a fingerprint string to bytes.
-// Accepts both "AA:BB:CC:DD" and "AABBCCDD" formats.
-func parseFingerprint(fp string) ([]byte, error) {
-	cleaned := strings.ReplaceAll(fp, ":", "")
-	cleaned = strings.ReplaceAll(cleaned, " ", "")
-	cleaned = strings.ToLower(cleaned)
+// ValidateFingerprintWithAlgorithm validates a certificate against an expected fingerprint using a specified algorithm.
+func ValidateFingerprintWithAlgorithm(cert *x509.Certificate, expectedFP string, algorithm string) error {
+	actualFP := fingerprint.New(cert.Raw, algorithm)
 
-	decoded, err := hex.DecodeString(cleaned)
-	if err != nil {
-		return nil, fmt.Errorf("invalid hex string: %w", err)
+	if normalizeFingerprint(expectedFP) != normalizeFingerprint(actualFP) {
+		return fmt.Errorf("fingerprint mismatch: expected %s, got %s", expectedFP, actualFP)
 	}
 
-	return decoded, nil
-}
-
-// formatFingerprint formats bytes as a colon-separated hex string.
-func formatFingerprint(data []byte) string {
-	hex := fmt.Sprintf("%X", data)
-	var result strings.Builder
-	for i := 0; i < len(hex); i += 2 {
-		if i > 0 {
-			result.WriteString(":")
-		}
-		result.WriteString(hex[i : i+2])
-	}
-	return result.String()
-}
-
-// bytesEqual compares two byte slices for equality.
-func bytesEqual(a, b []byte) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
+	return nil
 }

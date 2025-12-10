@@ -2,9 +2,10 @@
 
 ## Document History
 
-| Version |    Date    |   Author    |   Description    |
-|---------|------------|-------------|------------------|
-| alpha   | 2025-11-26 | Loïc Sikidi | Initial version  |
+| Version |    Date    |   Author    |   Description                                 |
+|---------|------------|-------------|-----------------------------------------------|
+| alpha   | 2025-11-26 | Loïc Sikidi | Initial version                               |
+| alpha   | 2025-12-10 | Loïc Sikidi | Add duplicate validation rules                |
 
 The TPM Trust Bundle is generated from a human-readable YAML configuration file named `.tpm-roots.yaml`. This file defines the root certificates for various TPM vendors and must follow strict formatting and validation rules to ensure consistency and integrity.
 
@@ -101,6 +102,107 @@ vendors:
 
 > [!IMPORTANT]
 > The `validate` and `certificates add` commands will reject any vendor ID not present in the TCG registry.
+
+### 3. No Duplicate Vendor IDs
+
+Each vendor ID must appear only once in the configuration file.
+
+```yaml
+# ✓ Correct - each vendor ID appears once
+vendors:
+    - id: "INTC"
+      name: "Intel"
+      certificates: []
+    - id: "NTC"
+      name: "Nuvoton Technology"
+      certificates: []
+
+# ✗ Incorrect - "NTC" appears twice
+vendors:
+    - id: "NTC"
+      name: "Nuvoton Technology"
+      certificates: []
+    - id: "NTC"
+      name: "Nuvoton Duplicate"
+      certificates: []
+```
+
+> [!IMPORTANT]
+> The `validate` command will reject files with duplicate vendor IDs.
+
+### 4. No Duplicate Certificates
+
+Within each vendor, certificates must be unique. A certificate is considered a duplicate if any of the following match:
+
+- **Name**: Certificate name must be unique within the vendor
+- **URL**: Certificate URL must be unique within the vendor
+- **Fingerprint**: Certificate fingerprint must be unique within the vendor
+
+```yaml
+# ✓ Correct - all certificates are unique
+vendors:
+    - id: "NTC"
+      name: "Nuvoton Technology"
+      certificates:
+        - name: "NuvotonTPMRootCA1110"
+          url: "https://example.com/cert1.cer"
+          validation:
+            fingerprint:
+              sha256: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99"
+        - name: "NuvotonTPMRootCA1111"
+          url: "https://example.com/cert2.cer"
+          validation:
+            fingerprint:
+              sha256: "11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF"
+
+# ✗ Incorrect - duplicate name
+vendors:
+    - id: "NTC"
+      certificates:
+        - name: "NuvotonTPMRootCA1110"
+          url: "https://example.com/cert1.cer"
+          validation:
+            fingerprint:
+              sha256: "AA:BB:..."
+        - name: "NuvotonTPMRootCA1110"  # Duplicate name
+          url: "https://example.com/cert2.cer"
+          validation:
+            fingerprint:
+              sha256: "11:22:..."
+
+# ✗ Incorrect - duplicate URL
+vendors:
+    - id: "NTC"
+      certificates:
+        - name: "Cert A"
+          url: "https://example.com/cert.cer"
+          validation:
+            fingerprint:
+              sha256: "AA:BB:..."
+        - name: "Cert B"
+          url: "https://example.com/cert.cer"  # Duplicate URL
+          validation:
+            fingerprint:
+              sha256: "11:22:..."
+
+# ✗ Incorrect - duplicate fingerprint
+vendors:
+    - id: "NTC"
+      certificates:
+        - name: "Cert A"
+          url: "https://example.com/cert1.cer"
+          validation:
+            fingerprint:
+              sha256: "AA:BB:CC:DD:..."
+        - name: "Cert B"
+          url: "https://example.com/cert2.cer"
+          validation:
+            fingerprint:
+              sha256: "AA:BB:CC:DD:..."  # Duplicate fingerprint
+```
+
+> [!IMPORTANT]
+> The `validate` and `certificates add` commands will reject duplicate certificates within a vendor.
 
 ## Formatting Rules
 
@@ -218,10 +320,12 @@ Example output:
 ❌ .tpm-roots.yaml has validation errors:
 
   Line 3: invalid vendor ID "UNKNOWN": not found in TCG TPM Vendor ID Registry
-  Line 4: vendors not sorted by ID: expected "INTEL" at position 0, got "NTC"
-  Line 7: URL must use HTTPS scheme: got "http"
-  Line 10: URL not properly encoded: got "https://example.com/cert with spaces.cer", expected "https://example.com/cert%20with%20spaces.cer"
-  Line 13: fingerprint not in uppercase with colons: got "aa:bb:cc:dd"
+  Line 4: duplicate vendor ID "NTC" (first defined at vendors[0])
+  Line 7: vendors not sorted by ID: expected "INTEL" at position 0, got "NTC"
+  Line 10: duplicate certificate "NuvotonTPMRootCA1110" in vendor "NTC"
+  Line 15: URL must use HTTPS scheme: got "http"
+  Line 18: URL not properly encoded: got "https://example.com/cert with spaces.cer", expected "https://example.com/cert%20with%20spaces.cer"
+  Line 21: fingerprint not in uppercase with colons: got "aa:bb:cc:dd"
 
 (showing first 10 errors)
 ```

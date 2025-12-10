@@ -40,8 +40,10 @@ func NewYAMLValidator() *YAMLValidator {
 // It checks:
 //   - File starts with YAML document marker (---)
 //   - Vendor IDs are valid according to TCG TPM Vendor ID Registry
+//   - No duplicate vendor IDs
 //   - Vendors are sorted alphabetically by ID
 //   - Certificates within each vendor are sorted alphabetically by name
+//   - No duplicate certificates
 //   - URLs are properly URL-encoded and use HTTPS scheme
 //   - Fingerprints are formatted in uppercase with colon separators
 //   - String values are double-quoted
@@ -76,8 +78,10 @@ func (v *YAMLValidator) ValidateFile(path string) ([]ValidationError, error) {
 	}
 
 	v.validateVendorIDs(cfg)
+	v.validateDuplicateVendorIDs(cfg)
 	v.validateVendorsSorting(cfg)
 	v.validateCertificatesSorting(cfg)
+	v.validateDuplicateCertificates(cfg)
 	v.validateURLEncoding(cfg)
 	v.validateFingerprintFormat(cfg)
 	v.validateQuotes(data)
@@ -177,6 +181,21 @@ func (v *YAMLValidator) validateVendorIDs(cfg *config.TPMRootsConfig) {
 	}
 }
 
+// validateDuplicateVendorIDs checks for duplicate vendor IDs.
+func (v *YAMLValidator) validateDuplicateVendorIDs(cfg *config.TPMRootsConfig) {
+	seenIDs := make(map[string]int)
+
+	for i, vendor := range cfg.Vendors {
+		if firstIdx, exists := seenIDs[vendor.ID]; exists {
+			path := fmt.Sprintf("vendors[%d].id", i)
+			v.addError(path, fmt.Sprintf("duplicate vendor ID %q (first defined at vendors[%d])",
+				vendor.ID, firstIdx))
+		} else {
+			seenIDs[vendor.ID] = i
+		}
+	}
+}
+
 // validateVendorsSorting checks that vendors are sorted by ID.
 func (v *YAMLValidator) validateVendorsSorting(cfg *config.TPMRootsConfig) {
 	vendorIDs := make([]string, len(cfg.Vendors))
@@ -214,6 +233,22 @@ func (v *YAMLValidator) validateCertificatesSorting(cfg *config.TPMRootsConfig) 
 				path := fmt.Sprintf("vendors[%d].certificates[%d].name", i, j)
 				v.addError(path, fmt.Sprintf("certificates not sorted by name in vendor %q: expected %q at position %d, got %q",
 					vendor.ID, sortedNames[j], j, certNames[j]))
+			}
+		}
+	}
+}
+
+// validateDuplicateCertificates checks for duplicate certificates within each vendor by URL and fingerprint.
+func (v *YAMLValidator) validateDuplicateCertificates(cfg *config.TPMRootsConfig) {
+	for i, vendor := range cfg.Vendors {
+		for j, cert := range vendor.Certificates {
+			// Check against all previous certificates in the same vendor
+			prevCerts := vendor.Certificates[:j]
+
+			if ContainsCertificate(prevCerts, cert) {
+				path := fmt.Sprintf("vendors[%d].certificates[%d]", i, j)
+				v.addError(path, fmt.Sprintf("duplicate certificate %q in vendor %q",
+					cert.Name, vendor.ID))
 			}
 		}
 	}

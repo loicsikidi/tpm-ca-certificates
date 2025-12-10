@@ -3,6 +3,18 @@ package fingerprint
 
 import "strings"
 
+// FormatFingerprint formats a hex string into the colon-separated format.
+func FormatFingerprint(hexStr string) string {
+	var result strings.Builder
+	for i := 0; i < len(hexStr); i += 2 {
+		if i > 0 {
+			result.WriteString(":")
+		}
+		result.WriteString(hexStr[i : i+2])
+	}
+	return result.String()
+}
+
 // IsValid checks if a fingerprint is in the correct format (uppercase with colons).
 //
 // The function validates that:

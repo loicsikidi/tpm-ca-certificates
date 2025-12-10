@@ -2,7 +2,6 @@ package certificates
 
 import (
 	"crypto/x509"
-	"encoding/hex"
 	"fmt"
 	"slices"
 	"strings"
@@ -12,8 +11,9 @@ import (
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config/download"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config/format"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/config/validate"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config/vendors"
-	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/digest"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/fingerprint"
 	"github.com/spf13/cobra"
 )
 
@@ -242,7 +242,7 @@ func processDownloadResults(results []certDownloadResult, existingCerts []config
 			}
 		}
 
-		if err := certificateExists(existingCerts, result, hashAlgo); err != nil {
+		if err := validate.CheckCertificate(existingCerts, result.url, result.cert); err != nil {
 			failures = append(failures, downloadFailure{result.url, err})
 			continue
 		}
@@ -355,15 +355,15 @@ func downloadCertificatesParallel(urls []string, fingerprints []string, hashAlgo
 				return result
 			}
 
-			if err := verifyFingerprint(cert, alg, hash); err != nil {
-				result.err = fmt.Errorf("fingerprint verification failed: %w", err)
+			if err := validate.ValidateFingerprintWithAlgorithm(cert, hash, alg); err != nil {
+				result.err = err
 				return result
 			}
 
 			fpValidation = hash
 		} else {
 			// Calculate fingerprint using specified algorithm
-			fpValidation = CalculateFingerprint(cert.Raw, hashAlgo)
+			fpValidation = fingerprint.New(cert.Raw, hashAlgo)
 
 			// Show warning only for single URL (not cluttering output for multi-URL)
 			if len(urls) == 1 {
@@ -379,63 +379,6 @@ func downloadCertificatesParallel(urls []string, fingerprints []string, hashAlgo
 // extractCertificateName extracts the certificate name from its CN (Common Name).
 func extractCertificateName(cert *x509.Certificate) string {
 	return strings.TrimSpace(cert.Subject.CommonName)
-}
-
-// certificateExists checks if a certificate already exists in in the config
-//
-// Checks:
-//   - by URL
-//   - by fingerprint
-func certificateExists(certs []config.Certificate, result certDownloadResult, hashAlgo string) error {
-	if err := checkCertificateURL(certs, result.url); err != nil {
-		return err
-	}
-	return checkCertificateFingerprint(certs, result, hashAlgo)
-}
-
-func checkCertificateURL(certs []config.Certificate, url string) error {
-	for _, cert := range certs {
-		if cert.URL == url {
-			return fmt.Errorf("certificate already exists (duplicate URL)")
-		}
-	}
-	return nil
-}
-
-func checkCertificateFingerprint(certs []config.Certificate, result certDownloadResult, hashAlgo string) error {
-	for _, cert := range certs {
-		fp := result.fingerprint
-		targetHashAlg, targetFP := getFingerprint(cert)
-		if targetHashAlg != hashAlgo {
-			fp = CalculateFingerprint(result.cert.Raw, targetHashAlg)
-		}
-		if strings.EqualFold(fp, targetFP) {
-			return fmt.Errorf("certificate already exists (duplicate fingerprint, matches '%s')", cert.Name)
-		}
-	}
-	return nil
-}
-
-// getFingerprint retrieves the fingerprint and its hash algorithm from a certificate.
-func getFingerprint(cert config.Certificate) (string, string) {
-	var hash, fp string
-	switch {
-	case cert.Validation.Fingerprint.SHA1 != "":
-		hash = sha1
-		fp = cert.Validation.Fingerprint.SHA1
-	case cert.Validation.Fingerprint.SHA384 != "":
-		hash = sha384
-		fp = cert.Validation.Fingerprint.SHA384
-	case cert.Validation.Fingerprint.SHA512 != "":
-		hash = sha512
-		fp = cert.Validation.Fingerprint.SHA512
-	case cert.Validation.Fingerprint.SHA256 != "":
-		fallthrough
-	default:
-		hash = sha256
-		fp = cert.Validation.Fingerprint.SHA256
-	}
-	return hash, fp
 }
 
 // ParseFingerprint parses a fingerprint string in format "HASH_ALG:HASH".
@@ -457,48 +400,6 @@ func ParseFingerprint(fp string) (string, string, error) {
 	}
 
 	return alg, hash, nil
-}
-
-// formatFingerprint formats a hex string into the colon-separated format.
-func formatFingerprint(hexStr string) string {
-	var result strings.Builder
-	for i := 0; i < len(hexStr); i += 2 {
-		if i > 0 {
-			result.WriteString(":")
-		}
-		result.WriteString(hexStr[i : i+2])
-	}
-	return result.String()
-}
-
-// verifyFingerprint checks if the provided fingerprint matches the certificate.
-func verifyFingerprint(cert *x509.Certificate, alg, expectedHash string) error {
-	actualHash := CalculateFingerprint(cert.Raw, alg)
-	if actualHash != strings.ToUpper(expectedHash) {
-		return fmt.Errorf("fingerprint mismatch: expected %s, got %s", expectedHash, actualHash)
-	}
-	return nil
-}
-
-// CalculateFingerprint calculates the fingerprint of data using the specified hash algorithm.
-func CalculateFingerprint(data []byte, algorithm string) string {
-	var hashBytes []byte
-
-	switch strings.ToLower(algorithm) {
-	case sha1:
-		hashBytes = digest.Sha1Hash(data)
-	case sha256:
-		hashBytes = digest.Sha256Hash(data)
-	case sha384:
-		hashBytes = digest.Sha384Hash(data)
-	case sha512:
-		hashBytes = digest.Sha512Hash(data)
-	default:
-		// This should not happen due to prior validation
-		panic("unsupported hash algorithm: " + algorithm)
-	}
-
-	return strings.ToUpper(formatFingerprint(hex.EncodeToString(hashBytes)))
 }
 
 // InsertCertificateAlphabetically inserts a certificate in alphabetical order by name.

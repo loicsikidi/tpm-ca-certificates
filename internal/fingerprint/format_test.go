@@ -69,3 +69,41 @@ func TestIsValid(t *testing.T) {
 		})
 	}
 }
+
+func TestFormatFingerprint(t *testing.T) {
+	tests := []struct {
+		name   string
+		hexStr string
+		want   string
+	}{
+		{
+			name:   "empty",
+			hexStr: "",
+			want:   "",
+		},
+		{
+			name:   "single byte",
+			hexStr: "AB",
+			want:   "AB",
+		},
+		{
+			name:   "two bytes",
+			hexStr: "ABCD",
+			want:   "AB:CD",
+		},
+		{
+			name:   "multiple bytes",
+			hexStr: "AABBCCDD",
+			want:   "AA:BB:CC:DD",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := FormatFingerprint(tt.hexStr)
+			if got != tt.want {
+				t.Errorf("formatFingerprint() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

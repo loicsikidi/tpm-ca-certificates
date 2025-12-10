@@ -26,7 +26,9 @@ The validator checks:
   - File starts with YAML document marker (---)
   - Vendor IDs are valid according to TCG TPM Vendor ID Registry
   - Vendors are sorted alphabetically by ID
+  - No duplicate vendor IDs
   - Certificates within each vendor are sorted alphabetically by name
+  - No duplicate certificates
   - URLs are properly URL-encoded and use HTTPS scheme
   - Fingerprints are formatted in uppercase with colon separators (AA:BB:CC:DD)
   - String values are double-quoted

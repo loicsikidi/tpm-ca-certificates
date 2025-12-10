@@ -94,15 +94,15 @@ vendors:
     name: "STMicroelectronics"
     certificates:
       - name: "Cert Z"
-        url: "https://example.com/cert.cer"
+        url: "https://example.com/cert-z.cer"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
       - name: "Cert A"
-        url: "https://example.com/cert.cer"
+        url: "https://example.com/cert-a.cer"
         validation:
           fingerprint:
-            sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
+            sha1: "11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44"
 `,
 			wantErrors:  2,
 			errorChecks: []string{"certificates not sorted"},
@@ -191,6 +191,97 @@ vendors:
 `,
 			wantErrors:  1,
 			errorChecks: []string{"invalid vendor ID", "not found in TCG TPM Vendor ID Registry"},
+		},
+		{
+			name: "duplicate vendor IDs",
+			yaml: `---
+version: "alpha"
+vendors:
+  - id: "STM"
+    name: "STMicroelectronics"
+    certificates:
+      - name: "Cert A"
+        url: "https://example.com/cert-a.cer"
+        validation:
+          fingerprint:
+            sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
+  - id: "STM"
+    name: "STMicroelectronics Duplicate"
+    certificates:
+      - name: "Cert B"
+        url: "https://example.com/cert-b.cer"
+        validation:
+          fingerprint:
+            sha1: "11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44"
+`,
+			wantErrors:  1,
+			errorChecks: []string{"duplicate vendor ID", "STM"},
+		},
+		{
+			name: "duplicate certificate by name",
+			yaml: `---
+version: "alpha"
+vendors:
+  - id: "STM"
+    name: "STMicroelectronics"
+    certificates:
+      - name: "Cert A"
+        url: "https://example.com/cert-a.cer"
+        validation:
+          fingerprint:
+            sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
+      - name: "Cert A"
+        url: "https://example.com/cert-b.cer"
+        validation:
+          fingerprint:
+            sha1: "11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44"
+`,
+			wantErrors:  1,
+			errorChecks: []string{"duplicate certificate", "Cert A"},
+		},
+		{
+			name: "duplicate certificate by URL",
+			yaml: `---
+version: "alpha"
+vendors:
+  - id: "STM"
+    name: "STMicroelectronics"
+    certificates:
+      - name: "Cert A"
+        url: "https://example.com/cert.cer"
+        validation:
+          fingerprint:
+            sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
+      - name: "Cert B"
+        url: "https://example.com/cert.cer"
+        validation:
+          fingerprint:
+            sha1: "11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44"
+`,
+			wantErrors:  1,
+			errorChecks: []string{"duplicate certificate", "Cert B"},
+		},
+		{
+			name: "duplicate certificate by fingerprint",
+			yaml: `---
+version: "alpha"
+vendors:
+  - id: "STM"
+    name: "STMicroelectronics"
+    certificates:
+      - name: "Cert A"
+        url: "https://example.com/cert-a.cer"
+        validation:
+          fingerprint:
+            sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
+      - name: "Cert B"
+        url: "https://example.com/cert-b.cer"
+        validation:
+          fingerprint:
+            sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
+`,
+			wantErrors:  1,
+			errorChecks: []string{"duplicate certificate", "Cert B"},
 		},
 	}
 
