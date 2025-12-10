@@ -1,59 +1,125 @@
 package validate
 
 import (
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
-	"crypto/sha1"
-	"crypto/sha256"
-	"crypto/x509"
-	"crypto/x509/pkix"
 	"encoding/hex"
-	"math/big"
+	"strings"
 	"testing"
-	"time"
 
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/fingerprint"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/testutil"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/digest"
 )
 
-func generateTestCert(t *testing.T) *x509.Certificate {
-	t.Helper()
+func TestValidateFingerprintWithAlgorithm(t *testing.T) {
+	cert, sha1Fingerprint := testutil.GenerateTestCert(t)
 
-	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		t.Fatal(err)
-	}
+	sha256Actual := hex.EncodeToString(digest.Sha256Hash(cert.Raw))
+	sha384Actual := hex.EncodeToString(digest.Sha384Hash(cert.Raw))
+	sha512Actual := hex.EncodeToString(digest.Sha512Hash(cert.Raw))
 
-	template := &x509.Certificate{
-		SerialNumber: big.NewInt(1),
-		Subject: pkix.Name{
-			Organization: []string{"Test Org"},
+	tests := []struct {
+		name               string
+		expectedFP         string
+		algorithm          string
+		wantError          bool
+		errorShouldContain string
+	}{
+		{
+			name:       "valid SHA1 with colons",
+			expectedFP: fingerprint.FormatFingerprint(sha1Fingerprint),
+			algorithm:  fingerprint.SHA1,
+			wantError:  false,
 		},
-		NotBefore:             time.Now(),
-		NotAfter:              time.Now().Add(365 * 24 * time.Hour),
-		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
-		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-		BasicConstraintsValid: true,
+		{
+			name:       "valid SHA1 without colons",
+			expectedFP: sha1Fingerprint,
+			algorithm:  fingerprint.SHA1,
+			wantError:  false,
+		},
+		{
+			name:       "valid SHA256 with colons",
+			expectedFP: fingerprint.FormatFingerprint(sha256Actual),
+			algorithm:  fingerprint.SHA256,
+			wantError:  false,
+		},
+		{
+			name:       "valid SHA256 without colons",
+			expectedFP: sha256Actual,
+			algorithm:  fingerprint.SHA256,
+			wantError:  false,
+		},
+		{
+			name:       "valid SHA384",
+			expectedFP: fingerprint.FormatFingerprint(sha384Actual),
+			algorithm:  fingerprint.SHA384,
+			wantError:  false,
+		},
+		{
+			name:       "valid SHA512",
+			expectedFP: fingerprint.FormatFingerprint(sha512Actual),
+			algorithm:  fingerprint.SHA512,
+			wantError:  false,
+		},
+		{
+			name:               "invalid SHA1 fingerprint",
+			expectedFP:         "00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00",
+			algorithm:          fingerprint.SHA1,
+			wantError:          true,
+			errorShouldContain: "fingerprint mismatch",
+		},
+		{
+			name:               "invalid SHA256 fingerprint",
+			expectedFP:         "0000000000000000000000000000000000000000000000000000000000000000",
+			algorithm:          fingerprint.SHA256,
+			wantError:          true,
+			errorShouldContain: "fingerprint mismatch",
+		},
+		{
+			name:               "wrong algorithm used (SHA256 expected, SHA1 provided)",
+			expectedFP:         sha1Fingerprint,
+			algorithm:          fingerprint.SHA256,
+			wantError:          true,
+			errorShouldContain: "fingerprint mismatch",
+		},
+		{
+			name:       "case insensitive matching lowercase",
+			expectedFP: strings.ToLower(sha256Actual),
+			algorithm:  fingerprint.SHA256,
+			wantError:  false,
+		},
+		{
+			name:       "case insensitive matching uppercase",
+			expectedFP: strings.ToUpper(sha256Actual),
+			algorithm:  fingerprint.SHA256,
+			wantError:  false,
+		},
 	}
 
-	certDER, err := x509.CreateCertificate(rand.Reader, template, template, &priv.PublicKey, priv)
-	if err != nil {
-		t.Fatal(err)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateFingerprintWithAlgorithm(cert, tt.expectedFP, tt.algorithm)
 
-	cert, err := x509.ParseCertificate(certDER)
-	if err != nil {
-		t.Fatal(err)
+			if tt.wantError && err == nil {
+				t.Errorf("ValidateFingerprintWithAlgorithm() expected error but got nil")
+			}
+			if !tt.wantError && err != nil {
+				t.Errorf("ValidateFingerprintWithAlgorithm() unexpected error = %v", err)
+			}
+			if tt.wantError && err != nil && tt.errorShouldContain != "" {
+				if !strings.Contains(err.Error(), tt.errorShouldContain) {
+					t.Errorf("ValidateFingerprintWithAlgorithm() error = %v, should contain %q", err, tt.errorShouldContain)
+				}
+			}
+		})
 	}
-
-	return cert
 }
 
 func TestValidateFingerprint(t *testing.T) {
-	cert := generateTestCert(t)
+	cert, fp := testutil.GenerateTestCert(t)
 
-	sha1Actual := hex.EncodeToString(computeSHA1(cert.Raw))
-	sha256Actual := hex.EncodeToString(computeSHA256(cert.Raw))
+	sha1Actual := fp
+	sha256Actual := hex.EncodeToString(digest.Sha256Hash(cert.Raw))
 
 	tests := []struct {
 		name        string
@@ -63,7 +129,7 @@ func TestValidateFingerprint(t *testing.T) {
 		{
 			name: "valid SHA1 with colons",
 			fingerprint: config.Fingerprint{
-				SHA1: formatWithColons(sha1Actual),
+				SHA1: fingerprint.FormatFingerprint(sha1Actual),
 			},
 			wantError: false,
 		},
@@ -77,7 +143,7 @@ func TestValidateFingerprint(t *testing.T) {
 		{
 			name: "valid SHA256",
 			fingerprint: config.Fingerprint{
-				SHA256: formatWithColons(sha256Actual),
+				SHA256: fingerprint.FormatFingerprint(sha256Actual),
 			},
 			wantError: false,
 		},
@@ -117,71 +183,4 @@ func TestValidateFingerprint(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestParseFingerprint(t *testing.T) {
-	tests := []struct {
-		name    string
-		input   string
-		want    string
-		wantErr bool
-	}{
-		{
-			name:    "with colons",
-			input:   "AA:BB:CC:DD",
-			want:    "aabbccdd",
-			wantErr: false,
-		},
-		{
-			name:    "without colons",
-			input:   "AABBCCDD",
-			want:    "aabbccdd",
-			wantErr: false,
-		},
-		{
-			name:    "with spaces",
-			input:   "AA BB CC DD",
-			want:    "aabbccdd",
-			wantErr: false,
-		},
-		{
-			name:    "invalid hex",
-			input:   "GGHHII",
-			wantErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := parseFingerprint(tt.input)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("parseFingerprint() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !tt.wantErr && hex.EncodeToString(got) != tt.want {
-				t.Errorf("parseFingerprint() = %v, want %v", hex.EncodeToString(got), tt.want)
-			}
-		})
-	}
-}
-
-func formatWithColons(hexStr string) string {
-	var result string
-	for i := 0; i < len(hexStr); i += 2 {
-		if i > 0 {
-			result += ":"
-		}
-		result += hexStr[i : i+2]
-	}
-	return result
-}
-
-func computeSHA1(data []byte) []byte {
-	h := sha1.Sum(data)
-	return h[:]
-}
-
-func computeSHA256(data []byte) []byte {
-	h := sha256.Sum256(data)
-	return h[:]
 }

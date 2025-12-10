@@ -34,11 +34,6 @@ vendors:
           validation:
             fingerprint:
                 sha256: "97:6B:05:79:C0:16:74:1B:00:03:BF:80:55:E9:20:AB:08:F7:2A:BC:81:95:47:B3:48:0B:0C:14:1E:95:6B:70"
-        - name: "Infineon OPTIGA(TM) RSA Root CA 3"
-          url: "https://pki.infineon.com/OptigaRsaRootCA3/OptigaRsaRootCA3.crt"
-          validation:
-            fingerprint:
-                sha256: "97:6B:05:79:C0:16:74:1B:00:03:BF:80:55:E9:20:AB:08:F7:2A:BC:81:95:47:B3:48:0B:0C:14:1E:95:6B:70"
     - id: "INTC"
       name: "Intel"
       certificates:

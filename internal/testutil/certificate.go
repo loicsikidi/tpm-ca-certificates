@@ -13,6 +13,16 @@ import (
 	"time"
 )
 
+func GenerateTestCert(t *testing.T) (*x509.Certificate, string) {
+	t.Helper()
+	der, fingerprint := generateTestCertWithExpiry(t, time.Now().Add(365*24*time.Hour))
+	cert, err := x509.ParseCertificate(der)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return cert, fingerprint
+}
+
 func GenerateTestCertDER(t *testing.T) ([]byte, string) {
 	t.Helper()
 	return generateTestCertWithExpiry(t, time.Now().Add(365*24*time.Hour))
