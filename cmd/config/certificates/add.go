@@ -180,6 +180,16 @@ func validateAndPrepareInputs(opts *AddOptions) (hashAlgo string, urls, fingerpr
 		return "", nil, nil, fmt.Errorf("no valid URLs provided")
 	}
 
+	// Validate that all URLs use HTTPS
+	for _, url := range urls {
+		if strings.HasPrefix(strings.ToLower(url), "http://") {
+			return "", nil, nil, fmt.Errorf("insecure HTTP URL not allowed: %s (use HTTPS instead)", url)
+		}
+		if !strings.HasPrefix(strings.ToLower(url), "https://") {
+			return "", nil, nil, fmt.Errorf("invalid URL scheme: %s (must use HTTPS)", url)
+		}
+	}
+
 	if len(fingerprints) > 0 && len(fingerprints) != len(urls) {
 		return "", nil, nil, fmt.Errorf("number of fingerprints (%d) doesn't match number of URLs (%d)", len(fingerprints), len(urls))
 	}
