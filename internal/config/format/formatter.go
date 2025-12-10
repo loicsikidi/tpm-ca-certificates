@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
 	"go.yaml.in/yaml/v4"
 )
 
@@ -46,7 +47,7 @@ func (f *Formatter) NeedsFormatting(inputPath string) (bool, error) {
 		return false, fmt.Errorf("failed to marshal YAML: %w", err)
 	}
 
-	originalData, err := os.ReadFile(inputPath)
+	originalData, err := utils.ReadFile(inputPath)
 	if err != nil {
 		return false, fmt.Errorf("failed to read original file: %w", err)
 	}

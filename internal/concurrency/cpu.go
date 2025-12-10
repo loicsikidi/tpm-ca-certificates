@@ -1,10 +1,11 @@
 package concurrency
 
 import (
-	"os"
 	"runtime"
 	"strconv"
 	"strings"
+
+	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
 )
 
 // MaxWorkers defines the maximum number of concurrent workers allowed.
@@ -47,7 +48,7 @@ func detectCgroupCPUQuota() int {
 
 // readCgroupV2Quota reads CPU quota from cgroup v2.
 func readCgroupV2Quota() int {
-	data, err := os.ReadFile("/sys/fs/cgroup/cpu.max")
+	data, err := utils.ReadFile("/sys/fs/cgroup/cpu.max")
 	if err != nil {
 		return 0
 	}
@@ -88,12 +89,12 @@ func readCgroupV2Quota() int {
 
 // readCgroupV1Quota reads CPU quota from cgroup v1.
 func readCgroupV1Quota() int {
-	quotaData, err := os.ReadFile("/sys/fs/cgroup/cpu/cpu.cfs_quota_us")
+	quotaData, err := utils.ReadFile("/sys/fs/cgroup/cpu/cpu.cfs_quota_us")
 	if err != nil {
 		return 0
 	}
 
-	periodData, err := os.ReadFile("/sys/fs/cgroup/cpu/cpu.cfs_period_us")
+	periodData, err := utils.ReadFile("/sys/fs/cgroup/cpu/cpu.cfs_period_us")
 	if err != nil {
 		return 0
 	}
