@@ -3,13 +3,13 @@ package verify
 import (
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/cli"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/cosign"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/digest"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
 	"github.com/loicsikidi/tpm-ca-certificates/pkg/apiv1beta"
 	"github.com/spf13/cobra"
 )
@@ -64,7 +64,7 @@ func run(cmd *cobra.Command, args []string) error {
 	bundleFilename := filepath.Base(bundlePath)
 
 	// Read bundle from disk
-	bundleData, err := os.ReadFile(bundlePath)
+	bundleData, err := utils.ReadFile(bundlePath)
 	if err != nil {
 		return fmt.Errorf("failed to read bundle file: %w", err)
 	}
@@ -131,14 +131,14 @@ func readChecksumsData(checksumsFile, checksumsSignature string) (*checksumsData
 	var err error
 
 	if checksumsFile != "" {
-		data.checksumData, err = os.ReadFile(checksumsFile)
+		data.checksumData, err = utils.ReadFile(checksumsFile)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read checksums file: %w", err)
 		}
 	}
 
 	if checksumsSignature != "" {
-		data.checksumSigData, err = os.ReadFile(checksumsSignature)
+		data.checksumSigData, err = utils.ReadFile(checksumsSignature)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read checksums signature file: %w", err)
 		}

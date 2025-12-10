@@ -3,13 +3,13 @@ package validate
 import (
 	"fmt"
 	"net/url"
-	"os"
 	"sort"
 	"strings"
 
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config/vendors"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/fingerprint"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
 	"go.yaml.in/yaml/v4"
 )
 
@@ -61,7 +61,7 @@ func NewYAMLValidator() *YAMLValidator {
 //	    os.Exit(1)
 //	}
 func (v *YAMLValidator) ValidateFile(path string) ([]ValidationError, error) {
-	data, err := os.ReadFile(path)
+	data, err := utils.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file: %w", err)
 	}

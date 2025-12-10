@@ -6,6 +6,7 @@ import (
 
 	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/cli"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -46,7 +47,7 @@ Shows up to 10 validation errors with line numbers.`,
 func run(cmd *cobra.Command, args []string) error {
 	bundlePath = args[0]
 
-	data, err := os.ReadFile(bundlePath)
+	data, err := utils.ReadFile(bundlePath)
 	if err != nil {
 		return fmt.Errorf("failed to read bundle: %w", err)
 	}
