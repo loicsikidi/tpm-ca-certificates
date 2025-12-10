@@ -63,7 +63,7 @@ func TestNew(t *testing.T) {
 						}
 					} else {
 						// Should be uppercase hex digit
-						if !((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F')) {
+						if (c < '0' || c > '9') && (c < 'A' || c > 'F') {
 							t.Errorf("fingerprint.New() character at position %d should be uppercase hex, got %c", i, c)
 						}
 					}
