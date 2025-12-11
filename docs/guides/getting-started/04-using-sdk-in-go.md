@@ -16,7 +16,7 @@ This guide is for Go developers who want to integrate TPM trust bundle retrieval
 
 ## Prerequisites
 
-- ✅ Go 1.23+
+- ✅ Go 1.25+
 - 📦 Basic understanding of Go modules
 
 ## Installation

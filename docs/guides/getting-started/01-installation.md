@@ -18,7 +18,7 @@ This guide covers the different ways to install `tpmtb` on your system.
 
 Pick your poison:
 
-- **Go 1.23+** (for installation via `go install`)
+- **Go 1.25+** (for installation via `go install`)
 - 🐳 **Docker** (for containerized usage)
 - ❄️ **Nix** (for declarative installation)
 
@@ -43,7 +43,7 @@ tpmtb version
 **Install a specific version:**
 
 ```bash
-go install github.com/loicsikidi/tpm-ca-certificates/cmd/tpmtb@v0.2.0
+go install github.com/loicsikidi/tpm-ca-certificates/cmd/tpmtb@v0.3.0
 ```
 
 ### Using Docker 🐳
@@ -77,7 +77,7 @@ tpmtb bundle download
 **Use a specific version:**
 
 ```bash
-docker pull ghcr.io/loicsikidi/tpm-ca-certificates/tpmtb:v0.2.0
+docker pull ghcr.io/loicsikidi/tpm-ca-certificates/tpmtb:v0.3.0
 ```
 
 ### Using Nix ❄️
@@ -125,15 +125,19 @@ You should see output similar to:
 ```bash
 tpmtb version
 # output:
-Revision: 0b85df93edbe5d54cf34483423b86b2d978ca928
-Version: v0.2.0
-BuildTime: 2025-12-04T22:12:49Z
-Dirty: false
-```
+tpmtb: TPM root of trust, simplified.
+https://github.com/loicsikidi/tpm-ca-certificates
 
-> [!WARNING]
-> With **Nix** you will see `unknown` for everything due to sandboxed builds.
-> We are working on improving this experience.
+GitVersion:    v0.3.0
+GitCommit:     ce7e1457f2d94bc87f25d4ab043f1a38f5882d55
+GitTreeState:  clean
+BuildDate:     2025-12-11T08:32:17
+BuiltBy:       goreleaser
+GoVersion:     go1.25.0
+Compiler:      gc
+ModuleSum:     unknown
+Platform:      linux/amd64
+```
 
 ## Shell Completion 🎯
 

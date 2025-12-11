@@ -1,6 +1,6 @@
 # Threat Model
 
-This document outlines the risk assessment for the `tpmtb` project and the mitigation measures implemented to minimize identified risks.
+This document outlines the risk assessment for the `tpm-ca-certificates` project and the mitigation measures implemented to minimize identified risks.
 
 ## Risks
 
@@ -113,7 +113,7 @@ This empowers users to independently validate that a bundle is trustworthy.
 The current implementation has a direct dependency on GitHub's attestation service for bundle verification. This design choice:
 
 **Trade-offs:**
-- ✅ **Simplifies the initial iteration:** Leverages GitHub's mature attestation infrastructure without to much effort
+- ✅ **Simplifies the initial iteration:** Leverages GitHub's mature attestation infrastructure without too much effort
 - ❌ **Complicates migration:** Moving the repository to another platform (GitLab, Gitea, etc.) would require reworking the entire verification workflow
 - ❌ **Vendor lock-in:** Creates coupling between the project's security model and GitHub's availability and policies
 

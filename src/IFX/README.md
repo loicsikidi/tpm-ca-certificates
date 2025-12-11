@@ -75,3 +75,8 @@ Since the domain `pki.infineon.com` is owned by Infineon Technologies AG, we can
 **URLs**:
 - ECC Root CA 3: https://pki.infineon.com/OptigaEccRootCA3/OptigaEccRootCA3.crt
 - RSA Root CA 3: https://pki.infineon.com/OptigaRsaRootCA3/OptigaRsaRootCA3.crt
+
+---
+
+https://community.infineon.com/t5/Knowledge-Base-Articles/Endorsement-key-certificate-validity-expiration-and-verification/ta-p/796521
+https://community.infineon.com/t5/OPTIGA-TPM/intermediate-CA-of-SLB9670XQ20FW786XTMA1/td-p/1121360
