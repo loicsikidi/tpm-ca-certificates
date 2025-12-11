@@ -1,0 +1,66 @@
+---
+version: "alpha"
+vendors:
+    - id: "IFX"
+      name: "Infineon"
+      certificates:
+        - name: "Infineon OPTIGA(TM) ECC Manufacturing CA 000"
+          url: "https://pki.infineon.com/OptigaEccMfrCA000/OptigaEccMfrCA000.crt"
+          validation:
+            fingerprint:
+                sha256: "28:4B:B4:91:4B:65:E9:3A:4B:42:1F:77:66:86:E3:27:7A:EA:C7:63:47:3D:EF:1A:C9:57:6A:17:E2:A7:41:E8"
+        - name: "Infineon OPTIGA(TM) ECC Manufacturing CA 001"
+          url: "https://pki.infineon.com/OptigaEccMfrCA001/OptigaEccMfrCA001.crt"
+          validation:
+            fingerprint:
+                sha256: "D9:6D:40:D5:27:E1:11:4C:24:40:BE:8E:13:BF:93:A3:17:64:F3:E1:D1:B1:5D:39:C9:18:91:82:8E:BD:24:85"
+        - name: "Infineon OPTIGA(TM) ECC Manufacturing CA 011"
+          url: "https://www.infineon.com/assets/row/public/documents/30/67/infineon-optigatm-ecc-manufacturing-ca-011.crt-c-en.crt"
+          validation:
+            fingerprint:
+                sha256: "B5:59:A8:4E:63:32:A7:B4:E3:2B:4D:37:39:E3:72:E3:C5:17:BA:5A:4C:CF:FE:E1:DA:AF:80:BC:64:16:28:EE"
+        - name: "Infineon OPTIGA(TM) ECC Manufacturing CA 029"
+          url: "https://www.infineon.com/assets/row/public/documents/30/67/infineon-optigatm-ecc-manufacturing-ca-029-issued-by-rootca-c-en.crt"
+          validation:
+            fingerprint:
+                sha256: "DE:99:9C:11:3B:AA:ED:11:13:3F:EB:77:31:89:8C:1F:43:DE:DB:D5:A7:5B:B6:5D:16:62:DF:46:D5:56:8A:CF"
+        - name: "Infineon OPTIGA(TM) ECC Manufacturing CA 036"
+          url: "https://www.infineon.com/assets/row/public/documents/30/67/infineon-optiga-ecc-manufacturing-ca-036-issued-by-rootca.crt-c-en.crt"
+          validation:
+            fingerprint:
+                sha256: "2C:BF:6D:6C:39:94:47:0A:EC:D2:B1:F8:7F:5D:21:11:08:D1:E0:A4:A8:1E:D9:CB:A2:6B:D2:98:96:5D:E0:1C"
+        - name: "Infineon OPTIGA(TM) RSA Manufacturing CA 011"
+          url: "https://www.infineon.com/assets/row/public/documents/30/67/infineon-optigatm-rsa-manufacturing-ca-011.crt-c-en.crt"
+          validation:
+            fingerprint:
+                sha256: "A8:33:79:F9:2A:34:1B:EB:61:B6:7F:03:50:66:44:94:0F:EB:4B:85:EA:50:4A:9D:22:13:BC:A5:2C:88:9F:89"
+        - name: "Infineon OPTIGA(TM) RSA Manufacturing CA 029"
+          url: "https://www.infineon.com/assets/row/public/documents/30/67/infineon-optigtm-rsa-manufacturing-ca-029-issued-by-rootca-c-en.crt"
+          validation:
+            fingerprint:
+                sha256: "26:20:3A:DA:09:D6:B7:0A:C1:8A:B1:80:C3:0D:CD:A8:C1:29:2D:89:A4:35:EA:A5:6E:1D:82:2B:1F:59:87:64"
+        - name: "Infineon OPTIGA(TM) RSA Manufacturing CA 036"
+          url: "https://www.infineon.com/assets/row/public/documents/30/67/infineon-optiga-rsa-manufacturing-ca-036-issued-by-rootca.crt-c-en.crt"
+          validation:
+            fingerprint:
+                sha256: "21:6C:47:D2:77:FC:40:CE:90:F0:86:83:21:CB:5E:F5:91:FC:1D:D8:D0:E4:FD:A1:A2:C8:3C:17:BE:01:B0:7E"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 ECC CA 040"
+          url: "https://www.infineon.com/assets/row/public/documents/30/67/infineon-certificate-optigaeccmfrca040-c-en.cer"
+          validation:
+            fingerprint:
+                sha256: "CE:0F:71:29:F5:DA:FA:55:98:14:68:79:23:A9:5C:09:DE:79:5B:9A:CE:A3:5F:44:6D:52:71:BC:C1:EF:AB:F5"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 ECC CA 041"
+          url: "https://www.infineon.com/assets/row/public/documents/30/67/infineon-certificate-optigaeccmfrca041-c-en.cer"
+          validation:
+            fingerprint:
+                sha256: "60:71:95:1B:ED:6F:38:F9:91:A9:41:78:8D:29:90:CE:4D:D7:A1:ED:A5:5A:5A:8B:46:71:51:80:06:59:7A:A0"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 RSA CA 040"
+          url: "https://www.infineon.com/assets/row/public/documents/30/67/infineon-certificate-optigarsamfrca040-c-en.cer"
+          validation:
+            fingerprint:
+                sha256: "1F:BE:9D:46:E9:DC:09:8E:54:BC:BB:FB:79:F0:C8:B0:02:27:68:56:66:30:DD:91:71:7D:04:43:25:B7:13:52"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 RSA CA 041"
+          url: "https://www.infineon.com/assets/row/public/documents/30/67/infineon-certificate-optigarsamfrca041-c-en.cer"
+          validation:
+            fingerprint:
+                sha256: "EC:F9:C2:A4:61:B1:56:18:FA:B5:7B:50:BE:87:6A:04:E6:4B:1B:46:F0:7F:77:52:63:85:60:FF:1C:9A:92:29"
