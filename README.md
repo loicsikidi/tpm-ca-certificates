@@ -74,7 +74,7 @@ docker pull ghcr.io/loicsikidi/tpm-ca-certificates/tpmtb:latest
 Or use it directly:
 
 ```bash
-docker run --rm ghcr.io/loicsikidi/tpm-ca-certificates/tpmtb:latest --help
+docker run --rm -v $(pwd):/tmp -w /tmp ghcr.io/loicsikidi/tpm-ca-certificates/tpmtb:latest --help
 ```
 
 </details>
@@ -90,7 +90,7 @@ tpmtb bundle download
 > [!TIP]
 > This command:
 > 1. 📥 Downloads the latest bundle from GitHub releases
-> 2. 🔐 Verifies the bundle's integrity using Sigstore
+> 2. 🔐 Verifies the bundle's integrity against the public transparency log (Rekor)
 > 3. 🔐 Validates the provenance attestation against the public transparency log (Rekor)
 >
 > The verification ensures that the bundle was genuinely produced by this repository's CI pipeline and hasn't been tampered with since publication.
@@ -105,18 +105,18 @@ Go to [documentation index](docs/README.md) to explore concepts, guides, and spe
 
 - [ ] Improve certificate catalog
   - ***We are actively looking to expand the number of root certificates included in the bundle. Contributions are welcome!*** Please refer to the [Contributing Guide](docs/guides/getting-started/05-contributing.md) for details on how you could help.
-- [ ] Enhance CI/CD pipeline
-  - Monitor certificate links for availability and integrity
-  - Monitor when a root CA is about to expire
-  - Monitor release verification process to ensure it continues to work as expected
-- [ ] Provide a golang-sdk to ease integration in Go applications
+- [ ] Gather feedback from early adopters to improve usability and address real-world needs
+   - Please open discussions or issues on GitHub to share your thoughts!applications
 - [ ] Support offline verification mode for air-gapped or restricted environments 
   - References:
     - [GitHub doc: Verify Attestation offline](https://docs.github.com/en/actions/how-tos/secure-your-work/use-artifact-attestations/verify-attestations-offline)
     - [Article: Verifying Cosign signatures offline](https://some-natalie.dev/blog/cosign-disconnected/)
-- [ ] Gather feedback from early adopters to improve usability and address real-world needs
-   - Please open discussions or issues on GitHub to share your thoughts!
 - [ ] Add `tpmtb` in nixpkgs for easy installation via Nix
+- [x] Enhance CI/CD pipeline
+  - Monitor certificate links for availability and integrity
+  - Monitor when a root CA is about to expire
+  - Monitor release verification process to ensure it continues to work as expected
+- [x] Provide a golang-sdk to ease integration in Go 
 
 ## License
 

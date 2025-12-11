@@ -1,6 +1,6 @@
 # Security Model
 
-This document describes the trust model and security principles behind the TPM Trust Bundle project. It explains the mechanisms that enable users to trust the content produced by this bundle.
+This document describes the trust model and security principles behind the project. It explains the mechanisms that enable users to trust the content produced by this bundle.
 
 > [!NOTE]
 > This file focuses on certificate sourcing trust. For a comprehensive overview of the threat model and mitigations, please refer to [Threat Model & Supply Chain Attack Mitigations](doc/02-threat_model.md).
@@ -77,13 +77,12 @@ This archive enables:
 A daily scheduled job regenerates the configuration and performs several checks:
 
 #### Daily Verification
-- **Generation validation:** Ensure the configuration can still be generated successfully
 - **Hash verification:** Confirm that certificate hashes remain valid (detect if a vendor site was compromised)
 - **URL availability:** Verify source URLs are still accessible
 
 #### Certificate Lifecycle Management
 - **Expiration alerts:** Flag certificates approaching expiration
-- **Automatic removal:** Expired certificates are removed from the bundle
+- **Manual removal:** Expired certificates will be removed from the bundle
 
 #### Release Verification
 - **Trust bundle verification:** Verify the latest release bundle using the configured trust mechanism
@@ -107,5 +106,7 @@ To enforce these requirements and reduce human error, we created the `tpmtb` CLI
 - **Bundle generation:** Automates the creation of the trust bundle from the validated configuration
 
 The CLI ensures consistency and reduces the risk of configuration errors that could compromise the trust model.
+
+---
 
 [^1]: Don't get me wrong, I don't want to incriminate them in any way, as this is not a prerogative of both projects. Shout-out to [keylime](https://github.com/keylime) and [Cedarcode](https://github.com/cedarcode) for their great contribution on the TPM ecosystem!

@@ -40,11 +40,19 @@ Welcome to the TPM CA Certificates documentation! This guide will help you navig
 
 ### I want to use TPM trust bundles in my application
 
+#### Integrating in Go applications
+
+1. Follow [Using the SDK in Go](guides/getting-started/04-using-sdk-in-go.md)
+
+#### Embedding the bundle in your application
+
 1. Start with [Installation](guides/getting-started/01-installation.md)
 2. Follow [Retrieve and Verify Bundle](guides/getting-started/02-retrieve-and-verify-bundle.md)
-3. Understand the [Bundle Format](specifications/04-tpm-trust-bundle-format.md)
 
-### I want to contribute a new certificate
+> [!TIP]
+> For other programming languages, manually download and verify the bundle using the `tpmtb` CLI, then embed the resulting PEM file in your application.
+
+### I want enrich the bundle with a new certificate
 
 1. Read the [Security Model](concepts/01-security_model.md) to understand requirements
 2. Follow the [Contributing Guide](guides/getting-started/04-contributing.md)
@@ -89,7 +97,6 @@ docs/
 
 - 💬 [GitHub Discussions](https://github.com/loicsikidi/tpm-ca-certificates/discussions) - Ask questions and share ideas
 - 🐛 [GitHub Issues](https://github.com/loicsikidi/tpm-ca-certificates/issues) - Report bugs or request features
-- 📖 [Main README](../README.md) - Project overview and quick start
 
 ## 🔗 External Resources
 
@@ -101,7 +108,3 @@ docs/
 ## 📝 Document Versions
 
 All specifications include version history and are maintained following semantic versioning principles. The configuration file format is currently in `alpha` version and will be promoted to `v1` once stabilized.
-
----
-
-**Need something else?** Check the [main README](../README.md) or open a [discussion](https://github.com/loicsikidi/tpm-ca-certificates/discussions).
