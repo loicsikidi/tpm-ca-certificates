@@ -399,7 +399,7 @@ func ParseFingerprint(fp string) (string, string, error) {
 	}
 
 	alg := strings.ToLower(parts[0])
-	hash := strings.ToUpper(parts[1])
+	hash := fingerprint.FormatFingerprint(parts[1])
 
 	// Validate algorithm
 	validAlgs := map[string]bool{

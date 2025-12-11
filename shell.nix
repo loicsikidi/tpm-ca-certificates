@@ -13,13 +13,24 @@
   };
 in
   pkgs.mkShell {
-    buildInputs = with pkgs; [goreleaser cosign syft gcc] ++ helpers.packages;
+    buildInputs = with pkgs;
+      [
+        delve
+        goreleaser
+        cosign
+        syft
+        gcc
+      ]
+      ++ helpers.packages;
 
     shellHook = ''
       ${helpers.shellHook}
       echo "Development environment ready!"
       echo "  - Go version: $(go version)"
     '';
+
+    # to enable debugging with delve
+    hardeningDisable = ["fortify"];
 
     env = {
       CGO_ENABLED = "1";
