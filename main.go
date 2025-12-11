@@ -3,11 +3,19 @@ package main
 import (
 	"os"
 
+	goversion "github.com/caarlos0/go-version"
 	"github.com/loicsikidi/tpm-ca-certificates/cmd/bundle"
 	"github.com/loicsikidi/tpm-ca-certificates/cmd/config"
-	"github.com/loicsikidi/tpm-ca-certificates/cmd/version"
+	versionCmd "github.com/loicsikidi/tpm-ca-certificates/cmd/version"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/cli"
 	"github.com/spf13/cobra"
+)
+
+const website = "https://github.com/loicsikidi/tpm-ca-certificates"
+
+var (
+	version = ""
+	builtBy = ""
 )
 
 func main() {
@@ -30,11 +38,25 @@ Notes:
 	}
 
 	rootCmd.AddCommand(bundle.NewCommand())
-	rootCmd.AddCommand(version.NewCommand())
+	rootCmd.AddCommand(versionCmd.NewCommand(buildVersion(version, builtBy)))
 	rootCmd.AddCommand(config.NewCommand())
 
 	if err := rootCmd.Execute(); err != nil {
 		cli.DisplayError("Error: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+func buildVersion(version, builtBy string) goversion.Info {
+	return goversion.GetVersionInfo(
+		goversion.WithAppDetails("tpmtb", "TPM root of trust, simplified.", website),
+		func(i *goversion.Info) {
+			if version != "" {
+				i.GitVersion = version
+			}
+			if builtBy != "" {
+				i.BuiltBy = builtBy
+			}
+		},
+	)
 }
