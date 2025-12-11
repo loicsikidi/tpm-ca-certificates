@@ -1,7 +1,7 @@
 {
   lib,
   stdenv,
-  buildGoModule,
+  buildGo125Module,
   fetchFromGitHub,
   installShellFiles,
   src ? null,
@@ -9,9 +9,9 @@
   version =
     if src != null
     then "unstable"
-    else "0.2.2";
+    else "0.3.0";
 in
-  buildGoModule {
+  buildGo125Module {
     pname = "tpmtb";
     inherit version;
 
@@ -23,10 +23,10 @@ in
           owner = "loicsikidi";
           repo = "tpm-ca-certificates";
           tag = "v${version}";
-          hash = "sha256-2OCoWZ+v55MK/INKSlteiIhOGuc0Fk6QKcG6gtwkX9Q=";
+          hash = "sha256-evbLeqotxRH1bI0fptJ6Bk1yG0h33TONQLLDc1BtWuA=";
         };
 
-    vendorHash = "sha256-yybHjGCo0vSSYi+vXZcEowFacifSTNALLpMkElFLhGc=";
+    vendorHash = "sha256-SV1wuv+Kcju1u2I7EKTzSldad3VJfRquXwqQWDwgrsM=";
 
     # Build the main package (at the root)
     # subPackages defaults to [ "." ] if not specified
