@@ -53,3 +53,6 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# direnv
+.direnv/
