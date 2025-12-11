@@ -31,10 +31,20 @@ in
     # Build the main package (at the root)
     # subPackages defaults to [ "." ] if not specified
 
-    ldflags = ["-s" "-w"];
+    ldflags = [
+      "-s"
+      "-w"
+      "-X main.version=${version}"
+      "-X main.builtBy=nix"
+    ];
 
     doCheck = true;
-    checkFlags = ["-v" "-timeout=30s" "-short"];
+
+    checkFlags = [
+      "-v"
+      "-timeout=30s"
+      "-short" # Skip tests that require network access
+    ];
 
     nativeBuildInputs = [installShellFiles];
 

@@ -3,6 +3,7 @@ module github.com/loicsikidi/tpm-ca-certificates
 go 1.25.0
 
 require (
+	github.com/caarlos0/go-version v0.2.2
 	github.com/sigstore/sigstore-go v1.1.4
 	github.com/spf13/cobra v1.10.2
 	go.yaml.in/yaml/v4 v4.0.0-rc.3

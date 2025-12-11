@@ -2,7 +2,6 @@ version: 2
 
 project_name: tpm-ca-certificates
 
-# Build du binaire tpmtb pour plusieurs plateformes
 builds:
   - id: tpmtb
     main: ./
@@ -17,9 +16,8 @@ builds:
       - amd64
       - arm64
     ldflags:
-      - -s -w
+      - -s -w -X main.builtBy=goreleaser
 
-# Archives des binaires tpmtb
 archives:
   - id: tpmtb-archives
     ids:
@@ -30,7 +28,6 @@ archives:
         formats: [ 'zip' ]
     name_template: "tpmtb_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 
-# Checksum de tous les artifacts
 checksum:
   name_template: "checksums.txt"
   algorithm: sha256
@@ -43,7 +40,7 @@ sboms:
   - id: source
     artifacts: source
 
-# Signature Cosign v3 keyless
+# Signature in Sigstore bundle format
 signs:
   - id: cosign-checksum
     cmd: cosign
@@ -69,7 +66,6 @@ dockers_v2:
       "org.opencontainers.image.version": "{{ .Version }}"
       "org.opencontainers.image.source": "https://github.com/loicsikidi/tpm-ca-certificates"
 
-# Configuration de la release GitHub
 release:
   github:
     owner: loicsikidi
@@ -146,7 +142,6 @@ release:
   footer: |
     **Generated with GoReleaser 🚀**
 
-# Changelog automatique
 changelog:
   use: github
   sort: asc
