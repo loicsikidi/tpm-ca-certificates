@@ -265,7 +265,7 @@ func (c *HTTPClient) ReleaseExists(ctx context.Context, repo Repo, tag string) e
 //	client := NewHTTPClient(nil)
 //	err := client.DownloadAsset(ctx, repo, "2025-12-03", "tpm-ca-certificates.pem", "/tmp/bundle.pem")
 func (c *HTTPClient) DownloadAssetToFile(ctx context.Context, repo Repo, tag, assetName, destination string) error {
-	data, err := c.DownloadAsset(ctx, repo, tag, assetName)
+	data, err := c.DownloadReleaseAsset(ctx, repo, tag, assetName)
 	if err != nil {
 		return err
 	}
@@ -278,7 +278,7 @@ func (c *HTTPClient) DownloadAssetToFile(ctx context.Context, repo Repo, tag, as
 	return nil
 }
 
-// DownloadAsset downloads a release asset to memory.
+// DownloadReleaseAsset downloads a release asset to memory.
 //
 // The asset is identified by its name within a specific release tag.
 // Returns the asset content as a byte slice.
@@ -286,8 +286,8 @@ func (c *HTTPClient) DownloadAssetToFile(ctx context.Context, repo Repo, tag, as
 // Example:
 //
 //	client := NewHTTPClient(nil)
-//	data, err := client.DownloadAsset(ctx, repo, "2025-12-03", "tpm-ca-certificates.pem")
-func (c *HTTPClient) DownloadAsset(ctx context.Context, repo Repo, tag, assetName string) ([]byte, error) {
+//	data, err := client.DownloadReleaseAsset(ctx, repo, "2025-12-03", "tpm-ca-certificates.pem")
+func (c *HTTPClient) DownloadReleaseAsset(ctx context.Context, repo Repo, tag, assetName string) ([]byte, error) {
 	// First, fetch the release to get the asset URL
 	url := fmt.Sprintf("%s/repos/%s/releases/tags/%s", githubAPIBaseURL, repo.String(), tag)
 

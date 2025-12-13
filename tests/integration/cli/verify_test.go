@@ -72,9 +72,14 @@ func TestVerifyIntegration(t *testing.T) {
 	}
 	t.Log("✓ Verifier created")
 
+	provenanceData, err := testutil.ReadTestFile(testutil.ProvenanceFile)
+	if err != nil {
+		t.Fatalf("Failed to read provenance: %v", err)
+	}
+
 	// Step 3: Verify bundle
 	t.Log("Step 3: Verifying bundle...")
-	result, err := v.Verify(context.Background(), bundleData, checksumData, checksumSigData, bundleDigest)
+	result, err := v.Verify(context.Background(), bundleData, checksumData, checksumSigData, provenanceData, bundleDigest)
 	if err != nil {
 		t.Fatalf("Verification failed: %v", err)
 	}
@@ -128,8 +133,13 @@ func TestVerifyWithInvalidCommit(t *testing.T) {
 		t.Fatalf("Failed to create verifier: %v", err)
 	}
 
+	provenanceData, err := testutil.ReadTestFile(testutil.ProvenanceFile)
+	if err != nil {
+		t.Fatalf("Failed to read provenance: %v", err)
+	}
+
 	// Verification should fail due to commit mismatch
-	_, err = v.Verify(context.Background(), bundleData, checksumData, checksumSigData, bundleDigest)
+	_, err = v.Verify(context.Background(), bundleData, checksumData, checksumSigData, provenanceData, bundleDigest)
 	if err == nil {
 		t.Error("Expected verification to fail with wrong commit, but it succeeded")
 	} else {
@@ -173,8 +183,13 @@ func TestVerifyWithInvalidDate(t *testing.T) {
 		t.Fatalf("Failed to create verifier: %v", err)
 	}
 
+	provenanceData, err := testutil.ReadTestFile(testutil.ProvenanceFile)
+	if err != nil {
+		t.Fatalf("Failed to read provenance: %v", err)
+	}
+
 	// Verification should fail due to date mismatch
-	_, err = v.Verify(context.Background(), bundleData, checksumData, checksumSigData, bundleDigest)
+	_, err = v.Verify(context.Background(), bundleData, checksumData, checksumSigData, provenanceData, bundleDigest)
 	if err == nil {
 		t.Error("Expected verification to fail with wrong date, but it succeeded")
 	} else {

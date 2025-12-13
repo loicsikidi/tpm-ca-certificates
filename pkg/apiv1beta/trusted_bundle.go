@@ -3,13 +3,27 @@ package apiv1beta
 import (
 	"context"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"os"
+	"path/filepath"
 	"slices"
 	"sync"
 	"time"
 
 	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/cache"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config/vendors"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
+)
+
+const (
+	CacheConfigFilename       = "config.json"
+	CacheRootBundleFilename   = "tpm-ca-certificates.pem"
+	CacheChecksumsFilename    = "checksums.txt"
+	CacheChecksumsSigFilename = "checksums.txt.sigstore.json"
+	CacheProvenanceFilename   = "roots.provenance.json"
 )
 
 // TrustedBundle represents a TPM trust bundle with certificate catalog organized by vendor.
@@ -40,6 +54,14 @@ type TrustedBundle interface {
 	// or only certificates from specified vendors if the bundle was created with VendorIDs filter.
 	GetRoots() *x509.CertPool
 
+	// Persist marshals bundle and its verification assets to disk at the specified cache path.
+	//
+	// Notes:
+	//  * variadic cachePath argument is optional. If not provided, the default cache path is used.
+	//  * if the files already exist, they will be overwritten.
+	//  * use [Load] to reconstruct [TrustedBundle] from persisted files.
+	Persist(cachePath ...string) error
+
 	// Stop stops the auto-update watcher if enabled.
 	//
 	// This method blocks until the watcher is fully stopped or the timeout (5 seconds) is reached.
@@ -57,6 +79,14 @@ type trustedBundle struct {
 	// vendorFilter is the list of vendors to filter when calling GetRoots.
 	// If empty, all certificates are returned.
 	vendorFilter []VendorID
+
+	// Verification assets
+	checksum          []byte
+	checksumSignature []byte
+	provenance        []byte
+
+	autoUpdateCfg     *AutoUpdateConfig
+	disableLocalCache bool
 
 	// Auto-update fields
 	stopChan    chan struct{}
@@ -84,9 +114,22 @@ func (tb *trustedBundle) GetMetadata() *bundle.Metadata {
 }
 
 // GetVendors returns the list of vendor IDs in the bundle.
+//
+// If the bundle was created with VendorIDs filter, only those vendors (with at least
+// one certificate in the bundle) are included.
 func (tb *trustedBundle) GetVendors() []VendorID {
 	tb.mu.RLock()
 	defer tb.mu.RUnlock()
+
+	if len(tb.vendorFilter) > 0 {
+		vendors := make([]VendorID, 0, len(tb.vendorFilter))
+		for _, vendorID := range tb.vendorFilter {
+			if _, ok := tb.catalog[vendorID]; ok {
+				vendors = append(vendors, vendorID)
+			}
+		}
+		return vendors
+	}
 
 	vendors := make([]VendorID, 0, len(tb.catalog))
 	for vendorID := range tb.catalog {
@@ -127,6 +170,68 @@ func (tb *trustedBundle) GetRoots() *x509.CertPool {
 	return pool
 }
 
+// Persist writes the bundle and its configuration to disk.
+func (tb *trustedBundle) Persist(cachePaths ...string) error {
+	tb.mu.RLock()
+	defer tb.mu.RUnlock()
+
+	if tb.disableLocalCache {
+		return ErrCannotPersistTrustedBundle
+	}
+
+	cachePath, err := utils.OptionalArg(cachePaths)
+	if err != nil {
+		cachePath = cache.CacheDir()
+	}
+
+	// sanitize cache path
+	cachePath = filepath.Clean(cachePath)
+
+	if !utils.DirExists(cachePath) {
+		if err := os.MkdirAll(cachePath, 0755); err != nil {
+			return fmt.Errorf("failed to create cache directory: %w", err)
+		}
+	}
+
+	bundlePath := filepath.Join(cachePath, CacheRootBundleFilename)
+	if err := os.WriteFile(bundlePath, tb.raw, 0644); err != nil {
+		return fmt.Errorf("failed to write bundle: %w", err)
+	}
+
+	checksumsPath := filepath.Join(cachePath, CacheChecksumsFilename)
+	if err := os.WriteFile(checksumsPath, tb.checksum, 0644); err != nil {
+		return fmt.Errorf("failed to write checksums: %w", err)
+	}
+
+	checksumsSigPath := filepath.Join(cachePath, CacheChecksumsSigFilename)
+	if err := os.WriteFile(checksumsSigPath, tb.checksumSignature, 0644); err != nil {
+		return fmt.Errorf("failed to write checksum signature: %w", err)
+	}
+
+	provenancePath := filepath.Join(cachePath, CacheProvenanceFilename)
+	if err := os.WriteFile(provenancePath, tb.provenance, 0644); err != nil {
+		return fmt.Errorf("failed to write provenance: %w", err)
+	}
+
+	cfg := CacheConfig{
+		AutoUpdate:    tb.autoUpdateCfg,
+		VendorIDs:     tb.vendorFilter,
+		LastTimestamp: time.Now(),
+	}
+
+	configData, err := json.Marshal(cfg)
+	if err != nil {
+		return fmt.Errorf("failed to marshal config: %w", err)
+	}
+
+	configPath := filepath.Join(cachePath, CacheConfigFilename)
+	if err := os.WriteFile(configPath, configData, 0644); err != nil {
+		return fmt.Errorf("failed to write config: %w", err)
+	}
+
+	return nil
+}
+
 // Stop stops the auto-update watcher.
 func (tb *trustedBundle) Stop() error {
 	// If no auto-update was configured, nothing to stop
@@ -162,12 +267,12 @@ type AutoUpdateConfig struct {
 	// DisableAutoUpdate disables automatic updates of the bundle.
 	//
 	// Optional. Default is false (auto-update enabled).
-	DisableAutoUpdate bool
+	DisableAutoUpdate bool `json:"disableAutoUpdate"`
 
 	// Interval specifies how often the bundle should be updated.
 	//
 	// Optional. If zero, the default interval of 24 hours is used.
-	Interval time.Duration
+	Interval time.Duration `json:"interval"`
 }
 
 // CheckAndSetDefaults validates and sets default values.
@@ -178,8 +283,173 @@ func (c *AutoUpdateConfig) CheckAndSetDefaults() error {
 	return nil
 }
 
+// CacheConfig represents the persisted configuration for a [TrustedBundle].
+type CacheConfig struct {
+	// AutoUpdate is the auto-update configuration.
+	AutoUpdate *AutoUpdateConfig `json:"autoUpdate,omitempty"`
+
+	// VendorIDs is the list of vendor IDs to filter.
+	VendorIDs []VendorID `json:"vendorIDs,omitempty"`
+
+	// LastTimestamp is the timestamp of the last update.
+	LastTimestamp time.Time `json:"lastTimestamp"`
+}
+
+// CheckAndSetDefaults validates and sets default values.
+func (c *CacheConfig) CheckAndSetDefaults() error {
+	if err := c.AutoUpdate.CheckAndSetDefaults(); err != nil {
+		return fmt.Errorf("invalid auto-update config: %w", err)
+	}
+	for _, vendorID := range c.VendorIDs {
+		if err := vendorID.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// LoadConfig configures the bundle loading from disk.
+type LoadConfig struct {
+	// CachePath is the location on disk for tpmtb cache.
+	//
+	// Optional. If empty, the default cache path is used ($HOME/.tpmtb).
+	CachePath string
+
+	// DisableLocalCache mode allows to work on a read-only
+	// files system if this is set, cache path is ignored.
+	//
+	// Optional. Default is false (local cache enabled).
+	DisableLocalCache bool
+
+	// SkipVerify disables bundle verification.
+	//
+	// Optional. By default the bundle will be verified using Cosign and GitHub Attestations.
+	SkipVerify bool
+}
+
+// CheckAndSetDefaults validates and sets default values.
+func (c *LoadConfig) CheckAndSetDefaults() error {
+	if c.CachePath == "" {
+		c.CachePath = cache.CacheDir()
+	}
+	if !utils.DirExists(c.CachePath) {
+		return fmt.Errorf("cache directory does not exist: %s", c.CachePath)
+	}
+	return nil
+}
+
+func (c LoadConfig) GetHttpClient() *http.Client {
+	return nil
+}
+
+func (c LoadConfig) GetSkipVerify() bool {
+	return c.SkipVerify
+}
+
+func (c LoadConfig) GetDisableLocalCache() bool {
+	return c.DisableLocalCache
+}
+
+func (c LoadConfig) GetCachePath() string {
+	return c.CachePath
+}
+
+// Load reads a persisted [TrustedBundle] from disk and verifies its integrity.
+//
+// Example:
+//
+//	tb, err := apiv1beta.Load(context.Background(), apiv1beta.LoadConfig{})
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//	defer tb.Stop()
+func Load(ctx context.Context, cfg LoadConfig) (TrustedBundle, error) {
+	if err := cfg.CheckAndSetDefaults(); err != nil {
+		return nil, err
+	}
+
+	bundlePath := filepath.Join(cfg.CachePath, CacheRootBundleFilename)
+	bundleData, err := utils.ReadFile(bundlePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read bundle: %w", err)
+	}
+
+	configPath := filepath.Join(cfg.CachePath, CacheConfigFilename)
+	configData, err := utils.ReadFile(configPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read config: %w", err)
+	}
+
+	var cacheCfg CacheConfig
+	if err := json.Unmarshal(configData, &cacheCfg); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
+	}
+
+	if err := cacheCfg.CheckAndSetDefaults(); err != nil {
+		return nil, fmt.Errorf("invalid config: %w", err)
+	}
+
+	var checksumData, checksumSigData, provenanceData []byte
+	if !cfg.SkipVerify {
+		var err error
+		checksumsPath := filepath.Join(cfg.CachePath, CacheChecksumsFilename)
+		checksumData, err = utils.ReadFile(checksumsPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read checksums: %w", err)
+		}
+
+		checksumsSigPath := filepath.Join(cfg.CachePath, CacheChecksumsSigFilename)
+		checksumSigData, err = utils.ReadFile(checksumsSigPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read checksum signature: %w", err)
+		}
+
+		provenancePath := filepath.Join(cfg.CachePath, CacheProvenanceFilename)
+		provenanceData, err = utils.ReadFile(provenancePath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read provenance: %w", err)
+		}
+
+		if _, err := VerifyTrustedBundle(ctx, VerifyConfig{
+			Bundle:            bundleData,
+			Checksum:          checksumData,
+			ChecksumSignature: checksumSigData,
+			Provenance:        provenanceData,
+			DisableLocalCache: cfg.DisableLocalCache,
+		}); err != nil {
+			return nil, fmt.Errorf("verification failed: %w", err)
+		}
+	}
+
+	// Create TrustedBundle from the loaded data
+	tb, err := newTrustedBundle(bundleData)
+	if err != nil {
+		return nil, err
+	}
+
+	// Store vendor filter and verification assets
+	tbImpl := tb.(*trustedBundle)
+	tbImpl.vendorFilter = cacheCfg.VendorIDs
+	tbImpl.checksum = checksumData
+	tbImpl.checksumSignature = checksumSigData
+	tbImpl.provenance = provenanceData
+
+	if !cacheCfg.AutoUpdate.DisableAutoUpdate {
+		tb.(*trustedBundle).startWatcher(ctx, cfg, cacheCfg.AutoUpdate.Interval)
+	}
+
+	return tb, nil
+}
+
+type updaterConfig interface {
+	GetHttpClient() *http.Client
+	GetSkipVerify() bool
+	GetDisableLocalCache() bool
+	GetCachePath() string
+}
+
 // startWatcher starts the auto-update watcher in a background goroutine.
-func (tb *trustedBundle) startWatcher(ctx context.Context, cfg GetConfig, interval time.Duration) {
+func (tb *trustedBundle) startWatcher(ctx context.Context, cfg updaterConfig, interval time.Duration) {
 	tb.stopChan = make(chan struct{})
 	tb.stoppedChan = make(chan struct{})
 
@@ -203,16 +473,15 @@ func (tb *trustedBundle) startWatcher(ctx context.Context, cfg GetConfig, interv
 }
 
 // checkAndUpdate checks for a new bundle version and updates if necessary.
-func (tb *trustedBundle) checkAndUpdate(ctx context.Context, cfg GetConfig) {
+func (tb *trustedBundle) checkAndUpdate(ctx context.Context, cfg updaterConfig) {
 	// Fetch the latest bundle without starting a watcher
 	newBundle, err := GetTrustedBundle(ctx, GetConfig{
 		Date:       "", // Always fetch latest
-		SkipVerify: cfg.SkipVerify,
-		HTTPClient: cfg.HTTPClient,
+		SkipVerify: cfg.GetSkipVerify(),
+		HTTPClient: cfg.GetHttpClient(),
 		AutoUpdate: AutoUpdateConfig{
 			DisableAutoUpdate: true, // Don't start a watcher for this temporary bundle
 		},
-		sourceRepo: cfg.sourceRepo,
 	})
 	if err != nil {
 		// Silently fail and keep current bundle
@@ -227,9 +496,12 @@ func (tb *trustedBundle) checkAndUpdate(ctx context.Context, cfg GetConfig) {
 		return
 	}
 
-	// Extract internal data from the new bundle
 	newTB := newBundle.(*trustedBundle)
-
-	// Update atomically
 	tb.update(newTB.raw, newTB.metadata, newTB.catalog)
+
+	// Persist the updated bundle if local cache is enabled
+	if !cfg.GetDisableLocalCache() {
+		// Ignore error as persistence failure shouldn't stop the update
+		_ = tb.Persist(cfg.GetCachePath())
+	}
 }

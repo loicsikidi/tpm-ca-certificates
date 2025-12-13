@@ -64,6 +64,56 @@ func main() {
 > [!NOTE]
 > By default, the bundle is automatically verified using Cosign signatures and GitHub Attestations. See the [verification specification](../../specifications/05-bundle-verification.md) for details.
 
+## Default Behavior 🎯
+
+The SDK is designed with **security and resilience** in mind. By default:
+
+### Auto-Update and Local Cache
+
+**Enabled by default** to ensure your bundle stays fresh and survives restarts:
+
+- **Auto-update:** Checks for new bundles every **24 hours**
+- **Local cache:** Stores bundle in **`$HOME/.tpmtb`** (filesystem)
+
+**Why these defaults?**
+
+1. **Security first:** Automatic updates ensure you get the latest root certificates
+2. **Restart resilience:** Cached bundles survive application restarts without re-downloading
+
+### Disabling Auto-Update
+
+For environments where you want manual control over bundle updates:
+
+```go
+tb, err := apiv1beta.GetTrustedBundle(ctx, apiv1beta.GetConfig{
+    Date: "XXXX-XX-XX", // Fixed date
+	AutoUpdate: apiv1beta.AutoUpdateConfig{
+		DisableAutoUpdate: true,
+	},
+})
+if err != nil {
+	log.Fatal(err)
+}
+defer tb.Stop()
+```
+
+### In-Memory Mode (Read-Only Filesystems)
+
+For containerized or restricted environments with read-only filesystems:
+
+```go
+tb, err := apiv1beta.GetTrustedBundle(ctx, apiv1beta.GetConfig{
+    DisableLocalCache: true, // No filesystem access,
+})
+if err != nil {
+	log.Fatal(err)
+}
+defer tb.Stop()
+```
+
+> [!WARNING]
+> With `DisableLocalCache: true`, the `Persist()` method will return an error. This mode is purely in-memory.
+
 ### Using Bundle Metadata
 
 Access bundle metadata to understand which version you're using:
@@ -98,12 +148,6 @@ defer tb.Stop()
 
 // GetRoots() will only return certificates from specified vendors
 certPool := tb.GetRoots()
-
-// Check which vendors are in the bundle
-vendors := tb.GetVendors()
-for _, vendor := range vendors {
-	log.Printf("Vendor: %s", vendor)
-}
 ```
 
 **Available Vendor IDs:**
@@ -122,6 +166,9 @@ Fetch a bundle from a specific date:
 ```go
 tb, err := apiv1beta.GetTrustedBundle(ctx, apiv1beta.GetConfig{
 	Date: "2025-12-03",
+	AutoUpdate: apiv1beta.AutoUpdateConfig{ // To prevent updates
+		DisableAutoUpdate: true,
+	},
 })
 if err != nil {
 	log.Fatal(err)
@@ -129,9 +176,9 @@ if err != nil {
 defer tb.Stop()
 ```
 
-### Automatic Updates
+### Customizing Auto-Update Interval
 
-Enable automatic updates to keep your bundle fresh:
+Change the default 24-hour interval to suit your needs:
 
 ```go
 import "time"
@@ -157,26 +204,19 @@ defer tb.Stop() // Important: Stop the background watcher when done
 - 🔒 Updates are atomic and thread-safe
 - 📅 Only updates if a newer release date is available
 
-### Disabling Auto-Update
+### Custom Cache Path
 
-If you prefer to control bundle updates manually, disable auto-update:
+Override the default cache location (`$HOME/.tpmtb`):
 
 ```go
 tb, err := apiv1beta.GetTrustedBundle(ctx, apiv1beta.GetConfig{
-	AutoUpdate: apiv1beta.AutoUpdateConfig{
-		DisableAutoUpdate: true,
-	},
+	CachePath: "/custom/cache/path",
 })
 if err != nil {
 	log.Fatal(err)
 }
-// No need to call tb.Stop() when auto-update is disabled
+defer tb.Stop()
 ```
-
-> [!TIP]
-> Disabling auto-update is useful when:
-> - You want to control update timing explicitly (e.g., during maintenance windows)
-> - You prefer to restart your application to pick up new bundles
 
 ### Disabling Verification
 
@@ -215,6 +255,99 @@ if err != nil {
 }
 defer tb.Stop()
 ```
+
+## Persisting and Loading Bundles 💾
+
+### Persist to Disk
+
+Save a bundle and its verification assets to disk for later use:
+
+```go
+// Get and verify a bundle
+tb, err := apiv1beta.GetTrustedBundle(ctx, apiv1beta.GetConfig{})
+if err != nil {
+	log.Fatal(err)
+}
+defer tb.Stop()
+
+// Persist to default location ($HOME/.tpmtb)
+if err := tb.Persist(); err != nil {
+	log.Fatalf("Failed to persist bundle: %v", err)
+}
+
+// Or persist to a custom location
+if err := tb.Persist("/custom/cache/path"); err != nil {
+	log.Fatalf("Failed to persist bundle: %v", err)
+}
+```
+
+**What gets persisted:**
+- `tpm-ca-certificates.pem` - The bundle itself
+- `checksums.txt` - SHA256 checksums
+- `checksums.txt.sigstore.json` - Cosign signature
+- `roots.provenance.json` - GitHub attestation
+- `config.json` - Bundle configuration (vendor filter, auto-update settings)
+
+### Load from Disk
+
+Load a previously persisted bundle:
+
+```go
+// Load from default location ($HOME/.tpmtb)
+tb, err := apiv1beta.Load(ctx, apiv1beta.LoadConfig{})
+if err != nil {
+	log.Fatal(err)
+}
+defer tb.Stop()
+
+// Or load from a custom location
+tb, err = apiv1beta.Load(ctx, apiv1beta.LoadConfig{
+	CachePath: "/custom/cache/path",
+})
+if err != nil {
+	log.Fatal(err)
+}
+
+// Bundle is automatically verified on load
+certPool := tb.GetRoots()
+```
+
+> [!NOTE]
+> When loading a bundle, verification is performed automatically using the persisted verification assets. If verification fails, `Load` returns an error.
+
+### Persist and Load with Auto-Update
+
+When you persist a bundle with auto-update enabled, the configuration is saved and restored on load:
+
+```go
+// First run: Get bundle with auto-update and persist
+tb, err := apiv1beta.GetTrustedBundle(ctx, apiv1beta.GetConfig{
+	AutoUpdate: apiv1beta.AutoUpdateConfig{
+		Interval: 6 * time.Hour,
+	},
+})
+if err != nil {
+	log.Fatal(err)
+}
+
+if err := tb.Persist(); err != nil {
+	log.Fatal(err)
+}
+tb.Stop()
+
+// Later run: Load persisted bundle - auto-update resumes automatically
+tb, err = apiv1beta.Load(ctx, apiv1beta.LoadConfig{})
+if err != nil {
+	log.Fatal(err)
+}
+defer tb.Stop() // Still needed to stop the watcher
+
+// Bundle will auto-update every 6 hours
+certPool := tb.GetRoots()
+```
+
+> [!TIP]
+> This pattern is useful for long-running services that restart occasionally. The bundle persists across restarts and auto-update resumes seamlessly.
 
 ## Manual Verification
 
