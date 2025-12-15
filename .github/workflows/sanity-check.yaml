@@ -1,8 +1,11 @@
-name: Daily Sanity Checks
+name: Sanity Checks
 on:
   schedule: # daily at 19:00 UTC
     - cron: '0 19 * * *'
   workflow_dispatch: # Allow manual trigger
+  pull_request:
+    branches: ["**"]
+
 permissions:
   contents: read
 jobs:

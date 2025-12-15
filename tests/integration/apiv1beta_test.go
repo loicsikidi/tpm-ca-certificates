@@ -72,7 +72,7 @@ func TestVerifyTrustedBundle(t *testing.T) {
 			t.Fatal("Expected error when BundleMetadata has empty Commit")
 		}
 
-		if !strings.Contains(err.Error(), "commit cannot be empty") {
+		if !strings.Contains(err.Error(), "metadata 'Commit' is required") {
 			t.Errorf("Expected validation error about commit, got: %v", err)
 		}
 	})
@@ -243,7 +243,7 @@ func TestGetTrustedBundle(t *testing.T) {
 
 		// Verify that the bundle contains all vendors (not filtered at fetch time)
 		allVendors := tb.GetVendors()
-		if len(allVendors) == 2 {
+		if len(allVendors) != 2 {
 			t.Errorf("Expected 2 vendors in catalog, got %d", len(allVendors))
 		}
 	})

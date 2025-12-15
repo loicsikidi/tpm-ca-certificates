@@ -18,6 +18,22 @@ type Metadata struct {
 	Commit string
 }
 
+func (m *Metadata) Check() error {
+	if m.Date == "" {
+		return fmt.Errorf("metadata 'Date' is required")
+	}
+	if err := ValidateDate(m.Date); err != nil {
+		return err
+	}
+	if m.Commit == "" {
+		return fmt.Errorf("metadata 'Commit' is required")
+	}
+	if err := ValidateCommit(m.Commit); err != nil {
+		return err
+	}
+	return nil
+}
+
 // ParseMetadata parses a TPM trust bundle from bytes and extracts the global metadata.
 func ParseMetadata(data []byte) (*Metadata, error) {
 	return ParseMetadataFromReader(bytes.NewReader(data))
@@ -38,13 +54,13 @@ func ParseMetadataFromReader(reader io.Reader) (*Metadata, error) {
 		}
 
 		// Look for "## Date: YYYY-MM-DD"
-		if strings.HasPrefix(line, MetadataKeyDate.String()) {
-			metadata.Date = strings.TrimSpace(strings.TrimPrefix(line, MetadataKeyDate.String()))
+		if after, ok := strings.CutPrefix(line, MetadataKeyDate.String()); ok {
+			metadata.Date = strings.TrimSpace(after)
 		}
 
 		// Look for "## Commit: <hash>"
-		if strings.HasPrefix(line, MetadataKeyCommit.String()) {
-			metadata.Commit = strings.TrimSpace(strings.TrimPrefix(line, MetadataKeyCommit.String()))
+		if after, ok := strings.CutPrefix(line, MetadataKeyCommit.String()); ok {
+			metadata.Commit = strings.TrimSpace(after)
 		}
 	}
 
@@ -101,8 +117,8 @@ func ParseBundleFromReader(reader io.Reader) (map[vendors.ID][]*x509.Certificate
 		}
 
 		// Parse certificate metadata (lines starting with #)
-		if strings.HasPrefix(line, CertMetadataKeyOwner.String()) {
-			ownerStr := strings.TrimSpace(strings.TrimPrefix(line, CertMetadataKeyOwner.String()))
+		if after, ok := strings.CutPrefix(line, CertMetadataKeyOwner.String()); ok {
+			ownerStr := strings.TrimSpace(after)
 			currentOwner = vendors.ID(ownerStr)
 			if err := currentOwner.Validate(); err != nil {
 				return nil, fmt.Errorf("invalid vendor ID in certificate metadata: %w", err)

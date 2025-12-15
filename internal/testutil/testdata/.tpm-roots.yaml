@@ -1,0 +1,35 @@
+---
+version: "alpha"
+vendors:
+    - id: "IFX"
+      name: "Infineon"
+      certificates:
+        - name: "Infineon OPTIGA(TM) ECC Root CA"
+          url: "https://www.infineon.com/assets/row/public/documents/30/67/infineon-optigatm-trust-ecc-root-ca-certificates-en.cer"
+          validation:
+            fingerprint:
+                sha256: "CF:EB:02:FE:CD:55:AD:7A:73:C6:E1:D1:19:85:D4:C4:7D:EE:24:8A:B6:3D:CB:66:09:1A:24:89:66:04:43:C3"
+    - id: "INTC"
+      name: "Intel"
+      certificates:
+        - name: "OnDie CA RootCA"
+          url: "https://tsci.intel.com/content/OnDieCA/certs/OnDie_CA_RootCA_Certificate.cer"
+          validation:
+            fingerprint:
+                sha256: "BE:B4:0B:B7:50:7B:33:96:72:26:AA:80:E0:84:74:9F:BB:65:93:89:3C:64:2E:81:8D:68:2E:9A:8D:07:FC:24"
+    - id: "NTC"
+      name: "Nuvoton Technology"
+      certificates:
+        - name: "NPCTxxx ECC521 RootCA"
+          url: "https://www.nuvoton.com/security/NTC-TPM-EK-Cert/NPCTxxxECC521RootCA.cer"
+          validation:
+            fingerprint:
+                sha1: "7C:7B:3C:8A:46:5E:67:D2:8F:4D:B0:F3:5C:E1:20:C4:BB:4A:AC:CC"
+    - id: "STM"
+      name: "STMicroelectronics"
+      certificates:
+        - name: "GlobalSign Trusted Platform Module ECC Root CA"
+          url: "https://secure.globalsign.com/cacert/tpmeccroot.crt"
+          validation:
+            fingerprint:
+                sha256: "5A:8C:7B:5E:B8:88:CF:CE:93:22:06:8E:80:E8:2B:28:B5:54:FF:EB:7F:DC:96:38:DC:B3:76:30:77:40:1D:26"
