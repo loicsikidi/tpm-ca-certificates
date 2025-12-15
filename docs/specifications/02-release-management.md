@@ -2,9 +2,10 @@
 
 ## Document History
 
-| Version |    Date    |   Author    |   Description    |
-|---------|------------|-------------|------------------|
-| alpha   | 2025-11-26 | Loïc Sikidi | Initial version  |
+| Version |    Date    |   Author    |   Description                                      |
+|---------|------------|-------------|----------------------------------------------------|
+| alpha   | 2025-11-26 | Loïc Sikidi | Initial version                                    |
+| alpha   | 2025-12-15 | Loïc Sikidi | Add intermediate certificates bundle as artifact   |
 
 ## Overview
 
@@ -66,16 +67,20 @@ Each bundle release tag produces the following artifacts:
 
 |   Name  |   Description |   Producer   |
 |---------|---------------|--------------|
-| `tpm-ca-certificates.pem` | The complete certificate bundle in PEM format | `tpmtb` |
-| `checksums.txt` | SHA-256 checksum of the bundle | `sha256sum` |
+| `tpm-ca-certificates.pem` | The complete root certificate bundle in PEM format | `tpmtb` |
+| `tpm-intermediate-ca-certificates.pem` | The complete intermediate certificate bundle in PEM format | `tpmtb` |
+| `checksums.txt` | SHA-256 checksums of both bundles | `sha256sum` |
 | `checksums.txt.sigstore.json` | Sigstore signature for checksum verification | `cosign` |
 
 > [!NOTE]
 > The signature is stored in [sigstore bundle format](https://docs.sigstore.dev/about/bundle/).
 
+> [!NOTE]
+> Both bundles are generated during every release, even if only one of the configuration files has been modified.
+
 #### Bundle Release Process
 
-1. Update `.tpm-roots.yaml` with new/updated certificates
+1. Update `.tpm-roots.yaml` and/or `.tpm-intermediates.yaml` with new/updated certificates
 2. Run `tpmtb config format` to ensure consistent formatting
 3. Run `tpmtb config validate` to verify configuration
 4. Commit changes to repository

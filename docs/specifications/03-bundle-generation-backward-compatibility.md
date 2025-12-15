@@ -15,7 +15,7 @@ This specification defines backward compatibility requirements for the `tpmtb ge
 
 ## Configuration File Format Versioning
 
-The configuration file format version is defined by the `version` field in `.tpm-roots.yaml`:
+The configuration file format version is defined by the `version` field in `.tpm-roots.yaml` and `.tpm-intermediates.yaml`:
 
 ```yaml
 version: "alpha"  # Pre-stable: alpha, beta, gamma
