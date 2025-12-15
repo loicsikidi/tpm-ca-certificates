@@ -132,12 +132,12 @@ release:
 
     ```bash
     # Verify the archive
-    gh attestation verify tpmtb_{{ .Version }}_linux_amd64.tar.gz --owner loicsikidi
+    gh attestation verify tpmtb_{{ .Version }}_linux_amd64.tar.gz --repo loicsikidi/{{ .ProjectName }}
     ```
     #### 2. OCI Provenance
 
     ```bash
-    gh attestation verify oci://ghcr.io/loicsikidi/{{ .ProjectName }}/tpmtb:{{ .Tag }} --owner loicsikidi
+    gh attestation verify oci://ghcr.io/loicsikidi/{{ .ProjectName }}/tpmtb:{{ .Tag }} --repo loicsikidi/{{ .ProjectName }}
     ```
   footer: |
     **Generated with GoReleaser 🚀**
