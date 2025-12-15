@@ -78,7 +78,7 @@ release:
     Once the checksum integrity is established, verify the **provenance** using GitHub's attestation system:
 
     ```bash
-    gh attestation verify tpm-ca-certificates.pem --owner loicsikidi
+    gh attestation verify tpm-ca-certificates.pem --repo loicsikidi/{{ .ProjectName }}
     ```
 
     #### Option 3: Reproducibility
