@@ -74,7 +74,7 @@ docker pull ghcr.io/loicsikidi/tpm-ca-certificates/tpmtb:latest
 Or use it directly:
 
 ```bash
-docker run --rm -v $(pwd):/tmp -w /tmp ghcr.io/loicsikidi/tpm-ca-certificates/tpmtb:latest --help
+docker run --rm ghcr.io/loicsikidi/tpm-ca-certificates/tpmtb:latest --help
 ```
 
 </details>
@@ -94,6 +94,12 @@ tpmtb bundle download
 > 3. 🔐 Validates the provenance attestation against the public transparency log (Rekor)
 >
 > The verification ensures that the bundle was genuinely produced by this repository's CI pipeline and hasn't been tampered with since publication.
+
+> [!NOTE]
+> When using the OCI image, you can output the bundle to stdout (since the container filesystem is read-only):
+> ```bash
+> docker run --rm ghcr.io/loicsikidi/tpm-ca-certificates/tpmtb:latest bundle download --output-dir - > tpm-ca-certificates.pem
+> ```
 
 Now you can use `tpm-ca-certificates.pem` as the trusted root certificate bundle for your TPM interactions 💫.
 
