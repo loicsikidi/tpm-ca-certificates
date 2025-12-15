@@ -7,10 +7,18 @@
 | alpha   | 2025-11-26 | Loïc Sikidi | Initial version  |
 | alpha   | 2025-12-08 | Loïc Sikidi | Clarify date format for validity dates (zero-padded day) |
 | alpha   | 2025-12-08 | Loïc Sikidi | Clarify "Not Valid After" field alignment formatting |
+| alpha   | 2025-12-15 | Loïc Sikidi | Clarify bundle format applies to both root and intermediate certificates |
 
 ## Overview
 
-The TPM Trust Bundle uses the PEM (Privacy Enhanced Mail) format as defined in [RFC 1421](https://datatracker.ietf.org/doc/html/rfc1421) to store a collection of verified TPM Root Endorsement Certificates with associated metadata.
+The TPM Trust Bundle uses the PEM (Privacy Enhanced Mail) format as defined in [RFC 1421](https://datatracker.ietf.org/doc/html/rfc1421) to store a collection of verified TPM certificates with associated metadata.
+
+This format specification applies to both:
+- **Root certificates bundle** (`tpm-ca-certificates.pem`)
+- **Intermediate certificates bundle** (`tpm-intermediate-ca-certificates.pem`)
+
+> [!IMPORTANT]
+> The bundle format does not include any global metadata to indicate whether certificates are root or intermediate certificates. It is the responsibility of consuming software to perform appropriate verification based on the bundle being used.
 
 ## Format Choice Rationale
 

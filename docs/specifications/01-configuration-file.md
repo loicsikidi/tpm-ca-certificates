@@ -6,8 +6,14 @@
 |---------|------------|-------------|-----------------------------------------------|
 | alpha   | 2025-11-26 | Loïc Sikidi | Initial version                               |
 | alpha   | 2025-12-10 | Loïc Sikidi | Add duplicate validation rules                |
+| alpha   | 2025-12-15 | Loïc Sikidi | Add support for two configuration files       |
 
-The TPM Trust Bundle is generated from a human-readable YAML configuration file named `.tpm-roots.yaml`. This file defines the root certificates for various TPM vendors and must follow strict formatting and validation rules to ensure consistency and integrity.
+The TPM Trust Bundle is generated from two human-readable YAML configuration files:
+
+- **`.tpm-roots.yaml`**: Defines root certificates for various TPM vendors
+- **`.tpm-intermediates.yaml`**: Defines intermediate certificates for various TPM vendors
+
+Both files must follow strict formatting and validation rules to ensure consistency and integrity.
 
 > [!IMPORTANT]
 > The configuration specification is currently in `alpha` version. Once stabilized, it will be promoted to `v1`.
