@@ -358,6 +358,208 @@ func parsePEMCertificates(pemData []byte) ([]*x509.Certificate, error) {
 	return certs, nil
 }
 
+func TestSmartCache(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	ctx := context.Background()
+
+	t.Run("first fetch downloads and caches bundle", func(t *testing.T) {
+		tmpDir := t.TempDir()
+
+		// First call should download from GitHub and cache
+		cfg := apiv1beta.GetConfig{
+			Date:       "2025-12-05",
+			SkipVerify: true,
+			CachePath:  tmpDir,
+			AutoUpdate: apiv1beta.AutoUpdateConfig{
+				DisableAutoUpdate: true,
+			},
+		}
+
+		tb, err := apiv1beta.GetTrustedBundle(ctx, cfg)
+		if err != nil {
+			t.Fatalf("First GetTrustedBundle() error = %v", err)
+		}
+		defer tb.Stop()
+
+		// Verify cache was created
+		configPath := filepath.Join(tmpDir, apiv1beta.CacheConfigFilename)
+		if _, err := os.Stat(configPath); os.IsNotExist(err) {
+			t.Fatal("Cache config.json was not created")
+		}
+
+		bundlePath := filepath.Join(tmpDir, apiv1beta.CacheRootBundleFilename)
+		if _, err := os.Stat(bundlePath); os.IsNotExist(err) {
+			t.Fatal("Cache bundle was not created")
+		}
+
+		// Verify config contains correct version
+		configData, err := os.ReadFile(configPath)
+		if err != nil {
+			t.Fatalf("Failed to read config: %v", err)
+		}
+
+		var cacheConfig apiv1beta.CacheConfig
+		if err := json.Unmarshal(configData, &cacheConfig); err != nil {
+			t.Fatalf("Failed to unmarshal config: %v", err)
+		}
+
+		if cacheConfig.Version != "2025-12-05" {
+			t.Errorf("Expected version '2025-12-05', got %q", cacheConfig.Version)
+		}
+	})
+
+	t.Run("second fetch uses cache", func(t *testing.T) {
+		tmpDir := t.TempDir()
+
+		// First call to populate cache
+		cfg1 := apiv1beta.GetConfig{
+			Date:       "2025-12-05",
+			SkipVerify: true,
+			CachePath:  tmpDir,
+			AutoUpdate: apiv1beta.AutoUpdateConfig{
+				DisableAutoUpdate: true,
+			},
+		}
+
+		tb1, err := apiv1beta.GetTrustedBundle(ctx, cfg1)
+		if err != nil {
+			t.Fatalf("First GetTrustedBundle() error = %v", err)
+		}
+		tb1.Stop()
+
+		// Get modification time of bundle file
+		bundlePath := filepath.Join(tmpDir, apiv1beta.CacheRootBundleFilename)
+		info1, err := os.Stat(bundlePath)
+		if err != nil {
+			t.Fatalf("Failed to stat bundle: %v", err)
+		}
+		modTime1 := info1.ModTime()
+
+		// Wait a bit to ensure modification time would differ if file was rewritten
+		time.Sleep(10 * time.Millisecond)
+
+		// Second call with same config should use cache
+		cfg2 := apiv1beta.GetConfig{
+			Date:       "2025-12-05",
+			SkipVerify: true,
+			CachePath:  tmpDir,
+			AutoUpdate: apiv1beta.AutoUpdateConfig{
+				DisableAutoUpdate: true,
+			},
+		}
+
+		tb2, err := apiv1beta.GetTrustedBundle(ctx, cfg2)
+		if err != nil {
+			t.Fatalf("Second GetTrustedBundle() error = %v", err)
+		}
+		defer tb2.Stop()
+
+		// Verify bundle file was not modified (loaded from cache)
+		info2, err := os.Stat(bundlePath)
+		if err != nil {
+			t.Fatalf("Failed to stat bundle after second call: %v", err)
+		}
+		modTime2 := info2.ModTime()
+
+		if !modTime1.Equal(modTime2) {
+			t.Error("Bundle file was modified, expected it to be loaded from cache")
+		}
+
+		// Verify bundle content is the same
+		if string(tb1.GetRaw()) != string(tb2.GetRaw()) {
+			t.Error("Bundle content differs between first and second fetch")
+		}
+	})
+
+	t.Run("different version triggers new download", func(t *testing.T) {
+		tmpDir := t.TempDir()
+
+		// First call with version 2025-12-05
+		cfg1 := apiv1beta.GetConfig{
+			Date:       "2025-12-05",
+			SkipVerify: true,
+			CachePath:  tmpDir,
+			AutoUpdate: apiv1beta.AutoUpdateConfig{
+				DisableAutoUpdate: true,
+			},
+		}
+
+		tb1, err := apiv1beta.GetTrustedBundle(ctx, cfg1)
+		if err != nil {
+			t.Fatalf("First GetTrustedBundle() error = %v", err)
+		}
+		tb1.Stop()
+
+		// Second call with different version should download again
+		cfg2 := apiv1beta.GetConfig{
+			Date:       "2025-12-03",
+			SkipVerify: true,
+			CachePath:  tmpDir,
+			AutoUpdate: apiv1beta.AutoUpdateConfig{
+				DisableAutoUpdate: true,
+			},
+		}
+
+		tb2, err := apiv1beta.GetTrustedBundle(ctx, cfg2)
+		if err != nil {
+			t.Fatalf("Second GetTrustedBundle() error = %v", err)
+		}
+		defer tb2.Stop()
+
+		// Verify cache now contains the new version
+		configPath := filepath.Join(tmpDir, apiv1beta.CacheConfigFilename)
+		configData, err := os.ReadFile(configPath)
+		if err != nil {
+			t.Fatalf("Failed to read config: %v", err)
+		}
+
+		var cacheConfig apiv1beta.CacheConfig
+		if err := json.Unmarshal(configData, &cacheConfig); err != nil {
+			t.Fatalf("Failed to unmarshal config: %v", err)
+		}
+
+		if cacheConfig.Version != "2025-12-03" {
+			t.Errorf("Expected version '2025-12-03', got %q", cacheConfig.Version)
+		}
+
+		// Verify bundle metadata
+		metadata := tb2.GetMetadata()
+		if metadata.Date != "2025-12-03" {
+			t.Errorf("Expected bundle date '2025-12-03', got %q", metadata.Date)
+		}
+	})
+
+	t.Run("DisableLocalCache bypasses cache", func(t *testing.T) {
+		tmpDir := t.TempDir()
+
+		// Call with DisableLocalCache=true should not create cache
+		cfg := apiv1beta.GetConfig{
+			Date:              "2025-12-05",
+			SkipVerify:        true,
+			CachePath:         tmpDir,
+			DisableLocalCache: true,
+			AutoUpdate: apiv1beta.AutoUpdateConfig{
+				DisableAutoUpdate: true,
+			},
+		}
+
+		tb, err := apiv1beta.GetTrustedBundle(ctx, cfg)
+		if err != nil {
+			t.Fatalf("GetTrustedBundle() error = %v", err)
+		}
+		defer tb.Stop()
+
+		// Verify cache was NOT created
+		configPath := filepath.Join(tmpDir, apiv1beta.CacheConfigFilename)
+		if _, err := os.Stat(configPath); !os.IsNotExist(err) {
+			t.Error("Cache config.json should not exist when DisableLocalCache is true")
+		}
+	})
+}
+
 func TestLoad(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")
@@ -367,6 +569,7 @@ func TestLoad(t *testing.T) {
 
 	ctx := context.Background()
 	cfg := apiv1beta.CacheConfig{
+		Version:       "2025-12-05",
 		AutoUpdate:    &apiv1beta.AutoUpdateConfig{},
 		VendorIDs:     []apiv1beta.VendorID{apiv1beta.IFX},
 		LastTimestamp: time.Now(),
@@ -441,6 +644,7 @@ func TestLoad(t *testing.T) {
 	t.Run("auto-update after load refreshes to newer version", func(t *testing.T) {
 		// Create cache config with auto-update enabled and short interval
 		cfg := apiv1beta.CacheConfig{
+			Version: "2025-12-05",
 			AutoUpdate: &apiv1beta.AutoUpdateConfig{
 				DisableAutoUpdate: false,
 				Interval:          2 * time.Second,
