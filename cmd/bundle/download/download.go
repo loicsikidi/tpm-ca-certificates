@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	bundleFilename = "tpm-ca-certificates.pem"
+	bundleFilename = apiv1beta.CacheRootBundleFilename
 )
 
 var (
@@ -45,7 +45,10 @@ verify its authenticity using the same verification process as the verify comman
   tpmtb bundle download --force
 
   # Download to a specific directory
-  tpmtb bundle download --output-dir /tmp`,
+  tpmtb bundle download --output-dir /tmp
+
+  # Print bundle to stdout
+  tpmtb bundle download --output-dir -`,
 		Args:         cobra.NoArgs,
 		SilenceUsage: true,
 		RunE:         run,
@@ -58,25 +61,28 @@ verify its authenticity using the same verification process as the verify comman
 	cmd.Flags().StringVarP(&date, "date", "d", "",
 		"Bundle release date (YYYY-MM-DD), default: latest")
 	cmd.Flags().StringVarP(&outputDir, "output-dir", "o", ".",
-		"Output directory for downloaded files")
+		"Output directory for downloaded files (use '-' to print to stdout)")
 
 	return cmd
 }
 
 func run(cmd *cobra.Command, args []string) error {
-	if !utils.DirExists(outputDir) {
+	if outputDir != "-" && !utils.DirExists(outputDir) {
 		return fmt.Errorf("output directory %s does not exist", outputDir)
 	}
 
-	bundlePath := filepath.Join(outputDir, bundleFilename)
+	var bundlePath string
+	if outputDir != "-" {
+		bundlePath = filepath.Join(outputDir, bundleFilename)
 
-	if utils.FileExists(bundlePath) && !force {
-		cli.DisplayWarning("File %s already exists.", bundlePath)
-		if !cli.PromptConfirmation("Override?") {
+		if utils.FileExists(bundlePath) && !force {
+			cli.DisplayWarning("File %s already exists.", bundlePath)
+			if !cli.PromptConfirmation("Override?") {
+				fmt.Println() // Add newline for clean output after prompt
+				return fmt.Errorf("download cancelled")
+			}
 			fmt.Println() // Add newline for clean output after prompt
-			return fmt.Errorf("download cancelled")
 		}
-		fmt.Println() // Add newline for clean output after prompt
 	}
 
 	// Use the pkg/apiv1beta API to download and optionally verify the bundle
@@ -102,7 +108,12 @@ func run(cmd *cobra.Command, args []string) error {
 	if skipVerify {
 		cli.DisplayWarning("⚠️  Verification skipped (--skip-verify)")
 	} else {
-		cli.DisplaySuccess("✅ Bundle verified")
+		displaySuccess("✅ Bundle verified")
+	}
+
+	if outputDir == "-" {
+		_, err = os.Stdout.Write(trustedBundle.GetRaw())
+		return err
 	}
 
 	if err := os.WriteFile(bundlePath, trustedBundle.GetRaw(), 0644); err != nil {
@@ -112,4 +123,12 @@ func run(cmd *cobra.Command, args []string) error {
 	cli.DisplaySuccess("✅ Downloaded bundle to %s", bundlePath)
 
 	return nil
+}
+
+// displaySuccess displays a success message unless outputting to stdout.
+func displaySuccess(msg string, args ...any) {
+	if outputDir == "-" {
+		return
+	}
+	cli.DisplaySuccess(msg, args...)
 }
