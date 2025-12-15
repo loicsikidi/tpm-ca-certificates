@@ -35,6 +35,8 @@ Welcome to the TPM CA Certificates documentation! This guide will help you navig
 | [TPM Trust Bundle Format](specifications/04-tpm-trust-bundle-format.md) | Bundle structure, metadata, and PEM format |
 | [Bundle Verification](specifications/05-bundle-verification.md) | Verification process, Sigstore integration, and SLSA attestation |
 | [API Versioning](specifications/06-api-versioning.md) | Public API versioning strategy, channels, and stability guarantees |
+| [Local Cache](specifications/07-local-cache.md) | Local cache system for offline verification and performance optimization |
+| [Full Offline Mode](specifications/08-full-offline-mode.md) | Complete offline verification with intermediate certificates support |
 
 ## 🎯 Common Use Cases
 
@@ -90,7 +92,9 @@ docs/
     ├── 03-bundle-generation-backward-compatibility.md
     ├── 04-tpm-trust-bundle-format.md
     ├── 05-bundle-verification.md
-    └── 06-api-versioning.md
+    ├── 06-api-versioning.md
+    ├── 07-local-cache.md
+    └── 08-full-offline-mode.md
 ```
 
 ## 🆘 Getting Help
