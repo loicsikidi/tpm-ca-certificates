@@ -289,6 +289,9 @@ func (c *VerifyConfig) CheckAndSetDefaults() error {
 		}
 		c.BundleMetadata = metadata
 	}
+	if err := c.BundleMetadata.Check(); err != nil {
+		return fmt.Errorf("invalid bundle metadata: %w", err)
+	}
 
 	if c.sourceRepo == nil {
 		c.sourceRepo = &github.Repo{
