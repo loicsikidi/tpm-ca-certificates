@@ -22,24 +22,23 @@ import (
 //  5. Computes the actual checksum of the artifact and compares it
 //
 // Returns the verification result which contains certificate extensions with commit information.
-func VerifyChecksum(ctx context.Context, cfg policy.Config, checksumData, signatureData, artifactData []byte, artifactName string) (*verify.VerificationResult, error) {
+func VerifyChecksum(ctx context.Context, policyCfg policy.Config, verifierCfg verifier.Config, checksumData, signatureData, artifactData []byte, artifactName string) (*verify.VerificationResult, error) {
 	var b bundle.Bundle
 	if err := b.UnmarshalJSON(signatureData); err != nil {
 		return nil, fmt.Errorf("failed to load signature bundle: %w", err)
 	}
 
-	// Create a Sigstore verifier with default configuration
-	sev, err := verifier.New(verifier.Config{})
+	sgVerifier, err := verifier.New(verifierCfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create verifier: %w", err)
 	}
 
-	policyBuilder, err := policy.BuildCosignPolicy(bytes.NewReader(checksumData), cfg)
+	policyBuilder, err := policy.BuildCosignPolicy(bytes.NewReader(checksumData), policyCfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build policy: %w", err)
 	}
 
-	result, err := sev.Verify(&b, policyBuilder)
+	result, err := sgVerifier.Verify(&b, policyBuilder)
 	if err != nil {
 		return nil, fmt.Errorf("signature verification failed: %w", err)
 	}

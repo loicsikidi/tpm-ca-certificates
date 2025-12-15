@@ -2,7 +2,9 @@ package verifier
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -10,6 +12,8 @@ import (
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/cosign"
 	transparencyGithub "github.com/loicsikidi/tpm-ca-certificates/internal/transparency/github"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/policy"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/verifier"
+	"github.com/sigstore/sigstore-go/pkg/root"
 	"github.com/sigstore/sigstore-go/pkg/verify"
 )
 
@@ -36,13 +40,19 @@ type Config struct {
 
 	// WorkflowFilename is the GitHub Actions workflow file name
 	//
-	// (optional, default: [github.ReleaseBundleWorkflowPath])
+	// Optional, default: [github.ReleaseBundleWorkflowPath]
 	WorkflowFilename string
 
-	// GitHubClient is the GitHub API client
+	// HTTPClient is the HTTP client to use for requests.
 	//
-	// (optional, will use default if nil)
-	GitHubClient *github.HTTPClient
+	// Optional. If nil, it stays nil and default HTTP client will be used.
+	HTTPClient *http.Client
+
+	// DisableLocalCache mode allows to work on a read-only
+	// files system if this is set, cache path is ignored.
+	//
+	// Optional. Default is false (local cache enabled).
+	DisableLocalCache bool
 }
 
 // CheckAndSetDefaults validates and sets default values.
@@ -64,9 +74,6 @@ func (c *Config) CheckAndSetDefaults() error {
 	}
 	if c.WorkflowFilename == "" {
 		c.WorkflowFilename = github.ReleaseBundleWorkflowPath
-	}
-	if c.GitHubClient == nil {
-		c.GitHubClient = github.NewHTTPClient(nil)
 	}
 
 	return nil
@@ -98,7 +105,7 @@ type VerifyResult struct {
 }
 
 // Verify performs full bundle verification (Cosign + GitHub Attestations).
-func (v *Verifier) Verify(ctx context.Context, bundleData, checksumsData, checksumsSigData []byte, digest string) (*VerifyResult, error) {
+func (v *Verifier) Verify(ctx context.Context, bundleData, checksumsData, checksumsSigData, provenanceData []byte, digest string) (*VerifyResult, error) {
 	result := &VerifyResult{Policy: v.GetPolicyConfig()}
 
 	// Phase 1: Cosign verification
@@ -109,7 +116,7 @@ func (v *Verifier) Verify(ctx context.Context, bundleData, checksumsData, checks
 	result.CosignResult = cosignResult
 
 	// Phase 2: GitHub Attestation verification
-	attestationResults, err := v.verifyGitHubAttestations(ctx, digest)
+	attestationResults, err := v.verifyGitHubAttestations(ctx, provenanceData, digest)
 	if err != nil {
 		return nil, fmt.Errorf("github attestation verification failed: %w", err)
 	}
@@ -126,9 +133,27 @@ func (v *Verifier) GetPolicyConfig() policy.Config {
 	}
 }
 
+func (v *Verifier) GetSigstoreVerifierConfig() (verifier.Config, error) {
+	cfg := verifier.Config{}
+	if v.config.DisableLocalCache {
+		opts := verifier.GetDefaultTUFOptions(v.config.HTTPClient)
+		opts.DisableLocalCache = true
+		root, err := root.FetchTrustedRootWithOptions(opts)
+		if err != nil {
+			return cfg, err
+		}
+		cfg.Root = root
+	}
+	return cfg, nil
+}
+
 // verifyCosign performs Cosign signature verification.
 func (v *Verifier) verifyCosign(ctx context.Context, bundleData, checksumsData, checksumsSigData []byte) (*verify.VerificationResult, error) {
-	result, err := cosign.VerifyChecksum(ctx, v.GetPolicyConfig(), checksumsData, checksumsSigData, bundleData, bundleFilename)
+	verifierCfg, err := v.GetSigstoreVerifierConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to produce sigstore verifier config: %w", err)
+	}
+	result, err := cosign.VerifyChecksum(ctx, v.GetPolicyConfig(), verifierCfg, checksumsData, checksumsSigData, bundleData, bundleFilename)
 	if err != nil {
 		return nil, err
 	}
@@ -145,20 +170,21 @@ func (v *Verifier) verifyCosign(ctx context.Context, bundleData, checksumsData, 
 }
 
 // verifyGitHubAttestations performs GitHub Attestation verification.
-func (v *Verifier) verifyGitHubAttestations(ctx context.Context, digest string) ([]*verify.VerificationResult, error) {
-	// Fetch attestations from GitHub API
-	attestations, err := v.config.GitHubClient.GetAttestations(ctx, *v.config.SourceRepo, digest)
+func (v *Verifier) verifyGitHubAttestations(_ context.Context, provenanceData []byte, digest string) ([]*verify.VerificationResult, error) {
+	// Unmarshal the provenance data (attestation)
+	var attestation github.Attestation
+	if err := json.Unmarshal(provenanceData, &attestation); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal provenance: %w", err)
+	}
+
+	verifierCfg, err := v.GetSigstoreVerifierConfig()
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch attestations: %w", err)
+		return nil, fmt.Errorf("failed to produce sigstore verifier config: %w", err)
 	}
-
-	if len(attestations) == 0 {
-		return nil, fmt.Errorf("no attestations found for this artifact")
-	}
-
 	cfg := transparencyGithub.Config{
-		Digest: digest,
-		Policy: v.GetPolicyConfig(),
+		Digest:   digest,
+		Policy:   v.GetPolicyConfig(),
+		Verifier: verifierCfg,
 	}
 
 	verifier, err := transparencyGithub.NewVerifier(cfg)
@@ -166,40 +192,23 @@ func (v *Verifier) verifyGitHubAttestations(ctx context.Context, digest string) 
 		return nil, fmt.Errorf("failed to create github verifier: %w", err)
 	}
 
-	// Verify each attestation
-	var verifiedResults []*verify.VerificationResult
-	var verificationErr error
-
-	for i, att := range attestations {
-		result, err := verifier.Verify(att)
-		if err != nil {
-			verificationErr = fmt.Errorf("attestation %d verification failed: %w", i, err)
-			continue
-		}
-
-		// Verify Rekor timestamp matches the bundle date
-		if err := verifyRekorTimestampDate(result, v.config.Date); err != nil {
-			verificationErr = fmt.Errorf("attestation %d timestamp validation failed: %w", i, err)
-			continue
-		}
-
-		// Verify commit matches the expected commit
-		if err := verifyAttestationCommit(result, v.config.Commit); err != nil {
-			verificationErr = fmt.Errorf("attestation %d commit validation failed: %w", i, err)
-			continue
-		}
-
-		verifiedResults = append(verifiedResults, result)
+	// Verify the attestation
+	result, err := verifier.Verify(&attestation)
+	if err != nil {
+		return nil, fmt.Errorf("attestation verification failed: %w", err)
 	}
 
-	if len(verifiedResults) == 0 {
-		if verificationErr != nil {
-			return nil, verificationErr
-		}
-		return nil, fmt.Errorf("no attestations passed verification")
+	// Verify Rekor timestamp matches the bundle date
+	if err := verifyRekorTimestampDate(result, v.config.Date); err != nil {
+		return nil, fmt.Errorf("timestamp validation failed: %w", err)
 	}
 
-	return verifiedResults, nil
+	// Verify commit matches the expected commit
+	if err := verifyAttestationCommit(result, v.config.Commit); err != nil {
+		return nil, fmt.Errorf("commit validation failed: %w", err)
+	}
+
+	return []*verify.VerificationResult{result}, nil
 }
 
 // verifyRekorTimestampDate validates that the Rekor timestamp date matches the expected tag date.

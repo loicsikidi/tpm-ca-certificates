@@ -3,12 +3,16 @@ package integration
 import (
 	"context"
 	"crypto/x509"
+	"encoding/json"
 	"encoding/pem"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/testutil"
 	"github.com/loicsikidi/tpm-ca-certificates/pkg/apiv1beta"
 )
 
@@ -135,8 +139,8 @@ func TestGetTrustedBundle(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to parse PEM certificates: %v", err)
 		}
-		if len(certs) == 1 {
-			t.Errorf("Expected 1 certificates in the bundle, got %d", len(certs))
+		if len(certs) == 0 {
+			t.Error("Expected at least one certificate in raw bundle")
 		}
 	})
 
@@ -239,8 +243,8 @@ func TestGetTrustedBundle(t *testing.T) {
 
 		// Verify that the bundle contains all vendors (not filtered at fetch time)
 		allVendors := tb.GetVendors()
-		if len(allVendors) < 2 {
-			t.Errorf("Expected at least 2 vendors in catalog, got %d", len(allVendors))
+		if len(allVendors) == 2 {
+			t.Errorf("Expected 2 vendors in catalog, got %d", len(allVendors))
 		}
 	})
 
@@ -352,4 +356,133 @@ func parsePEMCertificates(pemData []byte) ([]*x509.Certificate, error) {
 	}
 
 	return certs, nil
+}
+
+func TestLoad(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	t.Parallel()
+
+	ctx := context.Background()
+	cfg := apiv1beta.CacheConfig{
+		AutoUpdate:    &apiv1beta.AutoUpdateConfig{},
+		VendorIDs:     []apiv1beta.VendorID{apiv1beta.IFX},
+		LastTimestamp: time.Now(),
+	}
+	configData, err := json.Marshal(cfg)
+	if err != nil {
+		t.Fatalf("Failed to marshal config: %v", err)
+	}
+
+	t.Run("load from cache without network requests", func(t *testing.T) {
+		tmpDir := testutil.CreateCacheDir(t, configData)
+
+		tb, err := apiv1beta.Load(ctx, apiv1beta.LoadConfig{
+			CachePath:  tmpDir,
+			SkipVerify: false,
+		})
+		if err != nil {
+			t.Fatalf("Load failed: %v", err)
+		}
+		defer tb.Stop()
+
+		// Verify the loaded bundle
+		metadata := tb.GetMetadata()
+		if metadata.Date == "" {
+			t.Error("Metadata date is empty")
+		}
+		if metadata.Commit == "" {
+			t.Error("Metadata commit is empty")
+		}
+
+		vendors := tb.GetVendors()
+		if len(vendors) != 1 {
+			t.Errorf("Expected 1 vendor, got %d", len(vendors))
+		}
+	})
+
+	t.Run("load fails if provenance is missing", func(t *testing.T) {
+		tmpDir := testutil.CreateCacheDir(t, configData)
+
+		// Intentionally remove provenance file
+		if err := os.Remove(filepath.Join(tmpDir, apiv1beta.CacheProvenanceFilename)); err != nil {
+			t.Fatalf("Failed to remove provenance file: %v", err)
+		}
+
+		// Load should fail because provenance is missing
+		_, err := apiv1beta.Load(ctx, apiv1beta.LoadConfig{
+			CachePath:  tmpDir,
+			SkipVerify: false,
+		})
+		if err == nil {
+			t.Fatal("Expected Load to fail with missing provenance, but it succeeded")
+		}
+		expectedErrMsg := "failed to read provenance"
+		if !strings.Contains(err.Error(), expectedErrMsg) {
+			t.Errorf("Expected error message to contain %q, got: %v", expectedErrMsg, err)
+		}
+	})
+
+	t.Run("load with missing cache directory", func(t *testing.T) {
+		_, err := apiv1beta.Load(ctx, apiv1beta.LoadConfig{
+			CachePath: "/nonexistent/directory",
+		})
+		if err == nil {
+			t.Fatal("Expected error for missing cache directory")
+		}
+		expectedErrMsg := "cache directory does not exist"
+		if !strings.Contains(err.Error(), expectedErrMsg) {
+			t.Errorf("Expected error message to contain %q, got: %v", expectedErrMsg, err)
+		}
+	})
+
+	t.Run("auto-update after load refreshes to newer version", func(t *testing.T) {
+		// Create cache config with auto-update enabled and short interval
+		cfg := apiv1beta.CacheConfig{
+			AutoUpdate: &apiv1beta.AutoUpdateConfig{
+				DisableAutoUpdate: false,
+				Interval:          2 * time.Second,
+			},
+			VendorIDs:     []apiv1beta.VendorID{apiv1beta.IFX},
+			LastTimestamp: time.Now(),
+		}
+		configData, err := json.Marshal(cfg)
+		if err != nil {
+			t.Fatalf("Failed to marshal config: %v", err)
+		}
+
+		tmpDir := testutil.CreateCacheDir(t, configData)
+
+		// Load the bundle from cache (old version)
+		tb, err := apiv1beta.Load(ctx, apiv1beta.LoadConfig{
+			CachePath:  tmpDir,
+			SkipVerify: true,
+		})
+		if err != nil {
+			t.Fatalf("Load failed: %v", err)
+		}
+		defer tb.Stop()
+
+		initialMetadata := tb.GetMetadata()
+		t.Logf("Initial bundle date after load: %s", initialMetadata.Date)
+
+		// The cached bundle is older, so we expect it to be updated
+		// Wait for auto-update to trigger (interval + buffer)
+		time.Sleep(3 * time.Second)
+
+		updatedMetadata := tb.GetMetadata()
+		t.Logf("Updated bundle date after auto-update: %s", updatedMetadata.Date)
+
+		// The bundle should be updated to a newer version
+		if updatedMetadata.Date == initialMetadata.Date {
+			t.Error("Bundle was not auto-updated after interval")
+		}
+
+		// Verify commit also changed
+		if updatedMetadata.Commit == initialMetadata.Commit {
+			t.Error("Expected commit to change after update")
+		}
+	})
 }

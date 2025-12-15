@@ -10,8 +10,9 @@ import (
 )
 
 type Config struct {
-	Digest string
-	Policy policy.Config
+	Digest   string
+	Policy   policy.Config
+	Verifier verifier.Config
 }
 
 func (c *Config) CheckAndSetDefaults() error {
@@ -20,6 +21,9 @@ func (c *Config) CheckAndSetDefaults() error {
 	}
 	if c.Digest == "" {
 		return fmt.Errorf("digest cannot be empty")
+	}
+	if err := c.Verifier.CheckAndSetDefaults(); err != nil {
+		return fmt.Errorf("invalid verifier config: %w", err)
 	}
 	return nil
 }
@@ -37,7 +41,7 @@ func NewVerifier(cfg Config) (*Verifier, error) {
 	}
 
 	// Create Sigstore verifier with default configuration
-	v, err := verifier.New(verifier.Config{})
+	v, err := verifier.New(cfg.Verifier)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create sigstore verifier: %w", err)
 	}

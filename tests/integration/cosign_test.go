@@ -12,6 +12,7 @@ import (
 	"github.com/loicsikidi/tpm-ca-certificates/internal/testutil"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/cosign"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/policy"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/verifier"
 )
 
 // contains checks if a string contains a substring.
@@ -54,9 +55,10 @@ func TestCosignVerification(t *testing.T) {
 
 	ctx := context.Background()
 	cfg := testPolicyConfig(metadata)
+	verifierCfg := verifier.Config{}
 
 	t.Run("VerifyValidSignature", func(t *testing.T) {
-		result, err := cosign.VerifyChecksum(ctx, cfg, checksumData, signatureData, bundleData, testutil.BundleFile)
+		result, err := cosign.VerifyChecksum(ctx, cfg, verifierCfg, checksumData, signatureData, bundleData, testutil.BundleFile)
 		if err != nil {
 			t.Fatalf("Expected successful verification, got error: %v", err)
 		}
@@ -70,7 +72,7 @@ func TestCosignVerification(t *testing.T) {
 		invalidData := []byte("invalid content\n")
 
 		// Verification should fail because checksum doesn't match
-		_, err = cosign.VerifyChecksum(ctx, cfg, checksumData, signatureData, invalidData, testutil.BundleFile)
+		_, err = cosign.VerifyChecksum(ctx, cfg, verifierCfg, checksumData, signatureData, invalidData, testutil.BundleFile)
 		if err == nil {
 			t.Fatal("Expected verification to fail with invalid checksum, but it succeeded")
 		}
@@ -83,7 +85,7 @@ func TestCosignVerification(t *testing.T) {
 		// Use invalid signature data
 		invalidSignature := []byte("invalid json")
 
-		_, err = cosign.VerifyChecksum(ctx, cfg, checksumData, invalidSignature, bundleData, testutil.BundleFile)
+		_, err = cosign.VerifyChecksum(ctx, cfg, verifierCfg, checksumData, invalidSignature, bundleData, testutil.BundleFile)
 		if err == nil {
 			t.Fatal("Expected verification to fail with invalid signature data, but it succeeded")
 		}
