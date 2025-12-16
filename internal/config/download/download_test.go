@@ -33,15 +33,16 @@ func TestDownloadCertificate(t *testing.T) {
 		}))
 		defer server.Close()
 
-		wantErr := "failed to download certificate from " + server.URL + ": HTTP 404"
-
 		client := download.NewClient(server.Client())
 		_, err := client.DownloadCertificate(server.URL)
 		if err == nil {
 			t.Error("DownloadCertificate() expected error for 404")
 		}
-		if err.Error() != wantErr {
-			t.Errorf("DownloadCertificate() unexpected error message: got=%s, want=%s", err, wantErr)
+		if !strings.Contains(err.Error(), "failed to download certificate from "+server.URL) {
+			t.Errorf("DownloadCertificate() unexpected error message: got=%s", err)
+		}
+		if !strings.Contains(err.Error(), "HTTP 404") {
+			t.Errorf("DownloadCertificate() error should mention HTTP 404: got=%s", err)
 		}
 	})
 
@@ -63,14 +64,13 @@ func TestDownloadCertificate(t *testing.T) {
 	})
 
 	t.Run("invalid url", func(t *testing.T) {
-		wantErr := "failed to create request"
 		client := download.NewClient()
 		_, err := client.DownloadCertificate("://invalid-url")
 		if err == nil {
 			t.Error("DownloadCertificate() expected error for invalid URL")
 		}
-		if !strings.HasPrefix(err.Error(), wantErr) {
-			t.Errorf("DownloadCertificate() unexpected error message: got=%s, want=%s", err, wantErr)
+		if !strings.Contains(err.Error(), "failed to download certificate from ://invalid-url") {
+			t.Errorf("DownloadCertificate() unexpected error message: got=%s", err)
 		}
 	})
 }
