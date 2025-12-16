@@ -33,7 +33,7 @@ func TestVerifyTrustedBundle(t *testing.T) {
 
 		// First download a bundle
 		trustedBundle, err := apiv1beta.GetTrustedBundle(ctx, apiv1beta.GetConfig{
-			Date:       "2025-12-05",
+			Date:       testutil.BundleVersion,
 			SkipVerify: true,
 		})
 		if err != nil {
@@ -67,7 +67,7 @@ func TestVerifyTrustedBundle(t *testing.T) {
 		_, err := apiv1beta.VerifyTrustedBundle(ctx, apiv1beta.VerifyConfig{
 			Bundle: []byte("dummy"),
 			BundleMetadata: &bundle.Metadata{
-				Date:   "2025-12-05",
+				Date:   testutil.BundleVersion,
 				Commit: "", // Empty commit should fail validation
 			},
 		})
@@ -151,7 +151,7 @@ func TestGetTrustedBundle(t *testing.T) {
 
 	t.Run("fetch specific date with verification", func(t *testing.T) {
 		cfg := apiv1beta.GetConfig{
-			Date: "2025-12-05",
+			Date: testutil.BundleVersion,
 			AutoUpdate: apiv1beta.AutoUpdateConfig{
 				DisableAutoUpdate: true,
 			},
@@ -164,7 +164,7 @@ func TestGetTrustedBundle(t *testing.T) {
 		}
 
 		metadata := tb.GetMetadata()
-		if metadata.Date != "2025-12-05" {
+		if metadata.Date != testutil.BundleVersion {
 			t.Errorf("Expected date '2025-12-05', got %q", metadata.Date)
 		}
 	})
@@ -293,7 +293,7 @@ func TestGetTrustedBundle(t *testing.T) {
 		}
 
 		// The bundle should now be at the latest version (2025-12-05 or newer)
-		if updatedMetadata.Date < "2025-12-05" {
+		if updatedMetadata.Date < testutil.BundleVersion {
 			t.Errorf("Expected bundle to update to at least '2025-12-05', got %q", updatedMetadata.Date)
 		}
 
@@ -380,7 +380,7 @@ func TestSmartCache(t *testing.T) {
 
 		// First call should download from GitHub and cache
 		cfg := apiv1beta.GetConfig{
-			Date:       "2025-12-05",
+			Date:       testutil.BundleVersion,
 			SkipVerify: true,
 			CachePath:  tmpDir,
 			AutoUpdate: apiv1beta.AutoUpdateConfig{
@@ -416,7 +416,7 @@ func TestSmartCache(t *testing.T) {
 			t.Fatalf("Failed to unmarshal config: %v", err)
 		}
 
-		if cacheConfig.Version != "2025-12-05" {
+		if cacheConfig.Version != testutil.BundleVersion {
 			t.Errorf("Expected version '2025-12-05', got %q", cacheConfig.Version)
 		}
 	})
@@ -426,7 +426,7 @@ func TestSmartCache(t *testing.T) {
 
 		// First call to populate cache
 		cfg1 := apiv1beta.GetConfig{
-			Date:       "2025-12-05",
+			Date:       testutil.BundleVersion,
 			SkipVerify: true,
 			CachePath:  tmpDir,
 			AutoUpdate: apiv1beta.AutoUpdateConfig{
@@ -453,7 +453,7 @@ func TestSmartCache(t *testing.T) {
 
 		// Second call with same config should use cache
 		cfg2 := apiv1beta.GetConfig{
-			Date:       "2025-12-05",
+			Date:       testutil.BundleVersion,
 			SkipVerify: true,
 			CachePath:  tmpDir,
 			AutoUpdate: apiv1beta.AutoUpdateConfig{
@@ -489,7 +489,7 @@ func TestSmartCache(t *testing.T) {
 
 		// First call with version 2025-12-05
 		cfg1 := apiv1beta.GetConfig{
-			Date:       "2025-12-05",
+			Date:       testutil.BundleVersion,
 			SkipVerify: true,
 			CachePath:  tmpDir,
 			AutoUpdate: apiv1beta.AutoUpdateConfig{
@@ -547,7 +547,7 @@ func TestSmartCache(t *testing.T) {
 
 		// Call with DisableLocalCache=true should not create cache
 		cfg := apiv1beta.GetConfig{
-			Date:              "2025-12-05",
+			Date:              testutil.BundleVersion,
 			SkipVerify:        true,
 			CachePath:         tmpDir,
 			DisableLocalCache: true,
@@ -579,7 +579,7 @@ func TestLoad(t *testing.T) {
 
 	ctx := context.Background()
 	// cfg := apiv1beta.CacheConfig{
-	// 	Version:       "2025-12-05",
+	// 	Version:       testutil.BundleVersion,
 	// 	AutoUpdate:    &apiv1beta.AutoUpdateConfig{},
 	// 	VendorIDs:     []apiv1beta.VendorID{apiv1beta.IFX},
 	// 	LastTimestamp: time.Now(),
@@ -654,7 +654,7 @@ func TestLoad(t *testing.T) {
 	t.Run("auto-update after load refreshes to newer version", func(t *testing.T) {
 		// Create cache config with auto-update enabled and short interval
 		cfg := apiv1beta.CacheConfig{
-			Version: "2025-12-05",
+			Version: testutil.BundleVersion,
 			AutoUpdate: &apiv1beta.AutoUpdateConfig{
 				DisableAutoUpdate: false,
 				Interval:          2 * time.Second,

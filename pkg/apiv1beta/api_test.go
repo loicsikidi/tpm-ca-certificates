@@ -28,95 +28,74 @@ func TestCheckCacheExists(t *testing.T) {
 	})
 
 	t.Run("returns false when version does not match", func(t *testing.T) {
-		tmpDir := t.TempDir()
-
 		// Create config with different version
 		cfg := CacheConfig{
-			Version: "2025-12-01",
+			Version: testutil.BundleVersion,
 		}
 		configData, _ := json.Marshal(cfg)
-		configPath := filepath.Join(tmpDir, CacheConfigFilename)
-		os.WriteFile(configPath, configData, 0644)
+		tmpDir := testutil.CreateCacheDir(t, configData)
 
-		// Create bundle file
-		bundlePath := filepath.Join(tmpDir, CacheRootBundleFilename)
-		os.WriteFile(bundlePath, []byte("test bundle"), 0644)
-
-		if checkCacheExists(tmpDir, "2025-12-15") {
+		if checkCacheExists(tmpDir, "2025-01-01") {
 			t.Fatal("Expected checkCacheExists to return false when version does not match")
 		}
 	})
 
-	t.Run("returns false when bundle file does not exist", func(t *testing.T) {
-		tmpDir := t.TempDir()
-
-		// Create config with matching version
+	t.Run("returns false when missing at least one verification asset", func(t *testing.T) {
+		// Create config with different version
 		cfg := CacheConfig{
-			Version: "2025-12-15",
+			Version: testutil.BundleVersion,
 		}
 		configData, _ := json.Marshal(cfg)
-		configPath := filepath.Join(tmpDir, CacheConfigFilename)
-		os.WriteFile(configPath, configData, 0644)
+		tmpDir := testutil.CreateCacheDir(t, configData)
 
-		// Do not create bundle file
+		if err := os.Remove(filepath.Join(tmpDir, CacheChecksumsFilename)); err != nil {
+			t.Fatalf("Failed to remove checksum file: %v", err)
+		}
 
-		if checkCacheExists(tmpDir, "2025-12-15") {
-			t.Fatal("Expected checkCacheExists to return false when bundle file does not exist")
+		if checkCacheExists(tmpDir, testutil.BundleVersion) {
+			t.Fatal("Expected checkCacheExists to return false when verification asset is missing")
 		}
 	})
 
-	t.Run("returns false when config.json exists but not other assets (checksums.txt, etc)", func(t *testing.T) {
+	t.Run("returns true when just config.json and bundle exists when skipVerify is true", func(t *testing.T) {
 		tmpDir := t.TempDir()
 
-		// Create config with matching version
 		cfg := CacheConfig{
-			Version: "2025-12-15",
+			Version:    testutil.BundleVersion,
+			SkipVerify: true,
 		}
 		configData, _ := json.Marshal(cfg)
 		configPath := filepath.Join(tmpDir, CacheConfigFilename)
 		os.WriteFile(configPath, configData, 0644)
 
-		// Create bundle file
 		bundlePath := filepath.Join(tmpDir, CacheRootBundleFilename)
 		os.WriteFile(bundlePath, []byte("test bundle"), 0644)
 
-		if checkCacheExists(tmpDir, "2025-12-15") {
-			t.Fatal("Expected checkCacheExists to return false")
+		if !checkCacheExists(tmpDir, testutil.BundleVersion) {
+			t.Fatal("Expected checkCacheExists to return true")
+		}
+	})
+
+	t.Run("returns true when everything is present", func(t *testing.T) {
+		cfg := CacheConfig{
+			Version: testutil.BundleVersion,
+		}
+		configData, _ := json.Marshal(cfg)
+		tmpDir := testutil.CreateCacheDir(t, configData)
+
+		if !checkCacheExists(tmpDir, testutil.BundleVersion) {
+			t.Fatal("Expected checkCacheExists to return true")
 		}
 	})
 }
 
 func TestGetBundleFromCache(t *testing.T) {
 	t.Run("loads bundle and verification assets", func(t *testing.T) {
-		tmpDir := t.TempDir()
-
-		// Read test bundle
-		bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
-		if err != nil {
-			t.Fatalf("Failed to read test bundle: %v", err)
+		cfg := CacheConfig{
+			Version: testutil.BundleVersion,
 		}
-
-		// Create bundle file
-		bundlePath := filepath.Join(tmpDir, CacheRootBundleFilename)
-		if err := os.WriteFile(bundlePath, bundleData, 0644); err != nil {
-			t.Fatalf("Failed to write bundle: %v", err)
-		}
-
-		// Create verification assets
-		checksumPath := filepath.Join(tmpDir, CacheChecksumsFilename)
-		if err := os.WriteFile(checksumPath, []byte("checksum content"), 0644); err != nil {
-			t.Fatalf("Failed to write checksum: %v", err)
-		}
-
-		checksumSigPath := filepath.Join(tmpDir, CacheChecksumsSigFilename)
-		if err := os.WriteFile(checksumSigPath, []byte("checksum signature"), 0644); err != nil {
-			t.Fatalf("Failed to write checksum signature: %v", err)
-		}
-
-		provenancePath := filepath.Join(tmpDir, CacheProvenanceFilename)
-		if err := os.WriteFile(provenancePath, []byte("provenance"), 0644); err != nil {
-			t.Fatalf("Failed to write provenance: %v", err)
-		}
+		configData, _ := json.Marshal(cfg)
+		tmpDir := testutil.CreateCacheDir(t, configData)
 
 		// Load from cache
 		result, err := getBundleFromCache(tmpDir, false)
@@ -127,31 +106,23 @@ func TestGetBundleFromCache(t *testing.T) {
 		if len(result.bundleData) == 0 {
 			t.Fatal("Bundle data is empty")
 		}
-		if string(result.checksum) != "checksum content" {
-			t.Fatalf("Unexpected checksum: %s", string(result.checksum))
+		if len(result.checksum) == 0 {
+			t.Fatal("checksum data is empty")
 		}
-		if string(result.checksumSignature) != "checksum signature" {
-			t.Fatalf("Unexpected checksum signature: %s", string(result.checksumSignature))
+		if len(result.checksumSignature) == 0 {
+			t.Fatal("checksumSignature data is empty")
 		}
-		if string(result.provenance) != "provenance" {
-			t.Fatalf("Unexpected provenance: %s", string(result.provenance))
+		if len(result.provenance) == 0 {
+			t.Fatal("provenance data is empty")
 		}
 	})
 
 	t.Run("skips verification assets when skipVerify is true", func(t *testing.T) {
-		tmpDir := t.TempDir()
-
-		// Read test bundle
-		bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
-		if err != nil {
-			t.Fatalf("Failed to read test bundle: %v", err)
+		cfg := CacheConfig{
+			Version: testutil.BundleVersion,
 		}
-
-		// Create bundle file only
-		bundlePath := filepath.Join(tmpDir, CacheRootBundleFilename)
-		if err := os.WriteFile(bundlePath, bundleData, 0644); err != nil {
-			t.Fatalf("Failed to write bundle: %v", err)
-		}
+		configData, _ := json.Marshal(cfg)
+		tmpDir := testutil.CreateCacheDir(t, configData)
 
 		// Load from cache with skipVerify
 		result, err := getBundleFromCache(tmpDir, true)

@@ -172,10 +172,16 @@ func checkCacheExists(cachePath string, version string) bool {
 		return false
 	}
 
-	if !utils.FileExists(filepath.Join(cachePath, CacheRootBundleFilename)) ||
-		!utils.FileExists(filepath.Join(cachePath, CacheChecksumsFilename)) ||
-		!utils.FileExists(filepath.Join(cachePath, CacheChecksumsSigFilename)) {
+	if !utils.FileExists(filepath.Join(cachePath, CacheRootBundleFilename)) {
 		return false
+	}
+
+	if !cfg.SkipVerify {
+		if !utils.FileExists(filepath.Join(cachePath, CacheProvenanceFilename)) ||
+			!utils.FileExists(filepath.Join(cachePath, CacheChecksumsFilename)) ||
+			!utils.FileExists(filepath.Join(cachePath, CacheChecksumsSigFilename)) {
+			return false
+		}
 	}
 
 	return true

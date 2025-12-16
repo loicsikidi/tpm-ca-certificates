@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"slices"
 
+	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
 	"github.com/sigstore/sigstore-go/pkg/bundle"
 )
 
@@ -21,18 +22,12 @@ const (
 	apiVersion                = "2022-11-28"
 )
 
-// httpClient defines the minimal interface for an HTTP client.
-// This allows for easier testing and mocking.
-type httpClient interface {
-	Do(req *http.Request) (*http.Response, error)
-}
-
 // HTTPClient wraps the standard http.Client to implement attestation fetching.
 //
 // This client makes direct calls to the GitHub REST API without requiring
 // the gh CLI or authentication for public repositories.
 type HTTPClient struct {
-	client httpClient
+	client utils.HttpClient
 	// used to avoid rate limiting on GitHub API in ci pipelines
 	token string
 }

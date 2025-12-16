@@ -1,4 +1,4 @@
-package validate
+package validate_test
 
 import (
 	"encoding/hex"
@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/config/validate"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/fingerprint"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/testutil"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/digest"
@@ -98,7 +99,7 @@ func TestValidateFingerprintWithAlgorithm(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := ValidateFingerprintWithAlgorithm(cert, tt.expectedFP, tt.algorithm)
+			err := validate.ValidateFingerprintWithAlgorithm(cert, tt.expectedFP, tt.algorithm)
 
 			if tt.wantError && err == nil {
 				t.Errorf("ValidateFingerprintWithAlgorithm() expected error but got nil")
@@ -177,7 +178,7 @@ func TestValidateFingerprint(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := ValidateFingerprint(cert, tt.fingerprint)
+			err := validate.ValidateFingerprint(cert, tt.fingerprint)
 			if (err != nil) != tt.wantError {
 				t.Errorf("ValidateFingerprint() error = %v, wantError %v", err, tt.wantError)
 			}

@@ -1,10 +1,11 @@
-package validate
+package validate_test
 
 import (
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/loicsikidi/tpm-ca-certificates/internal/config/validate"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/fingerprint"
 )
 
@@ -294,7 +295,7 @@ vendors:
 				t.Fatal(err)
 			}
 
-			validator := NewYAMLValidator()
+			validator := validate.NewYAMLValidator()
 			errors, err := validator.ValidateFile(testFile)
 			if err != nil {
 				t.Fatalf("ValidateFile() unexpected error: %v", err)

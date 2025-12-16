@@ -1,10 +1,11 @@
-package validate
+package validate_test
 
 import (
 	"crypto/x509"
 	"testing"
 
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/config/validate"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/fingerprint"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/testutil"
 )
@@ -146,7 +147,7 @@ func TestContainsCertificate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := ContainsCertificate(tt.certs, tt.cert)
+			got := validate.ContainsCertificate(tt.certs, tt.cert)
 			if got != tt.want {
 				t.Errorf("ContainsCertificate() = %v, want %v", got, tt.want)
 			}
@@ -191,7 +192,7 @@ func TestCheckCertificate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := CheckCertificate(tt.certs, tt.url, tt.cert)
+			err := validate.CheckCertificate(tt.certs, tt.url, tt.cert)
 
 			if tt.wantError && err == nil {
 				t.Errorf("CheckCertificate() expected error but got nil")
