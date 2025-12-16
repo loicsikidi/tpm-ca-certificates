@@ -33,6 +33,8 @@ type httpClient interface {
 // the gh CLI or authentication for public repositories.
 type HTTPClient struct {
 	client httpClient
+	// used to avoid rate limiting on GitHub API in ci pipelines
+	token string
 }
 
 // NewHTTPClient creates a new GitHub attestation client.
@@ -45,6 +47,7 @@ func NewHTTPClient(httpClient *http.Client) *HTTPClient {
 	}
 	return &HTTPClient{
 		client: httpClient,
+		token:  os.Getenv("GITHUB_TOKEN"),
 	}
 }
 
@@ -77,6 +80,9 @@ func (c *HTTPClient) GetAttestations(ctx context.Context, repo Repo, digest stri
 	// Set required headers
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("X-GitHub-Api-Version", apiVersion)
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
 
 	// Execute request
 	resp, err := c.client.Do(req)
@@ -176,6 +182,9 @@ func (c *HTTPClient) GetReleases(ctx context.Context, repo Repo, opts ReleasesOp
 	// Set required headers
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("X-GitHub-Api-Version", apiVersion)
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
 
 	// Execute request
 	resp, err := c.client.Do(req)
@@ -236,6 +245,9 @@ func (c *HTTPClient) ReleaseExists(ctx context.Context, repo Repo, tag string) e
 
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("X-GitHub-Api-Version", apiVersion)
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
 
 	resp, err := c.client.Do(req)
 	if err != nil {
@@ -298,6 +310,9 @@ func (c *HTTPClient) DownloadReleaseAsset(ctx context.Context, repo Repo, tag, a
 
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("X-GitHub-Api-Version", apiVersion)
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
 
 	resp, err := c.client.Do(req)
 	if err != nil {

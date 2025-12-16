@@ -6,12 +6,14 @@ on:
   pull_request:
     branches: ["**"]
 
-permissions:
-  contents: read
+permissions: {}
+
 jobs:
   config-sanity:
     name: Verify TPM Roots Configuration
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
@@ -29,6 +31,8 @@ jobs:
   bundle-download:
     name: Verify Trust Bundle Validation
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
@@ -46,6 +50,10 @@ jobs:
   integration-tests:
     name: Run Integration Tests 
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      metadata: read
+      attestations: read
     steps:
       - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
