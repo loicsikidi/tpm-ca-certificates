@@ -61,7 +61,16 @@ jobs:
         with:
           go-version-file: go.mod
           cache: false
-      - uses: geomys/sandboxed-step@7d75eb49d17fdeeb3656b3a57d35932d205bcfb9 # v1.2.1
-        with:
-          run: |
-            go test -v -race ./...
+      - name: integration tests
+        run: |
+          go test -v -race ./...
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # ISSUE: zizmor doesn't seems to support "with.env" yet and throws an error
+      # Meanwhile, commenting out this step and running tests directly above
+      # - uses: geomys/sandboxed-step@7d75eb49d17fdeeb3656b3a57d35932d205bcfb9 # v1.2.1
+      #   with:
+      #     run: |
+      #       go test -v -race ./...
+      #     env:
+      #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
