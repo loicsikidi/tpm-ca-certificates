@@ -117,25 +117,9 @@ func (c *HTTPClient) GetAttestations(ctx context.Context, repo Repo, digest stri
 // GitHub stores bundles as snappy-compressed protobuf JSON at bundle_url.
 // However, for inline bundles in the API response, no decompression is needed.
 func (c *HTTPClient) fetchBundle(ctx context.Context, bundleURL string) (*bundle.Bundle, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, bundleURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create bundle request: %w", err)
-	}
-
-	resp, err := c.client.Do(req)
+	bundleBytes, err := utils.HttpGET(c.client, bundleURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch bundle: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("bundle URL returned status %d", resp.StatusCode)
-	}
-
-	// Read bundle content
-	bundleBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read bundle: %w", err)
 	}
 
 	// Try to parse as JSON bundle directly
@@ -337,24 +321,9 @@ func (c *HTTPClient) DownloadReleaseAsset(ctx context.Context, repo Repo, tag, a
 		return nil, fmt.Errorf("asset %q not found in release %q", assetName, tag)
 	}
 
-	req, err = http.NewRequestWithContext(ctx, http.MethodGet, assetURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create download request: %w", err)
-	}
-
-	resp, err = c.client.Do(req)
+	data, err := utils.HttpGET(c.client, assetURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to download file: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("download failed with status %d", resp.StatusCode)
-	}
-
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
 
 	return data, nil

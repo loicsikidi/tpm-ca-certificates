@@ -44,9 +44,15 @@ jobs:
       - uses: geomys/sandboxed-step@7d75eb49d17fdeeb3656b3a57d35932d205bcfb9 # v1.2.1
         with:
           run: |
-            echo "Downloading latest trust bundle from GitHub releases..."
-            go run ./ bundle download
-            echo "✅ Trust bundle downloaded and validated successfully"
+            echo "Building tpmtb tool..."
+            go build -o tpmtb
+            echo "printing version..."
+            ./tpmtb version
+            echo "Run sanity checks on trust bundle..."
+            ./tpmtb bundle list
+            ./tpmtb bundle download
+            ./tpmtb bundle verify ./tpm-ca-certificates.pem
+            ./tpmtb bundle validate ./tpm-ca-certificates.pem
   integration-tests:
     name: Run Integration Tests 
     runs-on: ubuntu-latest

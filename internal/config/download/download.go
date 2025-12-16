@@ -1,11 +1,9 @@
 package download
 
 import (
-	"context"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"io"
 	"net/http"
 	"time"
 
@@ -43,24 +41,9 @@ func NewClient(optionalClient ...utils.HttpClient) *Client {
 //	    log.Fatal(err)
 //	}
 func (c *Client) DownloadCertificate(url string) (*x509.Certificate, error) {
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	resp, err := c.HTTPClient.Do(req)
+	data, err := utils.HttpGET(c.HTTPClient, url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to download certificate from %s: %w", url, err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to download certificate from %s: HTTP %d", url, resp.StatusCode)
-	}
-
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read certificate data from %s: %w", url, err)
 	}
 
 	cert, err := ParseCertificate(data)
