@@ -133,7 +133,7 @@ func TestListCommandWithRealAPI(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
-	client := github.NewHTTPClient(nil)
+	client := github.NewHTTPClient()
 
 	// Test fetching releases
 	opts := github.ReleasesOptions{

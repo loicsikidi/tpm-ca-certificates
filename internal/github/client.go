@@ -36,12 +36,13 @@ type HTTPClient struct {
 //
 // The client uses the provided http.Client for making requests.
 // If nil is provided, http.DefaultClient is used.
-func NewHTTPClient(httpClient *http.Client) *HTTPClient {
-	if httpClient == nil {
-		httpClient = http.DefaultClient
+func NewHTTPClient(optionalClient ...utils.HttpClient) *HTTPClient {
+	client, err := utils.OptionalArg(optionalClient)
+	if err != nil {
+		client = http.DefaultClient
 	}
 	return &HTTPClient{
-		client: httpClient,
+		client: client,
 		token:  os.Getenv("GITHUB_TOKEN"),
 	}
 }

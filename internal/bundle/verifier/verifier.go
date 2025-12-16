@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"strings"
 	"time"
 
@@ -13,6 +12,8 @@ import (
 	transparencyGithub "github.com/loicsikidi/tpm-ca-certificates/internal/transparency/github"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/policy"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/verifier"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
+	"github.com/sigstore/sigstore-go/pkg/bundle"
 	"github.com/sigstore/sigstore-go/pkg/root"
 	"github.com/sigstore/sigstore-go/pkg/verify"
 )
@@ -46,7 +47,7 @@ type Config struct {
 	// HTTPClient is the HTTP client to use for requests.
 	//
 	// Optional. If nil, it stays nil and default HTTP client will be used.
-	HTTPClient *http.Client
+	HTTPClient utils.HttpClient
 
 	// DisableLocalCache mode allows to work on a read-only
 	// files system if this is set, cache path is ignored.
@@ -172,8 +173,8 @@ func (v *Verifier) verifyCosign(ctx context.Context, bundleData, checksumsData, 
 // verifyGitHubAttestations performs GitHub Attestation verification.
 func (v *Verifier) verifyGitHubAttestations(_ context.Context, provenanceData []byte, digest string) ([]*verify.VerificationResult, error) {
 	// Unmarshal the provenance data (attestation)
-	var attestation github.Attestation
-	if err := json.Unmarshal(provenanceData, &attestation); err != nil {
+	var bundle bundle.Bundle
+	if err := json.Unmarshal(provenanceData, &bundle); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal provenance: %w", err)
 	}
 
@@ -193,7 +194,7 @@ func (v *Verifier) verifyGitHubAttestations(_ context.Context, provenanceData []
 	}
 
 	// Verify the attestation
-	result, err := verifier.Verify(&attestation)
+	result, err := verifier.Verify(&bundle)
 	if err != nil {
 		return nil, fmt.Errorf("attestation verification failed: %w", err)
 	}

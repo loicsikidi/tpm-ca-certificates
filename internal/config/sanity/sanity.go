@@ -2,7 +2,6 @@ package sanity
 
 import (
 	"fmt"
-	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -11,6 +10,7 @@ import (
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config/download"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config/validate"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
 )
 
 // ValidationError represents a certificate validation error.
@@ -75,9 +75,9 @@ func NewChecker() *Checker {
 }
 
 // NewCheckerWithClient creates a new sanity checker with a custom HTTP client.
-func NewCheckerWithClient(httpClient *http.Client) *Checker {
+func NewCheckerWithClient(client utils.HttpClient) *Checker {
 	return &Checker{
-		downloader: &download.Client{HTTPClient: httpClient},
+		downloader: download.NewClient(client),
 	}
 }
 
