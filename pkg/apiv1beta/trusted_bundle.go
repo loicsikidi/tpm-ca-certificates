@@ -5,7 +5,6 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
 	"path/filepath"
 	"slices"
@@ -16,14 +15,6 @@ import (
 	"github.com/loicsikidi/tpm-ca-certificates/internal/cache"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config/vendors"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
-)
-
-const (
-	CacheConfigFilename       = "config.json"
-	CacheRootBundleFilename   = "tpm-ca-certificates.pem"
-	CacheChecksumsFilename    = "checksums.txt"
-	CacheChecksumsSigFilename = "checksums.txt.sigstore.json"
-	CacheProvenanceFilename   = "roots.provenance.json"
 )
 
 // TrustedBundle represents a TPM trust bundle with certificate catalog organized by vendor.
@@ -179,7 +170,6 @@ func (tb *trustedBundle) Persist(cachePaths ...string) error {
 		cachePath = cache.CacheDir()
 	}
 
-	// sanitize cache path
 	cachePath = filepath.Clean(cachePath)
 
 	if !utils.DirExists(cachePath) {
@@ -244,7 +234,6 @@ func (tb *trustedBundle) Stop() error {
 		close(tb.stopChan)
 	})
 
-	// Wait for watcher to stop with timeout
 	select {
 	case <-tb.stoppedChan:
 		return nil
@@ -284,40 +273,6 @@ func (c *AutoUpdateConfig) CheckAndSetDefaults() error {
 	return nil
 }
 
-// CacheConfig represents the persisted configuration for a [TrustedBundle].
-type CacheConfig struct {
-	// Version is the bundle version (YYYY-MM-DD format).
-	Version string `json:"version"`
-
-	// AutoUpdate is the auto-update configuration.
-	AutoUpdate *AutoUpdateConfig `json:"autoUpdate,omitempty"`
-
-	// SkipVerify indicates whether bundle verification was skipped.
-	SkipVerify bool `json:"skipVerify,omitempty"`
-
-	// VendorIDs is the list of vendor IDs to filter.
-	VendorIDs []VendorID `json:"vendorIDs,omitempty"`
-
-	// LastTimestamp is the timestamp of the last update.
-	LastTimestamp time.Time `json:"lastTimestamp"`
-}
-
-// CheckAndSetDefaults validates and sets default values.
-func (c *CacheConfig) CheckAndSetDefaults() error {
-	if c.Version == "" {
-		return fmt.Errorf("version cannot be empty")
-	}
-	if err := c.AutoUpdate.CheckAndSetDefaults(); err != nil {
-		return fmt.Errorf("invalid auto-update config: %w", err)
-	}
-	for _, vendorID := range c.VendorIDs {
-		if err := vendorID.Validate(); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // LoadConfig configures the bundle loading from disk.
 type LoadConfig struct {
 	// CachePath is the location on disk for tpmtb cache.
@@ -348,7 +303,7 @@ func (c *LoadConfig) CheckAndSetDefaults() error {
 	return nil
 }
 
-func (c LoadConfig) GetHttpClient() *http.Client {
+func (c LoadConfig) GetHttpClient() utils.HttpClient {
 	return nil
 }
 
@@ -463,7 +418,7 @@ func Load(ctx context.Context, cfg LoadConfig) (TrustedBundle, error) {
 }
 
 type updaterConfig interface {
-	GetHttpClient() *http.Client
+	GetHttpClient() utils.HttpClient
 	GetSkipVerify() bool
 	GetDisableLocalCache() bool
 	GetCachePath() string
@@ -525,4 +480,25 @@ func (tb *trustedBundle) checkAndUpdate(ctx context.Context, cfg updaterConfig) 
 		// Ignore error as persistence failure shouldn't stop the update
 		_ = tb.Persist(cfg.GetCachePath())
 	}
+}
+
+// newTrustedBundle creates a TrustedBundle from raw bundle data.
+func newTrustedBundle(b []byte) (TrustedBundle, error) {
+	metadata, err := bundle.ParseMetadata(b)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse bundle metadata: %w", err)
+	}
+
+	catalog, err := bundle.ParseBundle(b)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse bundle: %w", err)
+	}
+
+	tb := &trustedBundle{
+		assets:   &assets{bundleData: b},
+		metadata: metadata,
+		catalog:  catalog,
+	}
+
+	return tb, nil
 }

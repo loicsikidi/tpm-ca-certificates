@@ -63,7 +63,7 @@ func run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("limit must be greater than 0")
 	}
 
-	client := github.NewHTTPClient(nil)
+	client := github.NewHTTPClient()
 
 	opts := github.ReleasesOptions{
 		PageSize:  limit,

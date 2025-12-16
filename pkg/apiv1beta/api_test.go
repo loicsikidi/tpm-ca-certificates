@@ -98,7 +98,13 @@ func TestGetBundleFromCache(t *testing.T) {
 		tmpDir := testutil.CreateCacheDir(t, configData)
 
 		// Load from cache
-		result, err := getBundleFromCache(tmpDir, false)
+		assetsCfg := assetsConfig{
+			cachePath:                 tmpDir,
+			downloadChecksums:         true,
+			downloadChecksumSignature: true,
+			downloadProvenance:        true,
+		}
+		result, err := getAssetsFromCache(assetsCfg)
 		if err != nil {
 			t.Fatalf("Failed to load from cache: %v", err)
 		}
@@ -117,15 +123,18 @@ func TestGetBundleFromCache(t *testing.T) {
 		}
 	})
 
-	t.Run("skips verification assets when skipVerify is true", func(t *testing.T) {
+	t.Run("filter assets to avoid verification artefacts", func(t *testing.T) {
 		cfg := CacheConfig{
 			Version: testutil.BundleVersion,
 		}
 		configData, _ := json.Marshal(cfg)
 		tmpDir := testutil.CreateCacheDir(t, configData)
 
-		// Load from cache with skipVerify
-		result, err := getBundleFromCache(tmpDir, true)
+		// Load from cache with
+		assetsCfg := assetsConfig{
+			cachePath: tmpDir,
+		}
+		result, err := getAssetsFromCache(assetsCfg)
 		if err != nil {
 			t.Fatalf("Failed to load from cache: %v", err)
 		}
@@ -147,7 +156,13 @@ func TestGetBundleFromCache(t *testing.T) {
 	t.Run("returns error when bundle file does not exist", func(t *testing.T) {
 		tmpDir := t.TempDir()
 
-		_, err := getBundleFromCache(tmpDir, false)
+		assetsCfg := assetsConfig{
+			cachePath:                 tmpDir,
+			downloadChecksums:         true,
+			downloadChecksumSignature: true,
+			downloadProvenance:        true,
+		}
+		_, err := getAssetsFromCache(assetsCfg)
 		if err == nil {
 			t.Fatal("Expected error when bundle file does not exist")
 		}
@@ -167,9 +182,14 @@ func TestGetBundleFromCache(t *testing.T) {
 		if err := os.WriteFile(bundlePath, bundleData, 0644); err != nil {
 			t.Fatalf("Failed to write bundle: %v", err)
 		}
-
 		// Try to load without verification assets
-		_, err = getBundleFromCache(tmpDir, false)
+		assetsCfg := assetsConfig{
+			cachePath:                 tmpDir,
+			downloadChecksums:         true,
+			downloadChecksumSignature: true,
+			downloadProvenance:        true,
+		}
+		_, err = getAssetsFromCache(assetsCfg)
 		if err == nil {
 			t.Fatal("Expected error when verification assets are missing")
 		}
