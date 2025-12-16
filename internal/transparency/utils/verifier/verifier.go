@@ -2,7 +2,6 @@ package verifier
 
 import (
 	"fmt"
-	"net/http"
 	"path/filepath"
 
 	"github.com/cenkalti/backoff/v5"
@@ -22,13 +21,9 @@ var (
 	}
 )
 
-type httpClient interface {
-	Do(req *http.Request) (*http.Response, error)
-}
-
 type Config struct {
 	Root       root.TrustedMaterial
-	HTTPClient httpClient
+	HTTPClient utils.HttpClient
 	Options    []verify.VerifierOption
 }
 
@@ -55,7 +50,7 @@ func New(cfg Config) (*verify.Verifier, error) {
 }
 
 // GetDefaultTUFOptions returns TUF options with sane defaults for Sigstore usage.
-func GetDefaultTUFOptions(optionalClient ...httpClient) *tuf.Options {
+func GetDefaultTUFOptions(optionalClient ...utils.HttpClient) *tuf.Options {
 	client, err := utils.OptionalArg(optionalClient)
 	if err != nil {
 		client = nil

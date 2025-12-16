@@ -10,10 +10,12 @@ import (
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/digest"
 )
 
-var testRepo = github.SourceRepo
+var (
+	testRepo = github.SourceRepo
+	testTag  = testutil.BundleVersion
+)
 
 const (
-	testTag      = "2025-12-05"
 	testCommit   = "1e869770ff7c125a45735f30a959df2bb3e7b465"
 	testWorkflow = github.ReleaseBundleWorkflowPath
 

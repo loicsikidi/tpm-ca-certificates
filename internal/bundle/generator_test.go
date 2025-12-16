@@ -1,4 +1,4 @@
-package bundle
+package bundle_test
 
 import (
 	"crypto/x509"
@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	bundlepkg "github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config"
-	"github.com/loicsikidi/tpm-ca-certificates/internal/config/download"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/testutil"
 )
 
@@ -46,11 +46,7 @@ func TestGenerate(t *testing.T) {
 	}
 
 	t.Run("successful generation", func(t *testing.T) {
-		gen := &Generator{
-			downloader: &download.Client{
-				HTTPClient: server.Client(),
-			},
-		}
+		gen := bundlepkg.NewGenerator(server.Client())
 
 		bundle, err := gen.Generate(cfg)
 		if err != nil {
@@ -74,7 +70,7 @@ func TestEncodePEM(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	pemStr := string(encodePEM(cert))
+	pemStr := string(bundlepkg.EncodePEM(cert))
 
 	if !strings.Contains(pemStr, "BEGIN CERTIFICATE") {
 		t.Error("encodePEM() does not contain BEGIN CERTIFICATE")

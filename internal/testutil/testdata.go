@@ -7,7 +7,10 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
+
+	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
 )
 
 const (
@@ -31,6 +34,27 @@ const (
 //
 //go:embed testdata/*
 var TestData embed.FS
+
+var (
+	once          sync.Once
+	BundleVersion string
+)
+
+func init() {
+	once.Do(func() {
+		rawBundle, err := ReadTestFile(BundleFile)
+		if err != nil {
+			panic("failed to read embedded test bundle: " + err.Error())
+		}
+
+		metadata, err := bundle.ParseMetadata(rawBundle)
+		if err != nil {
+			panic("failed to parse bundle metadata: " + err.Error())
+		}
+
+		BundleVersion = metadata.Date
+	})
+}
 
 // GetTestDataFS returns the embedded filesystem containing test data.
 // The files are located under the "testdata/" prefix.

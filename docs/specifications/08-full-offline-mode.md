@@ -10,6 +10,9 @@
 
 This specification defines the **full offline mode** capability of the `tpm-ca-certificates` API, enabling complete validation of TPM Endorsement Key (EK) certificate trust chains without any network access.
 
+> [!IMPORTANT]
+> For obvious reasons, when operating in offline mode, the API will **automatically disable auto-update**. Without network access, it is impossible to fetch newer bundle versions, and the cached `trusted-root.json` may not be compatible with future bundles due to potential TUF key rotation.
+
 ### Motivation
 
 In enterprise environments, it is common to have air-gapped systems or strict network restrictions that prevent external connectivity. The full offline mode enables these environments to:

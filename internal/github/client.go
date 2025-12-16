@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"slices"
 
+	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
 	"github.com/sigstore/sigstore-go/pkg/bundle"
 )
 
@@ -21,18 +22,14 @@ const (
 	apiVersion                = "2022-11-28"
 )
 
-// httpClient defines the minimal interface for an HTTP client.
-// This allows for easier testing and mocking.
-type httpClient interface {
-	Do(req *http.Request) (*http.Response, error)
-}
-
 // HTTPClient wraps the standard http.Client to implement attestation fetching.
 //
 // This client makes direct calls to the GitHub REST API without requiring
 // the gh CLI or authentication for public repositories.
 type HTTPClient struct {
-	client httpClient
+	client utils.HttpClient
+	// used to avoid rate limiting on GitHub API in ci pipelines
+	token string
 }
 
 // NewHTTPClient creates a new GitHub attestation client.
@@ -45,6 +42,7 @@ func NewHTTPClient(httpClient *http.Client) *HTTPClient {
 	}
 	return &HTTPClient{
 		client: httpClient,
+		token:  os.Getenv("GITHUB_TOKEN"),
 	}
 }
 
@@ -77,6 +75,9 @@ func (c *HTTPClient) GetAttestations(ctx context.Context, repo Repo, digest stri
 	// Set required headers
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("X-GitHub-Api-Version", apiVersion)
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
 
 	// Execute request
 	resp, err := c.client.Do(req)
@@ -176,6 +177,9 @@ func (c *HTTPClient) GetReleases(ctx context.Context, repo Repo, opts ReleasesOp
 	// Set required headers
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("X-GitHub-Api-Version", apiVersion)
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
 
 	// Execute request
 	resp, err := c.client.Do(req)
@@ -236,6 +240,9 @@ func (c *HTTPClient) ReleaseExists(ctx context.Context, repo Repo, tag string) e
 
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("X-GitHub-Api-Version", apiVersion)
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
 
 	resp, err := c.client.Do(req)
 	if err != nil {
@@ -298,6 +305,9 @@ func (c *HTTPClient) DownloadReleaseAsset(ctx context.Context, repo Repo, tag, a
 
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("X-GitHub-Api-Version", apiVersion)
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
 
 	resp, err := c.client.Do(req)
 	if err != nil {

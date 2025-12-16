@@ -6,12 +6,16 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"sync"
 
 	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle/verifier"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/cache"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/github"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/digest"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
 )
 
 type VerifyResult = verifier.VerifyResult
@@ -121,6 +125,9 @@ func (c *GetConfig) CheckAndSetDefaults() error {
 			return fmt.Errorf("invalid vendor ID: %w", err)
 		}
 	}
+	if c.CachePath == "" {
+		c.CachePath = cache.CacheDir()
+	}
 	return nil
 }
 
@@ -140,32 +147,98 @@ func (c GetConfig) GetCachePath() string {
 	return c.CachePath
 }
 
-// bundleWithAssets contains the bundle data and verification assets.
-type bundleWithAssets struct {
+// assets contains the bundle data and verification assets.
+type assets struct {
 	bundleData        []byte
 	checksum          []byte
 	checksumSignature []byte
 	provenance        []byte
 }
 
-// getRawTrustedBundle retrieves and optionally verifies a TPM trust bundle from transparency
-// log assets:
+// checkCacheExists verifies if a cache exists for the specified version.
+func checkCacheExists(cachePath string, version string) bool {
+	configPath := filepath.Join(cachePath, CacheConfigFilename)
+	configData, err := os.ReadFile(configPath)
+	if err != nil {
+		return false
+	}
+
+	var cfg CacheConfig
+	if err := json.Unmarshal(configData, &cfg); err != nil {
+		return false
+	}
+
+	if cfg.Version != version {
+		return false
+	}
+
+	if !utils.FileExists(filepath.Join(cachePath, CacheRootBundleFilename)) {
+		return false
+	}
+
+	if !cfg.SkipVerify {
+		if !utils.FileExists(filepath.Join(cachePath, CacheProvenanceFilename)) ||
+			!utils.FileExists(filepath.Join(cachePath, CacheChecksumsFilename)) ||
+			!utils.FileExists(filepath.Join(cachePath, CacheChecksumsSigFilename)) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// getBundleFromCache retrieves a TPM trust bundle and its verification assets from local cache.
+func getBundleFromCache(cachePath string, skipVerify bool) (*assets, error) {
+	bundlePath := filepath.Join(cachePath, CacheRootBundleFilename)
+	bundleData, err := os.ReadFile(bundlePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read bundle from cache: %w", err)
+	}
+
+	result := &assets{
+		bundleData: bundleData,
+	}
+
+	if skipVerify {
+		return result, nil
+	}
+
+	checksumsPath := filepath.Join(cachePath, CacheChecksumsFilename)
+	checksum, err := os.ReadFile(checksumsPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read checksums from cache: %w", err)
+	}
+	result.checksum = checksum
+
+	checksumsSigPath := filepath.Join(cachePath, CacheChecksumsSigFilename)
+	checksumSig, err := os.ReadFile(checksumsSigPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read checksum signature from cache: %w", err)
+	}
+	result.checksumSignature = checksumSig
+
+	provenancePath := filepath.Join(cachePath, CacheProvenanceFilename)
+	provenance, err := os.ReadFile(provenancePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read provenance from cache: %w", err)
+	}
+	result.provenance = provenance
+
+	return result, nil
+}
+
+// getBundleFromGitHub retrieves and optionally verifies a TPM trust bundle from GitHub.
 //   - integrity: checksums.txt and checksums.txt.sigstore.json (stored in GitHub Releases)
 //   - provenance: GitHub Attestation (stored in GitHub API)
-func getRawTrustedBundle(ctx context.Context, cfg GetConfig) (*bundleWithAssets, error) {
+func getBundleFromGitHub(ctx context.Context, cfg GetConfig, releaseTag string) (*assets, error) {
 	client := github.NewHTTPClient(cfg.HTTPClient)
-
-	releaseTag, err := getReleaseTag(ctx, client, cfg)
-	if err != nil {
-		return nil, err
-	}
 
 	bundleData, err := client.DownloadReleaseAsset(ctx, *cfg.sourceRepo, releaseTag, bundleFilename)
 	if err != nil {
 		return nil, fmt.Errorf("failed to download bundle: %w", err)
 	}
 
-	result := &bundleWithAssets{
+	result := &assets{
 		bundleData: bundleData,
 	}
 
@@ -189,24 +262,12 @@ func getRawTrustedBundle(ctx context.Context, cfg GetConfig) (*bundleWithAssets,
 	result.checksumSignature = assets.ChecksumSignature
 	result.provenance = assets.Provenance
 
-	// Verify the bundle
-	if _, err := VerifyTrustedBundle(ctx, VerifyConfig{
-		Bundle:            bundleData,
-		Checksum:          assets.Checksum,
-		ChecksumSignature: assets.ChecksumSignature,
-		Provenance:        assets.Provenance,
-		sourceRepo:        cfg.sourceRepo,
-		HTTPClient:        cfg.HTTPClient,
-		DisableLocalCache: cfg.DisableLocalCache,
-	}); err != nil {
-		return nil, fmt.Errorf("verification failed: %w", err)
-	}
-
 	return result, nil
 }
 
 // getReleaseTag determines which release to fetch.
-func getReleaseTag(ctx context.Context, client *github.HTTPClient, cfg GetConfig) (string, error) {
+func getReleaseTag(ctx context.Context, cfg GetConfig) (string, error) {
+	client := github.NewHTTPClient(cfg.HTTPClient)
 	if cfg.Date != "" {
 		if err := client.ReleaseExists(ctx, *cfg.sourceRepo, cfg.Date); err != nil {
 			return "", fmt.Errorf("release %s not found: %w", cfg.Date, err)
@@ -498,28 +559,64 @@ func GetTrustedBundle(ctx context.Context, cfg GetConfig) (TrustedBundle, error)
 		return nil, fmt.Errorf("invalid config: %w", err)
 	}
 
-	// Fetch raw bundle data and verification assets
-	bundleWithAssets, err := getRawTrustedBundle(ctx, cfg)
+	releaseTag, err := getReleaseTag(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	tb, err := newTrustedBundle(bundleWithAssets.bundleData)
+	var assets *assets
+	if !cfg.DisableLocalCache {
+		if checkCacheExists(cfg.CachePath, releaseTag) {
+			assets, err = getBundleFromCache(cfg.CachePath, cfg.SkipVerify)
+			if err != nil {
+				return nil, fmt.Errorf("failed to load from cache: %w", err)
+			}
+		}
+	}
+
+	if assets == nil {
+		assets, err = getBundleFromGitHub(ctx, cfg, releaseTag)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if !cfg.SkipVerify {
+		if _, err := VerifyTrustedBundle(ctx, VerifyConfig{
+			Bundle:            assets.bundleData,
+			Checksum:          assets.checksum,
+			ChecksumSignature: assets.checksumSignature,
+			Provenance:        assets.provenance,
+			sourceRepo:        cfg.sourceRepo,
+			HTTPClient:        cfg.HTTPClient,
+			DisableLocalCache: cfg.DisableLocalCache,
+		}); err != nil {
+			return nil, fmt.Errorf("verification failed: %w", err)
+		}
+	}
+
+	tb, err := newTrustedBundle(assets.bundleData)
 	if err != nil {
 		return nil, err
 	}
 
-	// Store vendor filter and verification assets
+	// Cache additional config to the trusted bundle
 	tbImpl := tb.(*trustedBundle)
 	tbImpl.disableLocalCache = cfg.DisableLocalCache
 	tbImpl.vendorFilter = cfg.VendorIDs
-	tbImpl.checksum = bundleWithAssets.checksum
-	tbImpl.checksumSignature = bundleWithAssets.checksumSignature
-	tbImpl.provenance = bundleWithAssets.provenance
+	tbImpl.autoUpdateCfg = &cfg.AutoUpdate
+	tbImpl.assets = assets
 
-	// Start auto-update watcher if enabled
+	if !cfg.DisableLocalCache {
+		// Persist only if not already cached
+		if !checkCacheExists(cfg.CachePath, releaseTag) {
+			if err := tbImpl.Persist(cfg.CachePath); err != nil {
+				return nil, fmt.Errorf("failed to persist bundle to cache (if running on read-only filesystem, set DisableLocalCache=true): %w", err)
+			}
+		}
+	}
+
 	if !cfg.AutoUpdate.DisableAutoUpdate {
-		tbImpl.autoUpdateCfg = &cfg.AutoUpdate
 		tbImpl.startWatcher(ctx, cfg, cfg.AutoUpdate.Interval)
 	}
 
@@ -539,7 +636,7 @@ func newTrustedBundle(b []byte) (TrustedBundle, error) {
 	}
 
 	tb := &trustedBundle{
-		raw:      b,
+		assets:   &assets{bundleData: b},
 		metadata: metadata,
 		catalog:  catalog,
 	}

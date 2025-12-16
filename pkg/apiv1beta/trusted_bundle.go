@@ -72,18 +72,13 @@ type TrustedBundle interface {
 // trustedBundle is the internal implementation of [TrustedBundle].
 type trustedBundle struct {
 	mu       sync.RWMutex
-	raw      []byte
+	assets   *assets
 	metadata *bundle.Metadata
 	catalog  map[vendors.ID][]*x509.Certificate
 
 	// vendorFilter is the list of vendors to filter when calling GetRoots.
 	// If empty, all certificates are returned.
 	vendorFilter []VendorID
-
-	// Verification assets
-	checksum          []byte
-	checksumSignature []byte
-	provenance        []byte
 
 	autoUpdateCfg     *AutoUpdateConfig
 	disableLocalCache bool
@@ -100,7 +95,7 @@ func (tb *trustedBundle) GetRaw() []byte {
 	defer tb.mu.RUnlock()
 
 	// Return a copy to prevent external modifications
-	return slices.Clone(tb.raw)
+	return slices.Clone(tb.assets.bundleData)
 }
 
 // GetMetadata returns the bundle metadata.
@@ -194,29 +189,35 @@ func (tb *trustedBundle) Persist(cachePaths ...string) error {
 	}
 
 	bundlePath := filepath.Join(cachePath, CacheRootBundleFilename)
-	if err := os.WriteFile(bundlePath, tb.raw, 0644); err != nil {
+	if err := os.WriteFile(bundlePath, tb.assets.bundleData, 0644); err != nil {
 		return fmt.Errorf("failed to write bundle: %w", err)
 	}
 
 	checksumsPath := filepath.Join(cachePath, CacheChecksumsFilename)
-	if err := os.WriteFile(checksumsPath, tb.checksum, 0644); err != nil {
+	if err := os.WriteFile(checksumsPath, tb.assets.checksum, 0644); err != nil {
 		return fmt.Errorf("failed to write checksums: %w", err)
 	}
 
 	checksumsSigPath := filepath.Join(cachePath, CacheChecksumsSigFilename)
-	if err := os.WriteFile(checksumsSigPath, tb.checksumSignature, 0644); err != nil {
+	if err := os.WriteFile(checksumsSigPath, tb.assets.checksumSignature, 0644); err != nil {
 		return fmt.Errorf("failed to write checksum signature: %w", err)
 	}
 
 	provenancePath := filepath.Join(cachePath, CacheProvenanceFilename)
-	if err := os.WriteFile(provenancePath, tb.provenance, 0644); err != nil {
+	if err := os.WriteFile(provenancePath, tb.assets.provenance, 0644); err != nil {
 		return fmt.Errorf("failed to write provenance: %w", err)
 	}
 
+	skipVerify := (len(tb.assets.checksum) == 0 &&
+		len(tb.assets.checksumSignature) == 0 &&
+		len(tb.assets.provenance) == 0)
+
 	cfg := CacheConfig{
+		Version:       tb.metadata.Date,
 		AutoUpdate:    tb.autoUpdateCfg,
 		VendorIDs:     tb.vendorFilter,
 		LastTimestamp: time.Now(),
+		SkipVerify:    skipVerify,
 	}
 
 	configData, err := json.Marshal(cfg)
@@ -253,11 +254,11 @@ func (tb *trustedBundle) Stop() error {
 }
 
 // update atomically updates the bundle data.
-func (tb *trustedBundle) update(raw []byte, metadata *bundle.Metadata, catalog map[vendors.ID][]*x509.Certificate) {
+func (tb *trustedBundle) update(assets *assets, metadata *bundle.Metadata, catalog map[vendors.ID][]*x509.Certificate) {
 	tb.mu.Lock()
 	defer tb.mu.Unlock()
 
-	tb.raw = raw
+	tb.assets = assets
 	tb.metadata = metadata
 	tb.catalog = catalog
 }
@@ -285,8 +286,14 @@ func (c *AutoUpdateConfig) CheckAndSetDefaults() error {
 
 // CacheConfig represents the persisted configuration for a [TrustedBundle].
 type CacheConfig struct {
+	// Version is the bundle version (YYYY-MM-DD format).
+	Version string `json:"version"`
+
 	// AutoUpdate is the auto-update configuration.
 	AutoUpdate *AutoUpdateConfig `json:"autoUpdate,omitempty"`
+
+	// SkipVerify indicates whether bundle verification was skipped.
+	SkipVerify bool `json:"skipVerify,omitempty"`
 
 	// VendorIDs is the list of vendor IDs to filter.
 	VendorIDs []VendorID `json:"vendorIDs,omitempty"`
@@ -297,6 +304,9 @@ type CacheConfig struct {
 
 // CheckAndSetDefaults validates and sets default values.
 func (c *CacheConfig) CheckAndSetDefaults() error {
+	if c.Version == "" {
+		return fmt.Errorf("version cannot be empty")
+	}
 	if err := c.AutoUpdate.CheckAndSetDefaults(); err != nil {
 		return fmt.Errorf("invalid auto-update config: %w", err)
 	}
@@ -389,8 +399,18 @@ func Load(ctx context.Context, cfg LoadConfig) (TrustedBundle, error) {
 		return nil, fmt.Errorf("invalid config: %w", err)
 	}
 
+	var skipVerify bool
+	switch {
+	// user has highest priority
+	case cfg.SkipVerify:
+		skipVerify = true
+	default:
+		// then we fallback to cached config
+		skipVerify = cacheCfg.SkipVerify
+	}
+
 	var checksumData, checksumSigData, provenanceData []byte
-	if !cfg.SkipVerify {
+	if !skipVerify {
 		var err error
 		checksumsPath := filepath.Join(cfg.CachePath, CacheChecksumsFilename)
 		checksumData, err = utils.ReadFile(checksumsPath)
@@ -430,9 +450,10 @@ func Load(ctx context.Context, cfg LoadConfig) (TrustedBundle, error) {
 	// Store vendor filter and verification assets
 	tbImpl := tb.(*trustedBundle)
 	tbImpl.vendorFilter = cacheCfg.VendorIDs
-	tbImpl.checksum = checksumData
-	tbImpl.checksumSignature = checksumSigData
-	tbImpl.provenance = provenanceData
+	tbImpl.autoUpdateCfg = cacheCfg.AutoUpdate
+	tbImpl.assets.checksum = checksumData
+	tbImpl.assets.checksumSignature = checksumSigData
+	tbImpl.assets.provenance = provenanceData
 
 	if !cacheCfg.AutoUpdate.DisableAutoUpdate {
 		tb.(*trustedBundle).startWatcher(ctx, cfg, cacheCfg.AutoUpdate.Interval)
@@ -497,7 +518,7 @@ func (tb *trustedBundle) checkAndUpdate(ctx context.Context, cfg updaterConfig) 
 	}
 
 	newTB := newBundle.(*trustedBundle)
-	tb.update(newTB.raw, newTB.metadata, newTB.catalog)
+	tb.update(newTB.assets, newTB.metadata, newTB.catalog)
 
 	// Persist the updated bundle if local cache is enabled
 	if !cfg.GetDisableLocalCache() {

@@ -1,25 +1,32 @@
 package download
 
 import (
+	"context"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
 )
 
 // Client handles HTTPS certificate downloads.
 type Client struct {
-	HTTPClient *http.Client
+	HTTPClient utils.HttpClient
 }
 
 // NewClient creates a new download client with sensible defaults.
-func NewClient() *Client {
+func NewClient(optionalClient ...utils.HttpClient) *Client {
+	client, err := utils.OptionalArg(optionalClient)
+	if err != nil {
+		client = &http.Client{
+			Timeout: 5 * time.Second,
+		}
+	}
 	return &Client{
-		HTTPClient: &http.Client{
-			Timeout: 30 * time.Second,
-		},
+		HTTPClient: client,
 	}
 }
 
@@ -36,7 +43,12 @@ func NewClient() *Client {
 //	    log.Fatal(err)
 //	}
 func (c *Client) DownloadCertificate(url string) (*x509.Certificate, error) {
-	resp, err := c.HTTPClient.Get(url)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to download certificate from %s: %w", url, err)
 	}
@@ -51,7 +63,7 @@ func (c *Client) DownloadCertificate(url string) (*x509.Certificate, error) {
 		return nil, fmt.Errorf("failed to read certificate data from %s: %w", url, err)
 	}
 
-	cert, err := parseCertificate(data)
+	cert, err := ParseCertificate(data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse certificate from %s: %w", url, err)
 	}
@@ -59,8 +71,8 @@ func (c *Client) DownloadCertificate(url string) (*x509.Certificate, error) {
 	return cert, nil
 }
 
-// parseCertificate attempts to parse a certificate from DER or PEM format.
-func parseCertificate(data []byte) (*x509.Certificate, error) {
+// ParseCertificate attempts to parse a certificate from DER or PEM format.
+func ParseCertificate(data []byte) (*x509.Certificate, error) {
 	cert, err := x509.ParseCertificate(data)
 	if err == nil {
 		return cert, nil

@@ -15,6 +15,7 @@ import (
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config/download"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config/validate"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
 )
 
 // Generator orchestrates the generation of a TPM trust bundle.
@@ -23,9 +24,9 @@ type Generator struct {
 }
 
 // NewGenerator creates a new bundle generator.
-func NewGenerator() *Generator {
+func NewGenerator(optionalClient ...utils.HttpClient) *Generator {
 	return &Generator{
-		downloader: download.NewClient(),
+		downloader: download.NewClient(optionalClient...),
 	}
 }
 
@@ -207,14 +208,14 @@ func (g *Generator) processCertificate(cert config.Certificate, vendorID string)
 		return "", fmt.Errorf("fingerprint validation failed: %w", err)
 	}
 
-	pemBlock := encodePEM(x509Cert)
+	pemBlock := EncodePEM(x509Cert)
 	header := buildCertificateHeader(x509Cert, cert.Name, vendorID)
 
 	return fmt.Sprintf("%s%s", header, pemBlock), nil
 }
 
-// encodePEM converts an x509 certificate to PEM format.
-func encodePEM(cert *x509.Certificate) []byte {
+// EncodePEM converts an x509 certificate to PEM format.
+func EncodePEM(cert *x509.Certificate) []byte {
 	block := &pem.Block{
 		Type:  "CERTIFICATE",
 		Bytes: cert.Raw,

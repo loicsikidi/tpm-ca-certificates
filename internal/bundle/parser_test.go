@@ -1,9 +1,10 @@
-package bundle
+package bundle_test
 
 import (
 	"strings"
 	"testing"
 
+	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config/vendors"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/testutil"
 )
@@ -15,7 +16,7 @@ func TestParseBundle(t *testing.T) {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
 
-		catalog, err := ParseBundle(bundleData)
+		catalog, err := bundle.ParseBundle(bundleData)
 		if err != nil {
 			t.Fatalf("ParseBundle() error = %v", err)
 		}
@@ -32,7 +33,7 @@ func TestParseBundle(t *testing.T) {
 	})
 
 	t.Run("empty bundle", func(t *testing.T) {
-		_, err := ParseBundle([]byte(""))
+		_, err := bundle.ParseBundle([]byte(""))
 		if err == nil {
 			t.Fatal("Expected error for empty bundle")
 		}
@@ -54,7 +55,7 @@ func TestParseBundle(t *testing.T) {
 MIICaTCCAcugAwIBAgIBAjAKBggqhkjOPQQDBDBWMR4wHAYDVQQDExVOUENUeHh4
 -----END CERTIFICATE-----
 `
-		_, err := ParseBundle([]byte(invalidBundle))
+		_, err := bundle.ParseBundle([]byte(invalidBundle))
 		if err == nil {
 			t.Fatal("Expected error for invalid vendor ID")
 		}
@@ -167,7 +168,7 @@ MIIBdjCCARygAwIBAgIRAKjIOzWTCC66SJLRB5eewJMwCgYIKoZIzj0EAwIwGTEX
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Parse metadata from bytes
-			metadata, err := ParseMetadata([]byte(tt.bundleData))
+			metadata, err := bundle.ParseMetadata([]byte(tt.bundleData))
 
 			// Check error expectations
 			if tt.wantErrMsg != "" {
@@ -203,7 +204,7 @@ func TestParseMetadata_RealBundle(t *testing.T) {
 		t.Fatalf("Failed to read test bundle: %v", err)
 	}
 
-	metadata, err := ParseMetadata(data)
+	metadata, err := bundle.ParseMetadata(data)
 	if err != nil {
 		t.Fatalf("Failed to parse test bundle: %v", err)
 	}

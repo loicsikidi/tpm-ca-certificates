@@ -1,4 +1,4 @@
-package bundle
+package bundle_test
 
 import (
 	"os"
@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	bundlepkg "github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/testutil"
 )
 
@@ -16,7 +17,7 @@ func TestValidateBundle_ValidBundle(t *testing.T) {
 		t.Fatalf("failed to read test bundle: %v", err)
 	}
 
-	validator := NewBundleValidator()
+	validator := bundlepkg.NewBundleValidator()
 	errors, err := validator.ValidateBundle(data)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -37,7 +38,7 @@ func TestValidateBundle_MissingGlobalMetadata(t *testing.T) {
 MIIBkTCB+wIJAKHHCgVZU2T9MA0GCSqGSIb3DQEBCwUAMA0xCzAJBgNVBAYTAlVT
 -----END CERTIFICATE-----`
 
-	validator := NewBundleValidator()
+	validator := bundlepkg.NewBundleValidator()
 	errors, err := validator.ValidateBundle([]byte(bundle))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -72,7 +73,7 @@ func TestValidateBundle_InvalidDateFormat(t *testing.T) {
 ##
 `
 
-	validator := NewBundleValidator()
+	validator := bundlepkg.NewBundleValidator()
 	errors, err := validator.ValidateBundle([]byte(bundle))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -117,7 +118,7 @@ func TestValidateBundle_InvalidCommitHash(t *testing.T) {
 ##
 `
 
-			validator := NewBundleValidator()
+			validator := bundlepkg.NewBundleValidator()
 			errors, err := validator.ValidateBundle([]byte(bundle))
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
@@ -152,7 +153,7 @@ func TestValidateBundle_MissingRequiredFields(t *testing.T) {
 ##
 `
 
-	validator := NewBundleValidator()
+	validator := bundlepkg.NewBundleValidator()
 	errors, err := validator.ValidateBundle([]byte(bundle))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -200,7 +201,7 @@ func TestValidateBundle_InvalidVendorID(t *testing.T) {
 MIIBkTCB+wIJAKHHCgVZU2T9MA0GCSqGSIb3DQEBCwUAMA0xCzAJBgNVBAYTAlVT
 -----END CERTIFICATE-----`
 
-	validator := NewBundleValidator()
+	validator := bundlepkg.NewBundleValidator()
 	errors, err := validator.ValidateBundle([]byte(bundle))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -272,7 +273,7 @@ MIIBkTCB+wIJAKHHCgVZU2T9MA0GCSqGSIb3DQEBCwUAMA0xCzAJBgNVBAYTAlVT
 					"# Fingerprint (SHA-256): AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99\n# Fingerprint (SHA1): "+tt.fingerprint, 1)
 			}
 
-			validator := NewBundleValidator()
+			validator := bundlepkg.NewBundleValidator()
 			errors, err := validator.ValidateBundle([]byte(bundle))
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
@@ -315,7 +316,7 @@ func TestValidateBundle_MissingCertificateMetadata(t *testing.T) {
 MIIBkTCB+wIJAKHHCgVZU2T9MA0GCSqGSIb3DQEBCwUAMA0xCzAJBgNVBAYTAlVT
 -----END CERTIFICATE-----`
 
-	validator := NewBundleValidator()
+	validator := bundlepkg.NewBundleValidator()
 	errors, err := validator.ValidateBundle([]byte(bundle))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -356,7 +357,7 @@ func TestValidateBundleFile(t *testing.T) {
 		t.Fatalf("failed to write valid bundle: %v", err)
 	}
 
-	validator := NewBundleValidator()
+	validator := bundlepkg.NewBundleValidator()
 
 	// Read and validate
 	data, err := os.ReadFile(validPath)
@@ -402,7 +403,7 @@ INVALID
 `
 	}
 
-	validator := NewBundleValidator()
+	validator := bundlepkg.NewBundleValidator()
 	errors, err := validator.ValidateBundle([]byte(bundle))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -469,7 +470,7 @@ func TestValidateDate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := ValidateDate(tt.date)
+			err := bundlepkg.ValidateDate(tt.date)
 
 			if tt.expectError && err == nil {
 				t.Error("expected error but got none")
@@ -531,7 +532,7 @@ func TestValidateCommit(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := ValidateCommit(tt.commit)
+			err := bundlepkg.ValidateCommit(tt.commit)
 
 			if tt.expectError && err == nil {
 				t.Error("expected error but got none")
