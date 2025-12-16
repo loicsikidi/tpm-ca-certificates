@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
 	bundlepkg "github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/testutil"
@@ -71,7 +70,7 @@ func TestEncodePEM(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	pemStr := string(bundle.EncodePEM(cert))
+	pemStr := string(bundlepkg.EncodePEM(cert))
 
 	if !strings.Contains(pemStr, "BEGIN CERTIFICATE") {
 		t.Error("encodePEM() does not contain BEGIN CERTIFICATE")
