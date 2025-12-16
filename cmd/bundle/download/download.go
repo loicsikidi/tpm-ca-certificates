@@ -87,9 +87,9 @@ func run(cmd *cobra.Command, args []string) error {
 
 	// Use the pkg/apiv1beta API to download and optionally verify the bundle
 	if date == "" {
-		fmt.Println("Fetching latest release...")
+		display("Fetching latest release...")
 	} else {
-		fmt.Printf("Fetching release %s...\n", date)
+		display("Fetching release %s...", date)
 	}
 
 	cfg := apiv1beta.GetConfig{
@@ -123,6 +123,13 @@ func run(cmd *cobra.Command, args []string) error {
 	cli.DisplaySuccess("✅ Downloaded bundle to %s", bundlePath)
 
 	return nil
+}
+
+func display(msg string, args ...any) {
+	if outputDir == "-" {
+		return
+	}
+	fmt.Println(fmt.Sprintf(msg, args...))
 }
 
 // displaySuccess displays a success message unless outputting to stdout.
