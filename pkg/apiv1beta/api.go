@@ -172,15 +172,12 @@ func checkCacheExists(cachePath string, version string) bool {
 		return false
 	}
 
-	if !utils.FileExists(filepath.Join(cachePath, CacheRootBundleFilename)) {
+	if !utils.FileExists(filepath.Join(cachePath, CacheRootBundleFilename)) ||
+		!utils.FileExists(filepath.Join(cachePath, CacheChecksumsFilename)) ||
+		!utils.FileExists(filepath.Join(cachePath, CacheChecksumsSigFilename)) {
 		return false
 	}
-	if !utils.FileExists(filepath.Join(cachePath, CacheChecksumsFilename)) {
-		return false
-	}
-	if !utils.FileExists(filepath.Join(cachePath, CacheChecksumsSigFilename)) {
-		return false
-	}
+
 	return true
 }
 
@@ -578,17 +575,18 @@ func GetTrustedBundle(ctx context.Context, cfg GetConfig) (TrustedBundle, error)
 		}
 	}
 
-	// Verify the bundle
-	if _, err := VerifyTrustedBundle(ctx, VerifyConfig{
-		Bundle:            assets.bundleData,
-		Checksum:          assets.checksum,
-		ChecksumSignature: assets.checksumSignature,
-		Provenance:        assets.provenance,
-		sourceRepo:        cfg.sourceRepo,
-		HTTPClient:        cfg.HTTPClient,
-		DisableLocalCache: cfg.DisableLocalCache,
-	}); err != nil {
-		return nil, fmt.Errorf("verification failed: %w", err)
+	if !cfg.SkipVerify {
+		if _, err := VerifyTrustedBundle(ctx, VerifyConfig{
+			Bundle:            assets.bundleData,
+			Checksum:          assets.checksum,
+			ChecksumSignature: assets.checksumSignature,
+			Provenance:        assets.provenance,
+			sourceRepo:        cfg.sourceRepo,
+			HTTPClient:        cfg.HTTPClient,
+			DisableLocalCache: cfg.DisableLocalCache,
+		}); err != nil {
+			return nil, fmt.Errorf("verification failed: %w", err)
+		}
 	}
 
 	tb, err := newTrustedBundle(assets.bundleData)
@@ -596,13 +594,13 @@ func GetTrustedBundle(ctx context.Context, cfg GetConfig) (TrustedBundle, error)
 		return nil, err
 	}
 
-	// Store vendor filter and verification assets
+	// Cache additional config to the trusted bundle
 	tbImpl := tb.(*trustedBundle)
 	tbImpl.disableLocalCache = cfg.DisableLocalCache
 	tbImpl.vendorFilter = cfg.VendorIDs
+	tbImpl.autoUpdateCfg = &cfg.AutoUpdate
 	tbImpl.assets = assets
 
-	// Persist to local cache if possible
 	if !cfg.DisableLocalCache {
 		// Persist only if not already cached
 		if !checkCacheExists(cfg.CachePath, releaseTag) {
@@ -612,9 +610,7 @@ func GetTrustedBundle(ctx context.Context, cfg GetConfig) (TrustedBundle, error)
 		}
 	}
 
-	// Start auto-update watcher if enabled
 	if !cfg.AutoUpdate.DisableAutoUpdate {
-		tbImpl.autoUpdateCfg = &cfg.AutoUpdate
 		tbImpl.startWatcher(ctx, cfg, cfg.AutoUpdate.Interval)
 	}
 

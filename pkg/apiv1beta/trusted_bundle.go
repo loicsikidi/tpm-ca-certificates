@@ -208,11 +208,16 @@ func (tb *trustedBundle) Persist(cachePaths ...string) error {
 		return fmt.Errorf("failed to write provenance: %w", err)
 	}
 
+	skipVerify := (len(tb.assets.checksum) == 0 &&
+		len(tb.assets.checksumSignature) == 0 &&
+		len(tb.assets.provenance) == 0)
+
 	cfg := CacheConfig{
 		Version:       tb.metadata.Date,
 		AutoUpdate:    tb.autoUpdateCfg,
 		VendorIDs:     tb.vendorFilter,
 		LastTimestamp: time.Now(),
+		SkipVerify:    skipVerify,
 	}
 
 	configData, err := json.Marshal(cfg)
@@ -286,6 +291,9 @@ type CacheConfig struct {
 
 	// AutoUpdate is the auto-update configuration.
 	AutoUpdate *AutoUpdateConfig `json:"autoUpdate,omitempty"`
+
+	// SkipVerify indicates whether bundle verification was skipped.
+	SkipVerify bool `json:"skipVerify,omitempty"`
 
 	// VendorIDs is the list of vendor IDs to filter.
 	VendorIDs []VendorID `json:"vendorIDs,omitempty"`
@@ -391,8 +399,18 @@ func Load(ctx context.Context, cfg LoadConfig) (TrustedBundle, error) {
 		return nil, fmt.Errorf("invalid config: %w", err)
 	}
 
+	var skipVerify bool
+	switch {
+	// user has highest priority
+	case cfg.SkipVerify:
+		skipVerify = true
+	default:
+		// then we fallback to cached config
+		skipVerify = cacheCfg.SkipVerify
+	}
+
 	var checksumData, checksumSigData, provenanceData []byte
-	if !cfg.SkipVerify {
+	if !skipVerify {
 		var err error
 		checksumsPath := filepath.Join(cfg.CachePath, CacheChecksumsFilename)
 		checksumData, err = utils.ReadFile(checksumsPath)
@@ -432,6 +450,7 @@ func Load(ctx context.Context, cfg LoadConfig) (TrustedBundle, error) {
 	// Store vendor filter and verification assets
 	tbImpl := tb.(*trustedBundle)
 	tbImpl.vendorFilter = cacheCfg.VendorIDs
+	tbImpl.autoUpdateCfg = cacheCfg.AutoUpdate
 	tbImpl.assets.checksum = checksumData
 	tbImpl.assets.checksumSignature = checksumSigData
 	tbImpl.assets.provenance = provenanceData
