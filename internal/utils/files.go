@@ -33,6 +33,7 @@ func DirExists(path string) bool {
 
 // ReadFile reads the content of a file with a maximum size limit.
 //
+// If filename is "-", reads from stdin.
 // Default maximum size is [DefaultMaxFileSize], but can be overridden by providing a custom maxSize in bytes.
 func ReadFile(filename string, optionalMaxSize ...int64) ([]byte, error) {
 	maxSize, err := OptionalArg(optionalMaxSize)
@@ -40,13 +41,19 @@ func ReadFile(filename string, optionalMaxSize ...int64) ([]byte, error) {
 		maxSize = DefaultMaxFileSize
 	}
 
-	file, err := os.Open(filename)
-	if err != nil {
-		return nil, err
+	var reader io.Reader
+	if filename == "-" {
+		reader = os.Stdin
+	} else {
+		file, err := os.Open(filename)
+		if err != nil {
+			return nil, err
+		}
+		defer file.Close()
+		reader = file
 	}
-	defer file.Close()
 
-	limitedReader := io.LimitReader(file, maxSize+1)
+	limitedReader := io.LimitReader(reader, maxSize+1)
 
 	data, err := io.ReadAll(limitedReader)
 	if err != nil {
