@@ -87,7 +87,7 @@ Download the latest trust bundle with automatic integrity and provenance verific
 tpmtb bundle download
 ```
 
-> [!TIP]
+> [!NOTE]
 > This command:
 > 1. 📥 Downloads the latest bundle from GitHub releases
 > 2. 🔐 Verifies the bundle's integrity against the public transparency log (Rekor)
@@ -95,7 +95,7 @@ tpmtb bundle download
 >
 > The verification ensures that the bundle was genuinely produced by this repository's CI pipeline and hasn't been tampered with since publication.
 
-> [!NOTE]
+> [!TIP]
 > When using the OCI image, you can output the bundle to stdout (since the container filesystem is read-only):
 > ```bash
 > docker run --rm ghcr.io/loicsikidi/tpm-ca-certificates/tpmtb:latest bundle download --output-dir - > tpm-ca-certificates.pem
@@ -114,7 +114,7 @@ Go to [documentation index](docs/README.md) to explore concepts, guides, and spe
 - [ ] Gather feedback from early adopters to improve usability and address real-world needs
    - Please open [discussions](https://github.com/loicsikidi/tpm-ca-certificates/discussions) or [issues](https://github.com/loicsikidi/tpm-ca-certificates/issues) on GitHub to share your thoughts!
 - [ ] Support offline verification mode for air-gapped or restricted environments
-  - [ ] Step 1: verify bundle integrity + provence offline
+  - [ ] Step 1: verify bundle integrity + provenance offline (only with root certificates)
   - [ ] Step 2: provide Intermediates certificates for full chain validation offline
     - note: this will require way more effort to gather and maintain the intermediates certificates and is a lower priority for now
 - [ ] Add `tpmtb` in nixpkgs for easy installation via Nix
@@ -122,8 +122,30 @@ Go to [documentation index](docs/README.md) to explore concepts, guides, and spe
   - Monitor certificate links for availability and integrity
   - Monitor when a root CA is about to expire
   - Monitor release verification process to ensure it continues to work as expected
-- [x] Provide a golang-sdk to ease integration in Go 
+- [x] Provide a golang-sdk to ease integration in Go
+- [x] Code a minimal project using `golang-sdk` in order to demonstrate its usage and validate its ergonomics and usability
+  - Deliverable: 🧿 [tpm-trust](https://github.com/loicsikidi/tpm-trust)
 
 ## License
 
 BSD-3-Clause License. See the [LICENSE](LICENSE) file for detail
+
+## Alternatives
+
+Microsoft maintains an archive with a number of TPM root and intermediate certificates as described in their [documentation](https://learn.microsoft.com/en-us/windows-hardware/drivers/install/trusted-root-certification-authorities-certificate-store).
+
+Here's a comparative overview:
+
+| Feature | Microsoft TPM Root Certificates | tpm-ca-certificates |
+|---------|--------------------------------|---------------------|
+| **Completeness** | Mature for supported vendors | Growing<br/><br/> *Note: contributions are welcome!* |
+| **Intermediate Certificates Support** | Yes | In development (see [#52](https://github.com/loicsikidi/tpm-ca-certificates/issues/52)) |
+| **Open Source** | No | Yes<br>• Auditable code and build process<br>• Community can contribute |
+| **Provenance[^1]** | No | Yes ([`.tpm-roots.yaml`](.tpm-roots.yaml)) |
+| **Directly Usable Deliverable** | Yes, under certain conditions<br>• Limited to Windows systems integration (via a PowerShell bootstrap script) | Yes (PEM file + Golang SDK)<br>• Cross-platform compatible |
+| **Signed Deliverable** | Yes<br>• Digitally signed with Microsoft x509 certificate | Yes<br>• Keyless signing via Sigstore |
+| **Publicly Verifiable Signature in Transparency Log (`tlog`)** | No (not documented) | Yes |
+
+---
+
+[^1]: *Provenance* here means that there is a publicly accessible URL (owned by the TPM vendor) to retrieve the certificate.

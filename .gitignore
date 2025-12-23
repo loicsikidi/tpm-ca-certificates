@@ -43,6 +43,7 @@ vendors
 
 # IA assistants
 .claude/
+GOAL.md
 
 # nix
 result

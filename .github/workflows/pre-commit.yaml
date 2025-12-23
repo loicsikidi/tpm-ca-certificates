@@ -1,0 +1,31 @@
+name: Pre-commit
+
+on:
+  schedule: # daily at 19:00 UTC
+    - cron: '0 19 * * *'
+  workflow_dispatch: # Allow manual trigger
+  pull_request:
+    branches: ["**"]
+
+permissions: {}
+
+jobs:
+  pre-commit:
+    name: pre-commit hooks
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+        with:
+          persist-credentials: false
+      - name: Install Nix
+        uses: cachix/install-nix-action@0b0e072294b088b73964f1d72dfdac0951439dbd # v31.8.4
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run pre-commit hooks
+        run: |
+          nix-shell --run "pre-commit run --all-files"
+          nix-shell --run "pre-commit run --all-files --hook-stage pre-push"
