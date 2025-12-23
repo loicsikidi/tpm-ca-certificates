@@ -157,7 +157,7 @@ func (tb *trustedBundle) GetRoots() *x509.CertPool {
 }
 
 // Persist writes the bundle and its configuration to disk.
-func (tb *trustedBundle) Persist(cachePaths ...string) error {
+func (tb *trustedBundle) Persist(optionalCachePath ...string) error {
 	tb.mu.RLock()
 	defer tb.mu.RUnlock()
 
@@ -165,7 +165,7 @@ func (tb *trustedBundle) Persist(cachePaths ...string) error {
 		return ErrCannotPersistTrustedBundle
 	}
 
-	cachePath, err := utils.OptionalArg(cachePaths)
+	cachePath, err := utils.OptionalArg(optionalCachePath)
 	if err != nil {
 		cachePath = cache.CacheDir()
 	}
@@ -173,29 +173,14 @@ func (tb *trustedBundle) Persist(cachePaths ...string) error {
 	cachePath = filepath.Clean(cachePath)
 
 	if !utils.DirExists(cachePath) {
-		if err := os.MkdirAll(cachePath, 0755); err != nil {
+		if err := os.MkdirAll(cachePath, 0700); err != nil {
 			return fmt.Errorf("failed to create cache directory: %w", err)
 		}
 	}
 
-	bundlePath := filepath.Join(cachePath, CacheRootBundleFilename)
-	if err := os.WriteFile(bundlePath, tb.assets.bundleData, 0644); err != nil {
-		return fmt.Errorf("failed to write bundle: %w", err)
-	}
-
-	checksumsPath := filepath.Join(cachePath, CacheChecksumsFilename)
-	if err := os.WriteFile(checksumsPath, tb.assets.checksum, 0644); err != nil {
-		return fmt.Errorf("failed to write checksums: %w", err)
-	}
-
-	checksumsSigPath := filepath.Join(cachePath, CacheChecksumsSigFilename)
-	if err := os.WriteFile(checksumsSigPath, tb.assets.checksumSignature, 0644); err != nil {
-		return fmt.Errorf("failed to write checksum signature: %w", err)
-	}
-
-	provenancePath := filepath.Join(cachePath, CacheProvenanceFilename)
-	if err := os.WriteFile(provenancePath, tb.assets.provenance, 0644); err != nil {
-		return fmt.Errorf("failed to write provenance: %w", err)
+	// Write core bundle assets
+	if err := writeBundleAssets(cachePath, tb.assets.bundleData, tb.assets.checksum, tb.assets.checksumSignature, tb.assets.provenance); err != nil {
+		return err
 	}
 
 	skipVerify := (len(tb.assets.checksum) == 0 &&

@@ -16,7 +16,18 @@ const (
 	CacheChecksumsFilename    = "checksums.txt"
 	CacheChecksumsSigFilename = "checksums.txt.sigstore.json"
 	CacheProvenanceFilename   = "roots.provenance.json"
+	CacheTrustedRootFilename  = "trusted-root.json"
 )
+
+// CacheFilenames is the list of all expected cache files.
+var CacheFilenames = []string{
+	CacheRootBundleFilename,
+	CacheChecksumsFilename,
+	CacheChecksumsSigFilename,
+	CacheProvenanceFilename,
+	CacheTrustedRootFilename,
+	CacheConfigFilename,
+}
 
 // CacheConfig represents the persisted configuration for a [TrustedBundle].
 type CacheConfig struct {
@@ -82,4 +93,33 @@ func checkCacheExists(cachePath string, version string) bool {
 	}
 
 	return true
+}
+
+// writeBundleAssets writes the core bundle assets (bundle, checksums, signature, provenance) to the specified directory.
+func writeBundleAssets(dir string, bundle, checksum, checksumSignature, provenance []byte) error {
+	// Write root bundle
+	bundlePath := filepath.Join(dir, CacheRootBundleFilename)
+	if err := os.WriteFile(bundlePath, bundle, 0644); err != nil {
+		return fmt.Errorf("failed to write root bundle: %w", err)
+	}
+
+	// Write checksums
+	checksumsPath := filepath.Join(dir, CacheChecksumsFilename)
+	if err := os.WriteFile(checksumsPath, checksum, 0644); err != nil {
+		return fmt.Errorf("failed to write checksums: %w", err)
+	}
+
+	// Write checksum signature
+	checksumsSigPath := filepath.Join(dir, CacheChecksumsSigFilename)
+	if err := os.WriteFile(checksumsSigPath, checksumSignature, 0644); err != nil {
+		return fmt.Errorf("failed to write checksum signature: %w", err)
+	}
+
+	// Write provenance
+	provenancePath := filepath.Join(dir, CacheProvenanceFilename)
+	if err := os.WriteFile(provenancePath, provenance, 0644); err != nil {
+		return fmt.Errorf("failed to write provenance: %w", err)
+	}
+
+	return nil
 }

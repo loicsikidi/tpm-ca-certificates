@@ -2,16 +2,21 @@ package apiv1beta
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle/verifier"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/cache"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/github"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/digest"
+	verifierutils "github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/verifier"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
 )
 
@@ -412,4 +417,194 @@ func VerifyTrustedBundle(ctx context.Context, cfg VerifyConfig) (*VerifyResult, 
 	}
 
 	return result, nil
+}
+
+// SaveConfig configures the bundle saving for offline verification.
+type SaveConfig struct {
+	// Date specifies the bundle release date in YYYY-MM-DD format.
+	//
+	// Optional. If empty, the latest release will be fetched.
+	Date string
+
+	// VendorIDs specifies the list of vendor IDs to filter when calling 'TrustedBundle.GetRoots()'.
+	//
+	// It can be helpful when your TPM chips comes from specific vendors and you want to adopt
+	// a least-privilege approach.
+	//
+	// Optional. If empty, all vendors will be included.
+	VendorIDs []VendorID
+
+	// CachePath is the location on disk for tpmtb cache.
+	//
+	// Optional. If empty, the default cache path is used ($HOME/.tpmtb).
+	CachePath string
+
+	// HTTPClient is the HTTP client to use for requests.
+	//
+	// Optional. If nil, [http.DefaultClient] will be used.
+	HTTPClient utils.HttpClient
+}
+
+// CheckAndSetDefaults validates and sets default values.
+func (c *SaveConfig) CheckAndSetDefaults() error {
+	if c.HTTPClient == nil {
+		c.HTTPClient = HttpClient()
+	}
+	if c.CachePath == "" {
+		c.CachePath = cache.CacheDir()
+	}
+	for _, vendorID := range c.VendorIDs {
+		if err := vendorID.Validate(); err != nil {
+			return fmt.Errorf("invalid vendor ID: %w", err)
+		}
+	}
+	return nil
+}
+
+// SaveResponse contains all assets required for offline verification of a TPM bundle.
+type SaveResponse struct {
+	// RootBundle is the TPM root CA certificates bundle (PEM format).
+	RootBundle []byte
+
+	// RootProvenance is the GitHub Attestation provenance for the root bundle.
+	RootProvenance []byte
+
+	// IntermediateBundle is the TPM intermediate CA certificates bundle (PEM format).
+	//
+	// Reserved for future use.
+	IntermediateBundle []byte
+
+	// IntermediateProvenance is the GitHub Attestation provenance for the intermediate bundle.
+	//
+	// Reserved for future use.
+	IntermediateProvenance []byte
+
+	// Checksum is the checksums.txt file content.
+	Checksum []byte
+
+	// ChecksumSignature is the checksums.txt.sigstore.json file content.
+	ChecksumSignature []byte
+
+	// TrustedRoot is the Sigstore trusted_root.json from TUF.
+	TrustedRoot []byte
+
+	// CacheConfig is the cache configuration (JSON format) containing metadata about the bundle.
+	CacheConfig []byte
+}
+
+// Persist writes all assets to the specified output directory.
+//
+// If outputDir is empty, the default cache directory ($HOME/.tpmtb) is used.
+func (sr *SaveResponse) Persist(outputDir string) error {
+	if outputDir == "" {
+		outputDir = cache.CacheDir()
+	}
+
+	outputDir = filepath.Clean(outputDir)
+
+	if !utils.DirExists(outputDir) {
+		if err := os.MkdirAll(outputDir, 0700); err != nil {
+			return fmt.Errorf("failed to create output directory: %w", err)
+		}
+	}
+
+	// Write core bundle assets
+	if err := writeBundleAssets(outputDir, sr.RootBundle, sr.Checksum, sr.ChecksumSignature, sr.RootProvenance); err != nil {
+		return err
+	}
+
+	// Write trusted root
+	trustedRootPath := filepath.Join(outputDir, CacheTrustedRootFilename)
+	if err := os.WriteFile(trustedRootPath, sr.TrustedRoot, 0600); err != nil {
+		return fmt.Errorf("failed to write trusted root: %w", err)
+	}
+
+	// Write cache config
+	configPath := filepath.Join(outputDir, CacheConfigFilename)
+	if err := os.WriteFile(configPath, sr.CacheConfig, 0644); err != nil {
+		return fmt.Errorf("failed to write cache config: %w", err)
+	}
+
+	return nil
+}
+
+// Save retrieves a TPM trust bundle and all verification assets required for offline verification.
+//
+// This function downloads the bundle, verifies it, fetches the TUF trust chains from Rekor,
+// and returns a [SaveResponse] containing all necessary files for offline verification.
+//
+// The returned [SaveResponse] can be persisted to disk using the Persist method, which will
+// save all assets to the local cache directory ($HOME/.tpmtb by default).
+//
+// Example:
+//
+//	// Save the latest bundle with all verification assets
+//	resp, err := apiv1beta.Save(context.Background(), apiv1beta.SaveConfig{})
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//
+//	// Persist to default cache directory ($HOME/.tpmtb)
+//	if err := resp.Persist(""); err != nil {
+//	    log.Fatal(err)
+//	}
+//
+//	// Save a specific date's bundle filtered by vendor
+//	resp, err = apiv1beta.Save(context.Background(), apiv1beta.SaveConfig{
+//	    Date:      "2025-12-05",
+//	    VendorIDs: []apiv1beta.VendorID{apiv1beta.IFX, apiv1beta.NTC},
+//	})
+func Save(ctx context.Context, cfg SaveConfig) (*SaveResponse, error) {
+	if err := cfg.CheckAndSetDefaults(); err != nil {
+		return nil, fmt.Errorf("invalid config: %w", err)
+	}
+
+	// Use GetTrustedBundle to fetch and verify the bundle
+	// This gives us all the assets and handles verification automatically
+	tb, err := GetTrustedBundle(ctx, GetConfig{
+		Date:       cfg.Date,
+		CachePath:  cfg.CachePath,
+		VendorIDs:  cfg.VendorIDs,
+		HTTPClient: cfg.HTTPClient,
+		AutoUpdate: AutoUpdateConfig{
+			DisableAutoUpdate: true,
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get trusted bundle: %w", err)
+	}
+
+	// Fetch the Sigstore trusted_root.json from TUF
+	trustedRoot, err := verifierutils.FetchTrustedRoot(cfg.HTTPClient)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch trusted root: %w", err)
+	}
+
+	// Extract assets from the trusted bundle
+	tbImpl := tb.(*trustedBundle)
+	assets := tbImpl.assets
+	metadata := tbImpl.metadata
+
+	// Build cache config
+	cacheCfg := CacheConfig{
+		Version:       metadata.Date,
+		VendorIDs:     cfg.VendorIDs,
+		AutoUpdate:    &AutoUpdateConfig{DisableAutoUpdate: true},
+		SkipVerify:    false,
+		LastTimestamp: time.Now(),
+	}
+
+	cacheConfigData, err := json.Marshal(cacheCfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal cache config: %w", err)
+	}
+
+	return &SaveResponse{
+		RootBundle:        assets.bundleData,
+		RootProvenance:    assets.provenance,
+		Checksum:          assets.checksum,
+		ChecksumSignature: assets.checksumSignature,
+		TrustedRoot:       trustedRoot,
+		CacheConfig:       cacheConfigData,
+	}, nil
 }

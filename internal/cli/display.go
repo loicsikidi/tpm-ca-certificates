@@ -18,6 +18,10 @@ func colorize(color color, text string) string {
 	return string(color) + text + string(colorReset)
 }
 
+func Display(msg string, args ...any) {
+	fmt.Println(fmt.Sprintf(msg, args...))
+}
+
 func DisplaySuccess(msg string, args ...any) {
 	fmt.Println(colorize(colorGreen, fmt.Sprintf(msg, args...)))
 	fmt.Println()

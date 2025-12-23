@@ -4,6 +4,7 @@ import (
 	"github.com/loicsikidi/tpm-ca-certificates/cmd/bundle/download"
 	"github.com/loicsikidi/tpm-ca-certificates/cmd/bundle/generate"
 	"github.com/loicsikidi/tpm-ca-certificates/cmd/bundle/list"
+	"github.com/loicsikidi/tpm-ca-certificates/cmd/bundle/save"
 	"github.com/loicsikidi/tpm-ca-certificates/cmd/bundle/validate"
 	"github.com/loicsikidi/tpm-ca-certificates/cmd/bundle/verify"
 	"github.com/spf13/cobra"
@@ -21,6 +22,7 @@ func NewCommand() *cobra.Command {
 	cmd.AddCommand(validate.NewCommand())
 	cmd.AddCommand(verify.NewCommand())
 	cmd.AddCommand(download.NewCommand())
+	cmd.AddCommand(save.NewCommand())
 	cmd.AddCommand(list.NewCommand())
 
 	return cmd
