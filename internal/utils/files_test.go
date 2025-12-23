@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"strings"
@@ -148,6 +149,161 @@ func TestReadFile(t *testing.T) {
 
 		if string(data) != string(content) {
 			t.Errorf("ReadFile() = %q, want %q", data, content)
+		}
+	})
+
+	t.Run("reads from stdin with dash", func(t *testing.T) {
+		content := []byte("hello from stdin")
+		oldStdin := os.Stdin
+		defer func() { os.Stdin = oldStdin }()
+
+		r, w, err := os.Pipe()
+		if err != nil {
+			t.Fatalf("failed to create pipe: %v", err)
+		}
+		os.Stdin = r
+
+		go func() {
+			defer w.Close()
+			w.Write(content)
+		}()
+
+		data, err := ReadFile("-")
+		if err != nil {
+			t.Fatalf("ReadFile(\"-\") error = %v, want nil", err)
+		}
+
+		if !bytes.Equal(data, content) {
+			t.Errorf("ReadFile(\"-\") = %q, want %q", data, content)
+		}
+	})
+
+	t.Run("reads from stdin with custom max size", func(t *testing.T) {
+		content := []byte("test")
+		oldStdin := os.Stdin
+		defer func() { os.Stdin = oldStdin }()
+
+		r, w, err := os.Pipe()
+		if err != nil {
+			t.Fatalf("failed to create pipe: %v", err)
+		}
+		os.Stdin = r
+
+		go func() {
+			defer w.Close()
+			w.Write(content)
+		}()
+
+		data, err := ReadFile("-", 10)
+		if err != nil {
+			t.Fatalf("ReadFile(\"-\", 10) error = %v, want nil", err)
+		}
+
+		if !bytes.Equal(data, content) {
+			t.Errorf("ReadFile(\"-\", 10) = %q, want %q", data, content)
+		}
+	})
+
+	t.Run("rejects stdin exceeding max size", func(t *testing.T) {
+		content := []byte(strings.Repeat("a", 101))
+		oldStdin := os.Stdin
+		defer func() { os.Stdin = oldStdin }()
+
+		r, w, err := os.Pipe()
+		if err != nil {
+			t.Fatalf("failed to create pipe: %v", err)
+		}
+		os.Stdin = r
+
+		go func() {
+			defer w.Close()
+			w.Write(content)
+		}()
+
+		_, err = ReadFile("-", 100)
+		if err == nil {
+			t.Fatal("ReadFile(\"-\", 100) error = nil, want error for stdin too large")
+		}
+
+		if !strings.Contains(err.Error(), "file too large") {
+			t.Errorf("ReadFile(\"-\", 100) error = %v, want error containing 'file too large'", err)
+		}
+		if !strings.Contains(err.Error(), "100 bytes") {
+			t.Errorf("ReadFile(\"-\", 100) error = %v, want error mentioning max size of 100 bytes", err)
+		}
+	})
+
+	t.Run("reads binary content from stdin", func(t *testing.T) {
+		content := []byte{0x00, 0x01, 0x02, 0xFF, 0xFE}
+		oldStdin := os.Stdin
+		defer func() { os.Stdin = oldStdin }()
+
+		r, w, err := os.Pipe()
+		if err != nil {
+			t.Fatalf("failed to create pipe: %v", err)
+		}
+		os.Stdin = r
+
+		go func() {
+			defer w.Close()
+			w.Write(content)
+		}()
+
+		data, err := ReadFile("-")
+		if err != nil {
+			t.Fatalf("ReadFile(\"-\") error = %v, want nil", err)
+		}
+
+		if !bytes.Equal(data, content) {
+			t.Errorf("ReadFile(\"-\") = %v, want %v", data, content)
+		}
+	})
+
+	t.Run("reads empty stdin", func(t *testing.T) {
+		oldStdin := os.Stdin
+		defer func() { os.Stdin = oldStdin }()
+
+		r, w, err := os.Pipe()
+		if err != nil {
+			t.Fatalf("failed to create pipe: %v", err)
+		}
+		os.Stdin = r
+
+		go func() {
+			w.Close()
+		}()
+
+		data, err := ReadFile("-")
+		if err != nil {
+			t.Fatalf("ReadFile(\"-\") error = %v, want nil", err)
+		}
+
+		if len(data) != 0 {
+			t.Errorf("ReadFile(\"-\") = %q, want empty", data)
+		}
+	})
+
+	t.Run("handles stdin read error", func(t *testing.T) {
+		oldStdin := os.Stdin
+		defer func() { os.Stdin = oldStdin }()
+
+		r, w, err := os.Pipe()
+		if err != nil {
+			t.Fatalf("failed to create pipe: %v", err)
+		}
+		os.Stdin = r
+
+		// Close both ends to simulate read error
+		r.Close()
+		w.Close()
+
+		_, err = ReadFile("-")
+		if err == nil {
+			t.Fatal("ReadFile(\"-\") error = nil, want error for closed stdin")
+		}
+
+		if !strings.Contains(err.Error(), "file already closed") {
+			t.Logf("ReadFile(\"-\") error = %v (note: this is expected)", err)
 		}
 	})
 }

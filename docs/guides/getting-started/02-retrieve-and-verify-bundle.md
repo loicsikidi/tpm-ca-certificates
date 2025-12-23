@@ -83,8 +83,9 @@ Verifies that the bundle was built by the expected workflow from the correct rep
 
 - ✅ Queries GitHub API for SLSA build provenance attestations
 - ✅ Validates the attestation signature
-- ✅ Ensures the build occurred from the expected Git commit
-- ✅ Verifies all metadata is consistent (date, commit, repository)
+- ✅ Verifies the signature is recorded in Rekor transparency log
+- ✅ Validates attestation's metadata
+  - date, commit, repository, workflow identity
 
 > [!NOTE]
 > For detailed technical information about the verification process, see the [Bundle Verification Specification](../../specifications/05-bundle-verification.md).
@@ -97,11 +98,17 @@ If you already have the bundle, you can verify it manually:
 # Verify bundle with smart auto-detection of checksum files
 tpmtb bundle verify tpm-ca-certificates.pem
 
+# Verify bundle from standard input
+curl -sS https://raw.githubusercontent.com/loicsikidi/tpm-ca-certificates/refs/heads/main/MIRROR.tpm-ca-certificates.pem | tpmtb bundle verify -
+
 # Verify with explicit file paths
 tpmtb bundle verify tpm-ca-certificates.pem \
   --checksums-file checksums.txt \
   --checksums-signature checksums.txt.sigstore.json
 ```
+
+> [!TIP]
+> `MIRROR.tpm-ca-certificates.pem` and `MIRROR.tpm-intermediate-ca-certificates.pem` are available in the repository for convenience, to allow users to see the latest bundle directly without going through GitHub releases.
 
 ## Alternative Verification Methods 🔬
 
@@ -149,7 +156,7 @@ sha256sum -c checksums.txt
 Once the checksum integrity is established, verify the **provenance** using GitHub's attestation system:
 
 ```bash
-gh attestation verify tpm-ca-certificates.pem --owner loicsikidi
+gh attestation verify tpm-ca-certificates.pem --repo loicsikidi/tpm-ca-certificates
 ```
 
 ### Reproducibility Verification
@@ -194,16 +201,16 @@ If verification fails, check:
 
 GitHub API allows 60 requests per hour per IP address without authentication. In normal use cases, you should not reach this threshold, but if you do, you will see an explicit error message in the CLI.
 
-Currently, `tpmtb` does not support GitHub credentials, but this functionality may be added in the future if needed.
+`tpmtb` can send authenticated requests, if `GITHUB_TOKEN` environment variable is set.
 
-As a workaround, you can use GitHub CLI for attestation verification:
+As a workaround, you can use GitHub CLI to produce a token:
 
 ```bash
-# Authenticate with GitHub CLI
-gh auth login
+export GITHUB_TOKEN=$(gh auth token)
 
-# Then use gh for attestation verification
-gh attestation verify tpm-ca-certificates.pem --owner loicsikidi
+# run any tpmtb command which requires GitHub API access
+tpmtb bundle verify tpm-ca-certificates.pem
+tpmtb bundle download
 ```
 
 ## Understanding the Bundle Format 📄

@@ -111,7 +111,7 @@ func TestFindChecksumFiles(t *testing.T) {
 		os.WriteFile(checksumPath, checksumData, 0644)
 		os.WriteFile(signaturePath, signatureData, 0644)
 
-		foundChecksumPath, foundSignaturePath, found := cosign.FindChecksumFiles(bundlePath)
+		foundChecksumPath, foundSignaturePath, found := cosign.FindChecksumFiles(tmpDir)
 		if !found {
 			t.Fatal("Expected to find checksum files, but none were found")
 		}

@@ -19,9 +19,9 @@ This guide is for anyone who wants to understand how TPM trust bundles are gener
 
 This YAML file is the heart of the system. It's designed to be:
 
-✅ **Human-readable:** Anyone can understand what certificates are included
-✅ **Verifiable:** Clear provenance for every certificate URL
-✅ **Auditable:** Git history tracks every change
+- ✅ **Human-readable:** Anyone can understand what certificates are included
+- ✅ **Verifiable:** Clear provenance for every certificate URL
+- ✅ **Auditable:** Git history tracks every change
 
 ```yaml
 ---
@@ -147,7 +147,7 @@ MIICaTCCAcugAwIBAgIBAjAKBggqhkjOPQQDBDBW...
 
 **The Solution:**
 - 🔓 **Open Source:** All data is public and auditable
-- 🧑‍⚖️ **Human Review:** Experts validate every addition
+- 🧑‍⚖️ **Human Review:** Maintainers validate every addition
 - 📚 **Evidence-Based:** Every claim requires proof
 - 🤖 **Automated Checks:** CLI enforces formatting and validation rules
 

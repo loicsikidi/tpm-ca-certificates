@@ -3,6 +3,7 @@ package verify
 import (
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
@@ -46,7 +47,10 @@ Both verifications must succeed for the bundle to be considered valid.`,
   tpmtb bundle verify tpm-ca-certificates.pem
 
   # Verify with explicit checksum files
-  tpmtb bundle verify tpm-ca-certificates.pem --checksums-file checksums.txt --checksums-signature checksums.txt.sigstore.json`,
+  tpmtb bundle verify tpm-ca-certificates.pem --checksums-file checksums.txt --checksums-signature checksums.txt.sigstore.json
+
+  # Verify bundle from stdin
+  cat tpm-ca-certificates.pem | tpmtb bundle verify -`,
 		Args:         cobra.ExactArgs(1),
 		SilenceUsage: true,
 		RunE:         run,
@@ -61,9 +65,21 @@ Both verifications must succeed for the bundle to be considered valid.`,
 
 func run(cmd *cobra.Command, args []string) error {
 	bundlePath := args[0]
-	bundleFilename := filepath.Base(bundlePath)
 
-	// Read bundle from disk
+	var bundleDir, bundleFilename string
+	if bundlePath == "-" {
+		var err error
+		bundleDir, err = os.Getwd()
+		if err != nil {
+			return fmt.Errorf("failed to get current working directory: %w", err)
+		}
+		bundleFilename = "stdin"
+	} else {
+		bundleDir = filepath.Dir(bundlePath)
+		bundleFilename = filepath.Base(bundlePath)
+	}
+
+	// Read bundle from disk or stdin
 	bundleData, err := utils.ReadFile(bundlePath)
 	if err != nil {
 		return fmt.Errorf("failed to read bundle file: %w", err)
@@ -86,7 +102,7 @@ func run(cmd *cobra.Command, args []string) error {
 	skipReadFiles := false
 	if checksumsFile == "" && checksumsSignature == "" {
 		fmt.Println("Auto-detecting checksum files...")
-		checksumPath, checksumSigPath, found := cosign.FindChecksumFiles(bundlePath)
+		checksumPath, checksumSigPath, found := cosign.FindChecksumFiles(bundleDir)
 		if !found {
 			fmt.Println("Checksum files not found locally, will be downloaded from GitHub...")
 			skipReadFiles = true

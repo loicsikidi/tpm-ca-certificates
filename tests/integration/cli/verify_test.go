@@ -1,13 +1,16 @@
 package integration
 
 import (
+	"bytes"
 	"context"
+	"os"
 	"testing"
 
 	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle/verifier"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/github"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/testutil"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/digest"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
 )
 
 var (
@@ -210,4 +213,50 @@ func TestDigestComputation(t *testing.T) {
 	if bundleDigest != expectedDigest {
 		t.Errorf("Digest mismatch:\ngot:  %s\nwant: %s", bundleDigest, expectedDigest)
 	}
+}
+
+// TestReadFileFromStdin validates that ReadFile can read from stdin.
+func TestReadFileFromStdin(t *testing.T) {
+	bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
+	if err != nil {
+		t.Fatalf("Failed to read bundle: %v", err)
+	}
+
+	// Save original stdin
+	oldStdin := os.Stdin
+	defer func() { os.Stdin = oldStdin }()
+
+	// Create a pipe and simulate stdin
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("Failed to create pipe: %v", err)
+	}
+	os.Stdin = r
+
+	// Write bundle data to pipe in a goroutine
+	go func() {
+		defer w.Close()
+		w.Write(bundleData)
+	}()
+
+	// Read from stdin using ReadFile("-")
+	stdinData, err := utils.ReadFile("-")
+	if err != nil {
+		t.Fatalf("ReadFile(\"-\") failed: %v", err)
+	}
+
+	// Verify the data matches
+	if !bytes.Equal(stdinData, bundleData) {
+		t.Errorf("Data mismatch:\ngot length:  %d\nwant length: %d", len(stdinData), len(bundleData))
+	}
+
+	// Verify the digest matches
+	stdinDigest := digest.ComputeSHA256(stdinData)
+	bundleDigest := digest.ComputeSHA256(bundleData)
+	if stdinDigest != bundleDigest {
+		t.Errorf("Digest mismatch:\ngot:  %s\nwant: %s", stdinDigest, bundleDigest)
+	}
+
+	t.Logf("✓ Successfully read %d bytes from stdin", len(stdinData))
+	t.Logf("✓ Digest: %s", stdinDigest)
 }

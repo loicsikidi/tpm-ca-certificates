@@ -12,16 +12,14 @@ const (
 	signatureFilename = "checksums.txt.sigstore.json"
 )
 
-// FindChecksumFiles searches for checksum files in the same directory as the bundle.
+// FindChecksumFiles searches for checksum files in a given directory.
 //
 // It looks for two files:
 //   - checksums.txt: The checksums file
 //   - checksums.txt.sigstore.json: The Sigstore bundle signature
-func FindChecksumFiles(bundlePath string) (checksumPath, signaturePath string, found bool) {
-	bundleDir := filepath.Dir(bundlePath)
-
-	checksumPath = filepath.Join(bundleDir, checksumsFilename)
-	signaturePath = filepath.Join(bundleDir, signatureFilename)
+func FindChecksumFiles(bundleDirPath string) (checksumPath, signaturePath string, found bool) {
+	checksumPath = filepath.Join(bundleDirPath, checksumsFilename)
+	signaturePath = filepath.Join(bundleDirPath, signatureFilename)
 
 	checksumExists := utils.FileExists(checksumPath)
 	signatureExists := utils.FileExists(signaturePath)
