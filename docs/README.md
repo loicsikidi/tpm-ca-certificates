@@ -57,7 +57,7 @@ Welcome to the TPM CA Certificates documentation! This guide will help you navig
 ### I want enrich the bundle with a new certificate
 
 1. Read the [Security Model](concepts/01-security_model.md) to understand requirements
-2. Follow the [Contributing Guide](guides/getting-started/04-contributing.md)
+2. Follow the [Contributing Guide](guides/getting-started/05-contributing.md)
 3. Reference the [Configuration File Specification](specifications/01-configuration-file.md)
 
 ### I want to understand the security guarantees

@@ -3,7 +3,7 @@
 This document describes the trust model and security principles behind the project. It explains the mechanisms that enable users to trust the content produced by this bundle.
 
 > [!NOTE]
-> This file focuses on certificate sourcing trust. For a comprehensive overview of the threat model and mitigations, please refer to [Threat Model & Supply Chain Attack Mitigations](doc/02-threat_model.md).
+> This file focuses on certificate sourcing trust. For a comprehensive overview of the threat model and mitigations, please refer to [Threat Model & Supply Chain Attack Mitigations](02-threat_model.md).
  from certificate sourcing to release verification.
 
 **Open Source Transparency:** This project is open source, making all information public and allowing anyone to track the history of changes through git. This transparency is a fundamental building block of the trust model — every decision, every certificate addition, and every modification is visible and auditable.
