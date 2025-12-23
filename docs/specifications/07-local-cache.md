@@ -5,6 +5,7 @@
 | Version |    Date    |   Author    |   Description    |
 |---------|------------|-------------|------------------|
 | alpha   | 2025-12-15 | Loïc Sikidi | Initial version  |
+| alpha   | 2025-12-23 | Loïc Sikidi | Fix typos        |
 
 ## Overview
 
@@ -133,6 +134,7 @@ func (tb *TrustedBundle) Persist(ctx context.Context) error
    - `checksums.txt`
    - `checksums.txt.sigstore.json`
    - `roots.provenance.json`
+   - `config.json` (metadata about the cache)
 3. Return error if filesystem is read-only
 
 ### Save Method
@@ -152,15 +154,17 @@ func Save(ctx context.Context, cfg SaveConfig) (SaveResponse, error)
    - `checksums.txt.sigstore.json`
    - `roots.provenance.json`
    - `trusted-root.json`
+   - `config.json`
 4. Optionally copy to local cache if `--local-cache` flag is set
 
 **Configuration:**
 
 ```go
 type SaveConfig struct {
-   BundlePath       string  // Path to bundle file
-   OutputDir        string  // Output directory for cache
-   // ... other fields
+	Date string
+	VendorIDs []VendorID
+	CachePath string
+	HTTPClient utils.HttpClient
 }
 
 type SaveResponse struct {
@@ -171,6 +175,7 @@ type SaveResponse struct {
    Checksum               []byte
    ChecksumSignature      []byte
    TrustedRoot            []byte
+   CacheConfig            []byte
 }
 ```
 
@@ -207,10 +212,10 @@ type LoadConfig struct {
 
 ```bash
 # Save bundle with offline verification support
-tpmtb bundle save --output-dir /path/to/cache /path/to/bundle.pem
+tpmtb bundle save --date YYYY-MM-DD --output-dir /path/to/cache
 
 # Save bundle with offline verification directly to local cache
-tpmtb bundle save /path/to/bundle.pem --local-cache
+tpmtb bundle save --date YYYY-MM-DD --local-cache
 ```
 
 ### Verify Command (Updated)
@@ -220,5 +225,5 @@ tpmtb bundle save /path/to/bundle.pem --local-cache
 tpmtb bundle verify /path/to/bundle.pem
 
 # Load bundle in offline mode (requires offline-capable cache)
-tpmtb bundle verify /path/to/bundle.pem --offline
+tpmtb bundle verify /path/to/bundle.pem --offline --cache-dir /path/to/cache
 ```

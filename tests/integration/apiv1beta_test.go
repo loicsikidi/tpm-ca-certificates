@@ -721,3 +721,183 @@ func TestLoad(t *testing.T) {
 		}
 	})
 }
+
+func TestSave(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	ctx := context.Background()
+	t.Parallel()
+
+	t.Run("save bundle with all verification assets", func(t *testing.T) {
+		tmpDir := t.TempDir()
+
+		// Save the latest bundle
+		resp, err := apiv1beta.Save(ctx, apiv1beta.SaveConfig{
+			CachePath: tmpDir,
+		})
+		if err != nil {
+			t.Fatalf("Save() error = %v", err)
+		}
+
+		// Verify SaveResponse contains all required assets
+		if len(resp.RootBundle) == 0 {
+			t.Error("Expected RootBundle to be populated")
+		}
+		if len(resp.RootProvenance) == 0 {
+			t.Error("Expected RootProvenance to be populated")
+		}
+		if len(resp.Checksum) == 0 {
+			t.Error("Expected Checksum to be populated")
+		}
+		if len(resp.ChecksumSignature) == 0 {
+			t.Error("Expected ChecksumSignature to be populated")
+		}
+		if len(resp.TrustedRoot) == 0 {
+			t.Error("Expected TrustedRoot to be populated")
+		}
+		if len(resp.CacheConfig) == 0 {
+			t.Error("Expected CacheConfig to be populated")
+		}
+
+		// Verify IntermediateBundle and IntermediateProvenance are empty (out of scope)
+		if len(resp.IntermediateBundle) != 0 {
+			t.Error("Expected IntermediateBundle to be empty (out of scope)")
+		}
+		if len(resp.IntermediateProvenance) != 0 {
+			t.Error("Expected IntermediateProvenance to be empty (out of scope)")
+		}
+
+		// Verify CacheConfig can be unmarshaled
+		var cacheConfig apiv1beta.CacheConfig
+		if err := json.Unmarshal(resp.CacheConfig, &cacheConfig); err != nil {
+			t.Fatalf("Failed to unmarshal CacheConfig: %v", err)
+		}
+
+		if cacheConfig.Version == "" {
+			t.Error("Expected CacheConfig.Version to be populated")
+		}
+		if cacheConfig.SkipVerify {
+			t.Error("Expected CacheConfig.SkipVerify to be false")
+		}
+	})
+
+	t.Run("save specific date with vendor filter", func(t *testing.T) {
+		tmpDir := t.TempDir()
+
+		// Save a specific date with vendor filter
+		resp, err := apiv1beta.Save(ctx, apiv1beta.SaveConfig{
+			Date:      testutil.BundleVersion,
+			VendorIDs: []apiv1beta.VendorID{apiv1beta.IFX, apiv1beta.NTC},
+			CachePath: tmpDir,
+		})
+		if err != nil {
+			t.Fatalf("Save() error = %v", err)
+		}
+
+		// Verify CacheConfig contains vendor filter
+		var cacheConfig apiv1beta.CacheConfig
+		if err := json.Unmarshal(resp.CacheConfig, &cacheConfig); err != nil {
+			t.Fatalf("Failed to unmarshal CacheConfig: %v", err)
+		}
+
+		if cacheConfig.Version != testutil.BundleVersion {
+			t.Errorf("Expected version %q, got %q", testutil.BundleVersion, cacheConfig.Version)
+		}
+
+		if len(cacheConfig.VendorIDs) != 2 {
+			t.Errorf("Expected 2 vendor IDs, got %d", len(cacheConfig.VendorIDs))
+		}
+	})
+
+	t.Run("persist saves all files to output directory", func(t *testing.T) {
+		tmpDir := t.TempDir()
+
+		// Save and persist
+		resp, err := apiv1beta.Save(ctx, apiv1beta.SaveConfig{
+			Date:      testutil.BundleVersion,
+			CachePath: tmpDir,
+		})
+		if err != nil {
+			t.Fatalf("Save() error = %v", err)
+		}
+
+		outputDir := t.TempDir()
+		if err := resp.Persist(outputDir); err != nil {
+			t.Fatalf("Persist() error = %v", err)
+		}
+
+		// Verify all files were created
+		for _, filename := range apiv1beta.CacheFilenames {
+			filePath := filepath.Join(outputDir, filename)
+			if _, err := os.Stat(filePath); os.IsNotExist(err) {
+				t.Errorf("Expected file %q to exist", filename)
+			}
+		}
+
+		// Verify file contents match response
+		bundleData, err := os.ReadFile(filepath.Join(outputDir, apiv1beta.CacheRootBundleFilename))
+		if err != nil {
+			t.Fatalf("Failed to read bundle file: %v", err)
+		}
+		if !slices.Equal(bundleData, resp.RootBundle) {
+			t.Error("Bundle file content doesn't match response")
+		}
+
+		trustedRootData, err := os.ReadFile(filepath.Join(outputDir, apiv1beta.CacheTrustedRootFilename))
+		if err != nil {
+			t.Fatalf("Failed to read trusted root file: %v", err)
+		}
+		if !slices.Equal(trustedRootData, resp.TrustedRoot) {
+			t.Error("Trusted root file content doesn't match response")
+		}
+
+		// Verify trusted-root.json is valid JSON
+		var trustedRootJSON map[string]any
+		if err := json.Unmarshal(trustedRootData, &trustedRootJSON); err != nil {
+			t.Errorf("Trusted root is not valid JSON: %v", err)
+		}
+	})
+
+	t.Run("save and load for offline verification", func(t *testing.T) {
+		tmpDir := t.TempDir()
+
+		// Save bundle
+		resp, err := apiv1beta.Save(ctx, apiv1beta.SaveConfig{
+			Date:      testutil.BundleVersion,
+			CachePath: tmpDir,
+		})
+		if err != nil {
+			t.Fatalf("Save() error = %v", err)
+		}
+
+		// Persist to cache directory
+		cacheDir := t.TempDir()
+		if err := resp.Persist(cacheDir); err != nil {
+			t.Fatalf("Persist() error = %v", err)
+		}
+
+		// Load the saved bundle from cache
+		tb, err := apiv1beta.Load(ctx, apiv1beta.LoadConfig{
+			CachePath:  cacheDir,
+			SkipVerify: false, // Verify using cached assets
+		})
+		if err != nil {
+			t.Fatalf("Load() error = %v", err)
+		}
+		defer tb.Stop()
+
+		// Verify the loaded bundle
+		metadata := tb.GetMetadata()
+		if metadata.Date != testutil.BundleVersion {
+			t.Errorf("Expected date %q, got %q", testutil.BundleVersion, metadata.Date)
+		}
+
+		// Verify we can get roots
+		certPool := tb.GetRoots()
+		if certPool == nil {
+			t.Error("Expected cert pool, got nil")
+		}
+	})
+}

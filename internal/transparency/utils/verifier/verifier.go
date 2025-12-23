@@ -13,6 +13,8 @@ import (
 	"github.com/theupdateframework/go-tuf/v2/metadata/fetcher"
 )
 
+const rootTarget = "trusted_root.json"
+
 var (
 	defaultOptions = []verify.VerifierOption{
 		verify.WithSignedCertificateTimestamps(1), // Require valid SCT (Signed Certificate Timestamp)
@@ -74,4 +76,37 @@ func GetDefaultTUFOptions(optionalClient ...utils.HttpClient) *tuf.Options {
 	opts.WithFetcher(f)
 
 	return opts
+}
+
+// FetchTrustedRoot fetches the Sigstore trusted_root.json from TUF and returns it as a compact JSON buffer.
+//
+// This is useful for offline verification scenarios where the trusted root needs to be cached locally.
+//
+// Example:
+//
+//	trustedRootJSON, err := verifier.FetchTrustedRoot()
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//	os.WriteFile("trusted-root.json", trustedRootJSON, 0644)
+func FetchTrustedRoot(optionalClient ...utils.HttpClient) ([]byte, error) {
+	client, err := utils.OptionalArg(optionalClient)
+	if err != nil {
+		client = nil
+	}
+
+	opts := GetDefaultTUFOptions(client)
+	opts.DisableLocalCache = true
+
+	tufClient, err := tuf.New(opts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create TUF client: %w", err)
+	}
+
+	target, err := tufClient.GetTarget(rootTarget)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve trusted_root.json via TUF: %w", err)
+	}
+
+	return target, nil
 }
