@@ -8,6 +8,8 @@
     "https://github.com/loicsikidi/nix-shell-toolbox/tarball/main") {
     inherit pkgs;
     hooksConfig = {
+      tpmtb-format.enable = true;
+      tpmtb-validate.enable = true;
       gotest.settings.flags = "-short -race";
     };
   };

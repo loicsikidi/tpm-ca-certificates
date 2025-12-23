@@ -1,0 +1,15 @@
+extensions = ["md"]
+timeout = 5
+header = { "accept" = "text/html" }
+accept = [
+    "200",
+    "429",
+    "502", # it's ok if the backend is down during the scan
+]
+exclude = [
+    '^https://pki\.infineon\.com',
+    '^https://www\.st\.com',
+    '^https://software\.intel\.com',
+    '^https://(.*\.)?github(usercontent)?\.(com|io)',
+    '^http://invalid-url-that-should-fail\.local',
+]

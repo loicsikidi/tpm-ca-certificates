@@ -59,7 +59,7 @@ docker pull ghcr.io/loicsikidi/tpm-ca-certificates/tpmtb:latest
 **Run directly:**
 
 ```bash
-docker run --rm ghcr.io/loicsikidi/tpm-ca-certificates/tpmtb:latest --help
+docker run --rm -v $(pwd):/tmp -w /tmp ghcr.io/loicsikidi/tpm-ca-certificates/tpmtb:latest --help
 ```
 
 **Create an alias for convenience:**
