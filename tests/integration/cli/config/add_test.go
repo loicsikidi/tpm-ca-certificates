@@ -1,4 +1,4 @@
-package integration
+package config_test
 
 import (
 	"os"

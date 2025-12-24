@@ -1,11 +1,15 @@
-package integration
+package bundle_test
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"os/exec"
+	"io"
+	"os"
 	"testing"
+
+	"github.com/loicsikidi/tpm-ca-certificates/cmd/bundle/download"
 )
 
 func TestDownloadCommand(t *testing.T) {
@@ -27,17 +31,48 @@ func TestDownloadCommand(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Run the download command with stdout output
-			cmd := exec.Command("go", "run", "../../../main.go", "bundle", "download", "--date", tt.date, "--output-dir", "-")
-
-			var stdout bytes.Buffer
-			var stderr bytes.Buffer
-			cmd.Stdout = &stdout
-			cmd.Stderr = &stderr
-
-			if err := cmd.Run(); err != nil {
-				t.Fatalf("download command failed: %v\nstderr: %s", err, stderr.String())
+			// Capture stdout
+			oldStdout := os.Stdout
+			r, w, err := os.Pipe()
+			if err != nil {
+				t.Fatalf("failed to create pipe: %v", err)
 			}
+			os.Stdout = w
+
+			// Create download config
+			opts := &download.Opts{
+				Date:       tt.date,
+				OutputDir:  "-",
+				SkipVerify: false,
+				Force:      false,
+			}
+
+			// Run download in a goroutine
+			errCh := make(chan error, 1)
+			go func() {
+				errCh <- download.Run(context.Background(), opts)
+			}()
+
+			// Read output
+			var stdout bytes.Buffer
+			done := make(chan bool)
+			go func() {
+				_, _ = io.Copy(&stdout, r)
+				done <- true
+			}()
+
+			// Wait for command to finish
+			if err := <-errCh; err != nil {
+				w.Close()
+				<-done
+				os.Stdout = oldStdout
+				t.Fatalf("download command failed: %v", err)
+			}
+
+			// Close pipe and restore stdout
+			w.Close()
+			<-done
+			os.Stdout = oldStdout
 
 			// Compute SHA256 checksum
 			bundleData := stdout.Bytes()

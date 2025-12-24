@@ -1,6 +1,7 @@
 package download
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -16,15 +17,18 @@ const (
 	bundleFilename = apiv1beta.CacheRootBundleFilename
 )
 
-var (
-	skipVerify bool
-	force      bool
-	date       string
-	outputDir  string
-)
+// Opts holds the configuration for the download command.
+type Opts struct {
+	SkipVerify bool
+	Force      bool
+	Date       string
+	OutputDir  string
+}
 
 // NewCommand creates the download command.
 func NewCommand() *cobra.Command {
+	opts := &Opts{}
+
 	cmd := &cobra.Command{
 		Use:   "download",
 		Short: "download a TPM trust bundle from GitHub releases and verify it",
@@ -51,53 +55,53 @@ verify its authenticity using the same verification process as the verify comman
   tpmtb bundle download --output-dir -`,
 		Args:         cobra.NoArgs,
 		SilenceUsage: true,
-		RunE:         run,
+		RunE:         func(cmd *cobra.Command, args []string) error { return Run(cmd.Context(), opts) },
 	}
 
-	cmd.Flags().BoolVar(&skipVerify, "skip-verify", false,
+	cmd.Flags().BoolVar(&opts.SkipVerify, "skip-verify", false,
 		"Skip bundle verification after download")
-	cmd.Flags().BoolVarP(&force, "force", "f", false,
+	cmd.Flags().BoolVarP(&opts.Force, "force", "f", false,
 		"Overwrite existing files without prompting")
-	cmd.Flags().StringVarP(&date, "date", "d", "",
+	cmd.Flags().StringVarP(&opts.Date, "date", "d", "",
 		"Bundle release date (YYYY-MM-DD), default: latest")
-	cmd.Flags().StringVarP(&outputDir, "output-dir", "o", ".",
+	cmd.Flags().StringVarP(&opts.OutputDir, "output-dir", "o", ".",
 		"Output directory for downloaded files (use '-' to print to stdout)")
 
 	return cmd
 }
 
-func run(cmd *cobra.Command, args []string) error {
-	if outputDir != "-" && !utils.DirExists(outputDir) {
-		return fmt.Errorf("output directory %s does not exist", outputDir)
+// Run executes the download command.
+func Run(ctx context.Context, o *Opts) error {
+	if o.OutputDir != "-" && !utils.DirExists(o.OutputDir) {
+		return fmt.Errorf("output directory %s does not exist", o.OutputDir)
 	}
 
 	var bundlePath string
-	if outputDir != "-" {
-		bundlePath = filepath.Join(outputDir, bundleFilename)
+	if o.OutputDir != "-" {
+		bundlePath = filepath.Join(o.OutputDir, bundleFilename)
 
-		if utils.FileExists(bundlePath) && !force {
+		if utils.FileExists(bundlePath) && !o.Force {
 			cli.DisplayWarning("File %s already exists.", bundlePath)
 			if !cli.PromptConfirmation("Override?") {
-				fmt.Println() // Add newline for clean output after prompt
+				fmt.Println()
 				return fmt.Errorf("download cancelled")
 			}
-			fmt.Println() // Add newline for clean output after prompt
+			fmt.Println()
 		}
 	}
 
-	// Use the pkg/apiv1beta API to download and optionally verify the bundle
-	if date == "" {
-		display("Fetching latest release...")
+	if o.Date == "" {
+		display(o, "Fetching latest release...")
 	} else {
-		display("Fetching release %s...", date)
+		display(o, "Fetching release %s...", o.Date)
 	}
 
 	cfg := apiv1beta.GetConfig{
-		Date:       date,
-		SkipVerify: skipVerify,
+		Date:       o.Date,
+		SkipVerify: o.SkipVerify,
 	}
 
-	trustedBundle, err := apiv1beta.GetTrustedBundle(cmd.Context(), cfg)
+	trustedBundle, err := apiv1beta.GetTrustedBundle(ctx, cfg)
 	if err != nil {
 		if errors.Is(err, apiv1beta.ErrBundleVerificationFailed) {
 			cli.DisplayError("❌ Bundle verification failed")
@@ -105,13 +109,13 @@ func run(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if skipVerify {
+	if o.SkipVerify {
 		cli.DisplayWarning("⚠️  Verification skipped (--skip-verify)")
 	} else {
-		displaySuccess("✅ Bundle verified")
+		displaySuccess(o, "✅ Bundle verified")
 	}
 
-	if outputDir == "-" {
+	if o.OutputDir == "-" {
 		_, err = os.Stdout.Write(trustedBundle.GetRaw())
 		return err
 	}
@@ -125,16 +129,15 @@ func run(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func display(msg string, args ...any) {
-	if outputDir == "-" {
+func display(o *Opts, msg string, args ...any) {
+	if o.OutputDir == "-" {
 		return
 	}
 	fmt.Println(fmt.Sprintf(msg, args...))
 }
 
-// displaySuccess displays a success message unless outputting to stdout.
-func displaySuccess(msg string, args ...any) {
-	if outputDir == "-" {
+func displaySuccess(o *Opts, msg string, args ...any) {
+	if o.OutputDir == "-" {
 		return
 	}
 	cli.DisplaySuccess(msg, args...)

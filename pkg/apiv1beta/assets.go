@@ -113,22 +113,19 @@ func getAssetsFromCache(cfg assetsConfig) (*assets, error) {
 		return result, nil
 	}
 
-	checksumsPath := filepath.Join(cfg.cachePath, CacheChecksumsFilename)
-	checksum, err := os.ReadFile(checksumsPath)
+	checksum, err := cache.LoadFile(cache.ChecksumsFilename, cfg.cachePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read checksums from cache: %w", err)
+		return nil, err
 	}
 
-	checksumsSigPath := filepath.Join(cfg.cachePath, CacheChecksumsSigFilename)
-	checksumSig, err := os.ReadFile(checksumsSigPath)
+	checksumSig, err := cache.LoadFile(cache.ChecksumsSigFilename, cfg.cachePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read checksum signature from cache: %w", err)
+		return nil, err
 	}
 
-	provenancePath := filepath.Join(cfg.cachePath, CacheProvenanceFilename)
-	provenance, err := os.ReadFile(provenancePath)
+	provenance, err := cache.LoadFile(cache.ProvenanceFilename, cfg.cachePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read provenance from cache: %w", err)
+		return nil, err
 	}
 
 	if len(provenance) == 0 ||

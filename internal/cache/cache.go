@@ -1,15 +1,46 @@
 package cache
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
+
+	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
 )
 
 const (
 	// CacheDirName is the default folder name for tpmtb cache.
 	CacheDirName = ".tpmtb"
+
+	// ConfigFilename is the cache configuration file name.
+	ConfigFilename = "config.json"
+
+	// RootBundleFilename is the root bundle file name.
+	RootBundleFilename = "tpm-ca-certificates.pem"
+
+	// ChecksumsFilename is the checksums file name.
+	ChecksumsFilename = "checksums.txt"
+
+	// ChecksumsSigFilename is the checksums signature file name.
+	ChecksumsSigFilename = "checksums.txt.sigstore.json"
+
+	// ProvenanceFilename is the provenance file name.
+	ProvenanceFilename = "roots.provenance.json"
+
+	// TrustedRootFilename is the trusted root file name.
+	TrustedRootFilename = "trusted-root.json"
 )
+
+// Filenames is the list of all expected cache files.
+var Filenames = []string{
+	RootBundleFilename,
+	ChecksumsFilename,
+	ChecksumsSigFilename,
+	ProvenanceFilename,
+	TrustedRootFilename,
+	ConfigFilename,
+}
 
 var (
 	once sync.Once
@@ -29,4 +60,48 @@ func CacheDir() string {
 		path = filepath.Join(home, CacheDirName)
 	})
 	return path
+}
+
+// ValidateCacheFiles checks if all required cache files exist in the specified directory.
+// Returns an error listing missing files if any are not found.
+func ValidateCacheFiles(cacheDir string) error {
+	var missingFiles []string
+
+	for _, filename := range Filenames {
+		filePath := filepath.Join(cacheDir, filename)
+		if !utils.FileExists(filePath) {
+			missingFiles = append(missingFiles, filename)
+		}
+	}
+
+	if len(missingFiles) > 0 {
+		return fmt.Errorf("missing required cache files: %v", missingFiles)
+	}
+
+	return nil
+}
+
+// LoadFile reads a specified file from the cache directory.
+func LoadFile(filename string, optionalCacheDir ...string) ([]byte, error) {
+	cacheDir := utils.OptionalArgWithDefault(optionalCacheDir, CacheDir())
+	filePath := filepath.Join(cacheDir, filename)
+	data, err := utils.ReadFile(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read %s from cache: %w", filename, err)
+	}
+	return data, nil
+}
+
+// SaveFile writes data to a specified file in the cache directory.
+func SaveFile(filename string, data []byte, optionalCacheDir ...string) error {
+	cacheDir := utils.OptionalArgWithDefault(optionalCacheDir, CacheDir())
+	filePath := filepath.Join(cacheDir, filename)
+	perm := os.FileMode(0644)
+	if filename == TrustedRootFilename {
+		perm = 0600
+	}
+	if err := os.WriteFile(filePath, data, perm); err != nil {
+		return fmt.Errorf("failed to write %s to cache: %w", filename, err)
+	}
+	return nil
 }

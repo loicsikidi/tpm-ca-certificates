@@ -3,31 +3,26 @@ package apiv1beta
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/loicsikidi/tpm-ca-certificates/internal/cache"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
 )
 
+// Aliases for backward compatibility - these constants are now defined in internal/cache
 const (
-	CacheConfigFilename       = "config.json"
-	CacheRootBundleFilename   = "tpm-ca-certificates.pem"
-	CacheChecksumsFilename    = "checksums.txt"
-	CacheChecksumsSigFilename = "checksums.txt.sigstore.json"
-	CacheProvenanceFilename   = "roots.provenance.json"
-	CacheTrustedRootFilename  = "trusted-root.json"
+	CacheConfigFilename       = cache.ConfigFilename
+	CacheRootBundleFilename   = cache.RootBundleFilename
+	CacheChecksumsFilename    = cache.ChecksumsFilename
+	CacheChecksumsSigFilename = cache.ChecksumsSigFilename
+	CacheProvenanceFilename   = cache.ProvenanceFilename
+	CacheTrustedRootFilename  = cache.TrustedRootFilename
 )
 
 // CacheFilenames is the list of all expected cache files.
-var CacheFilenames = []string{
-	CacheRootBundleFilename,
-	CacheChecksumsFilename,
-	CacheChecksumsSigFilename,
-	CacheProvenanceFilename,
-	CacheTrustedRootFilename,
-	CacheConfigFilename,
-}
+// This is an alias for backward compatibility.
+var CacheFilenames = cache.Filenames
 
 // CacheConfig represents the persisted configuration for a [TrustedBundle].
 type CacheConfig struct {
@@ -65,8 +60,7 @@ func (c *CacheConfig) CheckAndSetDefaults() error {
 
 // checkCacheExists verifies if a cache exists for the specified version.
 func checkCacheExists(cachePath string, version string) bool {
-	configPath := filepath.Join(cachePath, CacheConfigFilename)
-	configData, err := os.ReadFile(configPath)
+	configData, err := cache.LoadFile(cache.ConfigFilename, cachePath)
 	if err != nil {
 		return false
 	}
@@ -97,29 +91,17 @@ func checkCacheExists(cachePath string, version string) bool {
 
 // writeBundleAssets writes the core bundle assets (bundle, checksums, signature, provenance) to the specified directory.
 func writeBundleAssets(dir string, bundle, checksum, checksumSignature, provenance []byte) error {
-	// Write root bundle
-	bundlePath := filepath.Join(dir, CacheRootBundleFilename)
-	if err := os.WriteFile(bundlePath, bundle, 0644); err != nil {
-		return fmt.Errorf("failed to write root bundle: %w", err)
+	if err := cache.SaveFile(cache.RootBundleFilename, bundle, dir); err != nil {
+		return err
 	}
-
-	// Write checksums
-	checksumsPath := filepath.Join(dir, CacheChecksumsFilename)
-	if err := os.WriteFile(checksumsPath, checksum, 0644); err != nil {
-		return fmt.Errorf("failed to write checksums: %w", err)
+	if err := cache.SaveFile(cache.ChecksumsFilename, checksum, dir); err != nil {
+		return err
 	}
-
-	// Write checksum signature
-	checksumsSigPath := filepath.Join(dir, CacheChecksumsSigFilename)
-	if err := os.WriteFile(checksumsSigPath, checksumSignature, 0644); err != nil {
-		return fmt.Errorf("failed to write checksum signature: %w", err)
+	if err := cache.SaveFile(cache.ChecksumsSigFilename, checksumSignature, dir); err != nil {
+		return err
 	}
-
-	// Write provenance
-	provenancePath := filepath.Join(dir, CacheProvenanceFilename)
-	if err := os.WriteFile(provenancePath, provenance, 0644); err != nil {
-		return fmt.Errorf("failed to write provenance: %w", err)
+	if err := cache.SaveFile(cache.ProvenanceFilename, provenance, dir); err != nil {
+		return err
 	}
-
 	return nil
 }
