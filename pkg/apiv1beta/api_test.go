@@ -1,6 +1,7 @@
 package apiv1beta
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -217,6 +218,94 @@ func TestCacheConfigValidation(t *testing.T) {
 		err := cfg.CheckAndSetDefaults()
 		if err != nil {
 			t.Fatalf("Expected no error with valid config: %v", err)
+		}
+	})
+}
+
+func TestVerifyTrustedBundleWithCustomTrustedRoot(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("verifies bundle with custom trusted root", func(t *testing.T) {
+		// Load all required test data
+		bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
+		if err != nil {
+			t.Fatalf("Failed to read test bundle: %v", err)
+		}
+
+		checksumData, err := testutil.ReadTestFile(testutil.ChecksumFile)
+		if err != nil {
+			t.Fatalf("Failed to read checksums: %v", err)
+		}
+
+		checksumSigData, err := testutil.ReadTestFile(testutil.ChecksumSigstoreFile)
+		if err != nil {
+			t.Fatalf("Failed to read checksum signature: %v", err)
+		}
+
+		provenanceData, err := testutil.ReadTestFile(testutil.ProvenanceFile)
+		if err != nil {
+			t.Fatalf("Failed to read provenance: %v", err)
+		}
+
+		trustedRootData, err := testutil.ReadTestFile(testutil.TrustedRootFile)
+		if err != nil {
+			t.Fatalf("Failed to read trusted root: %v", err)
+		}
+
+		// Verify with custom trusted root (offline mode)
+		result, err := VerifyTrustedBundle(ctx, VerifyConfig{
+			Bundle:            bundleData,
+			Checksum:          checksumData,
+			ChecksumSignature: checksumSigData,
+			Provenance:        provenanceData,
+			TrustedRoot:       trustedRootData,
+		})
+		if err != nil {
+			t.Fatalf("Failed to verify bundle with custom trusted root: %v", err)
+		}
+
+		if result == nil {
+			t.Fatal("Expected verification result to be non-nil")
+		}
+		if result.CosignResult == nil {
+			t.Fatal("Expected Cosign result to be non-nil")
+		}
+		if len(result.GithubAttestationResults) == 0 {
+			t.Fatal("Expected at least one GitHub attestation result")
+		}
+	})
+
+	t.Run("fails with invalid trusted root JSON", func(t *testing.T) {
+		bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
+		if err != nil {
+			t.Fatalf("Failed to read test bundle: %v", err)
+		}
+
+		checksumData, err := testutil.ReadTestFile(testutil.ChecksumFile)
+		if err != nil {
+			t.Fatalf("Failed to read checksums: %v", err)
+		}
+
+		checksumSigData, err := testutil.ReadTestFile(testutil.ChecksumSigstoreFile)
+		if err != nil {
+			t.Fatalf("Failed to read checksum signature: %v", err)
+		}
+
+		provenanceData, err := testutil.ReadTestFile(testutil.ProvenanceFile)
+		if err != nil {
+			t.Fatalf("Failed to read provenance: %v", err)
+		}
+
+		// Try to verify with invalid JSON
+		_, err = VerifyTrustedBundle(ctx, VerifyConfig{
+			Bundle:            bundleData,
+			Checksum:          checksumData,
+			ChecksumSignature: checksumSigData,
+			Provenance:        provenanceData,
+			TrustedRoot:       []byte("invalid json"),
+		})
+		if err == nil {
+			t.Fatal("Expected error with invalid trusted root JSON")
 		}
 	})
 }

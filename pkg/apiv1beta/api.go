@@ -295,6 +295,15 @@ type VerifyConfig struct {
 	// Optional. Default is false (local cache enabled).
 	DisableLocalCache bool
 
+	// TrustedRoot is the content of the trusted-root.json file to use for offline verification.
+	// When provided, this Sigstore trusted root will be used instead of fetching from TUF.
+	//
+	// The trusted root must contain valid Sigstore public good certificates. Invalid or
+	// untrusted certificates will cause verification to fail.
+	//
+	// Optional. If not provided, the trusted root will be fetched from Sigstore's TUF repository.
+	TrustedRoot []byte
+
 	// sourceRepo is the GitHub repository to fetch bundles from.
 	//
 	// This field is internal for security reasons and should not be set by users.
@@ -403,6 +412,7 @@ func VerifyTrustedBundle(ctx context.Context, cfg VerifyConfig) (*VerifyResult, 
 		WorkflowFilename:  github.ReleaseBundleWorkflowPath,
 		HTTPClient:        cfg.HTTPClient,
 		DisableLocalCache: cfg.DisableLocalCache,
+		TrustedRoot:       cfg.TrustedRoot,
 	}
 
 	v, err := verifier.New(verifierCfg)

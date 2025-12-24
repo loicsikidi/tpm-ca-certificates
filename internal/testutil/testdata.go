@@ -2,6 +2,7 @@
 package testutil
 
 import (
+	"bytes"
 	"embed"
 	"encoding/json"
 	"io/fs"
@@ -28,8 +29,11 @@ const (
 	// ConfigFile is the name of the test config file.
 	ConfigFile = ".tpm-roots.yaml"
 
-	// TrustedRootFile is the name of the test trusted root file.
+	// TrustedRootFile is the name of the trusted root file.
 	TrustedRootFile = "trusted-root.json"
+
+	// CacheConfigFile is the name of the cache config file.
+	CacheConfigFile = "config.json"
 )
 
 // TestData contains embedded test data files from tests/integration/testdata.
@@ -127,18 +131,22 @@ func CreateCacheDir(t *testing.T, configData []byte) string {
 		t.Fatalf("Failed to write provenance: %v", err)
 	}
 
-	// trustedRootData, err := ReadTestFile(TrustedRootFile)
-	// if err != nil {
-	// 	t.Fatalf("Failed to read test trusted root: %v", err)
-	// }
-	// if err := cache.SaveFile(cache.TrustedRootFilename, trustedRootData, tmpDir); err != nil {
-	// 	t.Fatalf("Failed to write trusted root: %v", err)
-	// }
+	trustedRootData, err := ReadTestFile(TrustedRootFile)
+	if err != nil {
+		t.Fatalf("Failed to read test trusted root: %v", err)
+	}
+	if err := cache.SaveFile(cache.TrustedRootFilename, trustedRootData, tmpDir); err != nil {
+		t.Fatalf("Failed to write trusted root: %v", err)
+	}
 
 	// Write config
 	if configData == nil {
-		// Create minimal valid config
-		configData = []byte(`{"autoUpdate":{},"vendorIDs":[],"lastTimestamp":"2025-12-14T00:00:00Z"}`)
+		// Create minimal valid config with bundle version
+		b, err := ReadTestFile(CacheConfigFile)
+		if err != nil {
+			t.Fatalf("Failed to read test cache config: %v", err)
+		}
+		configData = bytes.Clone(b)
 	}
 
 	// Validate it's valid JSON

@@ -226,3 +226,135 @@ func TestGetVendors(t *testing.T) {
 		}
 	})
 }
+
+func TestLoadOfflineMode(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("loads bundle successfully in offline mode", func(t *testing.T) {
+		// Create cache with all required files including trusted-root.json
+		cacheDir := testutil.CreateCacheDir(t, nil)
+
+		// Load in offline mode
+		tb, err := Load(ctx, LoadConfig{
+			CachePath:   cacheDir,
+			OfflineMode: true,
+		})
+		if err != nil {
+			t.Fatalf("Failed to load bundle in offline mode: %v", err)
+		}
+		defer tb.Stop()
+
+		// Verify bundle was loaded
+		roots := tb.GetRoots()
+		if roots == nil {
+			t.Fatal("Expected roots to be non-nil")
+		}
+
+		// Verify we have at least one vendor
+		vendors := tb.GetVendors()
+		if len(vendors) == 0 {
+			t.Fatal("Expected at least one vendor")
+		}
+	})
+
+	t.Run("fails when trusted-root.json is missing in offline mode", func(t *testing.T) {
+		// Create cache without trusted-root.json
+		tmpDir := t.TempDir()
+
+		bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
+		if err != nil {
+			t.Fatalf("Failed to read test bundle: %v", err)
+		}
+
+		// Create minimal cache (missing trusted-root.json)
+		bundlePath := filepath.Join(tmpDir, CacheRootBundleFilename)
+		if err := os.WriteFile(bundlePath, bundleData, 0644); err != nil {
+			t.Fatalf("Failed to write bundle: %v", err)
+		}
+
+		configPath := filepath.Join(tmpDir, CacheConfigFilename)
+		configData := []byte(`{"version":"2025-12-14","autoUpdate":{"disableAutoUpdate":true}}`)
+		if err := os.WriteFile(configPath, configData, 0644); err != nil {
+			t.Fatalf("Failed to write config: %v", err)
+		}
+
+		// Load other verification assets
+		for _, filename := range []string{
+			testutil.ChecksumFile,
+			testutil.ChecksumSigstoreFile,
+			testutil.ProvenanceFile,
+		} {
+			data, err := testutil.ReadTestFile(filename)
+			if err != nil {
+				t.Fatalf("Failed to read test file %s: %v", filename, err)
+			}
+			destPath := filepath.Join(tmpDir, filename)
+			if err := os.WriteFile(destPath, data, 0644); err != nil {
+				t.Fatalf("Failed to write file %s: %v", filename, err)
+			}
+		}
+
+		// Try to load in offline mode - should fail
+		_, err = Load(ctx, LoadConfig{
+			CachePath:   tmpDir,
+			OfflineMode: true,
+		})
+		if err == nil {
+			t.Fatal("Expected error when trusted-root.json is missing in offline mode")
+		}
+	})
+
+	t.Run("fails when offline mode requires local cache", func(t *testing.T) {
+		cacheDir := testutil.CreateCacheDir(t, nil)
+
+		_, err := Load(ctx, LoadConfig{
+			CachePath:         cacheDir,
+			OfflineMode:       true,
+			DisableLocalCache: true,
+		})
+		if err == nil {
+			t.Fatal("Expected error when offline mode is enabled with DisableLocalCache=true")
+		}
+	})
+
+	t.Run("disables auto-update in offline mode", func(t *testing.T) {
+		// Create cache with auto-update enabled
+		configData := []byte(`{
+			"version":"` + testutil.BundleVersion + `",
+			"autoUpdate":{"disableAutoUpdate":false},
+			"vendorIDs":[],
+			"lastTimestamp":"2025-12-14T00:00:00Z"
+		}`)
+		cacheDir := testutil.CreateCacheDir(t, configData)
+
+		tb, err := Load(ctx, LoadConfig{
+			CachePath:   cacheDir,
+			OfflineMode: true,
+		})
+		if err != nil {
+			t.Fatalf("Failed to load bundle in offline mode: %v", err)
+		}
+		defer tb.Stop()
+
+		// Verify auto-update is disabled (watcher should not be running)
+		tbImpl := tb.(*trustedBundle)
+		if tbImpl.stopChan != nil {
+			t.Fatal("Expected watcher to be disabled in offline mode")
+		}
+	})
+}
+
+func TestLoadConfigValidation(t *testing.T) {
+	t.Run("rejects offline mode with disabled local cache", func(t *testing.T) {
+		cfg := LoadConfig{
+			CachePath:         t.TempDir(),
+			OfflineMode:       true,
+			DisableLocalCache: true,
+		}
+
+		err := cfg.CheckAndSetDefaults()
+		if err == nil {
+			t.Fatal("Expected error when offline mode is enabled with DisableLocalCache=true")
+		}
+	})
+}

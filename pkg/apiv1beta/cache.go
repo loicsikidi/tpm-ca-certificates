@@ -47,8 +47,10 @@ func (c *CacheConfig) CheckAndSetDefaults() error {
 	if c.Version == "" {
 		return fmt.Errorf("version cannot be empty")
 	}
-	if err := c.AutoUpdate.CheckAndSetDefaults(); err != nil {
-		return fmt.Errorf("invalid auto-update config: %w", err)
+	if c.AutoUpdate != nil {
+		if err := c.AutoUpdate.CheckAndSetDefaults(); err != nil {
+			return fmt.Errorf("invalid auto-update config: %w", err)
+		}
 	}
 	for _, vendorID := range c.VendorIDs {
 		if err := vendorID.Validate(); err != nil {

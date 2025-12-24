@@ -54,6 +54,11 @@ type Config struct {
 	//
 	// Optional. Default is false (local cache enabled).
 	DisableLocalCache bool
+
+	// TrustedRoot is the Sigstore trusted root for offline verification.
+	//
+	// Optional. If provided, this will be used instead of fetching from TUF.
+	TrustedRoot []byte
 }
 
 // CheckAndSetDefaults validates and sets default values.
@@ -136,15 +141,29 @@ func (v *Verifier) GetPolicyConfig() policy.Config {
 
 func (v *Verifier) GetSigstoreVerifierConfig() (verifier.Config, error) {
 	cfg := verifier.Config{}
+
+	// Priority 1: Use custom trusted root if provided (offline mode)
+	if len(v.config.TrustedRoot) > 0 {
+		trustedRoot, err := LoadTrustedRoot(v.config.TrustedRoot)
+		if err != nil {
+			return cfg, fmt.Errorf("failed to load custom trusted root: %w", err)
+		}
+		cfg.Root = trustedRoot
+		return cfg, nil
+	}
+
+	// Priority 2: Fetch from TUF with local cache disabled
 	if v.config.DisableLocalCache {
 		opts := verifier.GetDefaultTUFOptions(v.config.HTTPClient)
 		opts.DisableLocalCache = true
-		root, err := root.FetchTrustedRootWithOptions(opts)
+		trustedRoot, err := root.FetchTrustedRootWithOptions(opts)
 		if err != nil {
 			return cfg, err
 		}
-		cfg.Root = root
+		cfg.Root = trustedRoot
 	}
+
+	// Priority 3: Use default (fetch from TUF with local cache enabled)
 	return cfg, nil
 }
 
