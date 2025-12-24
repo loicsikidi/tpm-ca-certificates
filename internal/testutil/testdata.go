@@ -5,12 +5,11 @@ import (
 	"embed"
 	"encoding/json"
 	"io/fs"
-	"os"
-	"path/filepath"
 	"sync"
 	"testing"
 
 	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/cache"
 )
 
 const (
@@ -28,6 +27,9 @@ const (
 
 	// ConfigFile is the name of the test config file.
 	ConfigFile = ".tpm-roots.yaml"
+
+	// TrustedRootFile is the name of the test trusted root file.
+	TrustedRootFile = "trusted-root.json"
 )
 
 // TestData contains embedded test data files from tests/integration/testdata.
@@ -97,7 +99,7 @@ func CreateCacheDir(t *testing.T, configData []byte) string {
 	if err != nil {
 		t.Fatalf("Failed to read test bundle: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(tmpDir, "tpm-ca-certificates.pem"), bundleData, 0644); err != nil {
+	if err := cache.SaveFile(cache.RootBundleFilename, bundleData, tmpDir); err != nil {
 		t.Fatalf("Failed to write bundle: %v", err)
 	}
 
@@ -105,7 +107,7 @@ func CreateCacheDir(t *testing.T, configData []byte) string {
 	if err != nil {
 		t.Fatalf("Failed to read test checksums: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(tmpDir, "checksums.txt"), checksumData, 0644); err != nil {
+	if err := cache.SaveFile(cache.ChecksumsFilename, checksumData, tmpDir); err != nil {
 		t.Fatalf("Failed to write checksums: %v", err)
 	}
 
@@ -113,7 +115,7 @@ func CreateCacheDir(t *testing.T, configData []byte) string {
 	if err != nil {
 		t.Fatalf("Failed to read test checksum signature: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(tmpDir, "checksums.txt.sigstore.json"), checksumSigData, 0644); err != nil {
+	if err := cache.SaveFile(cache.ChecksumsSigFilename, checksumSigData, tmpDir); err != nil {
 		t.Fatalf("Failed to write checksum signature: %v", err)
 	}
 
@@ -121,9 +123,17 @@ func CreateCacheDir(t *testing.T, configData []byte) string {
 	if err != nil {
 		t.Fatalf("Failed to read test provenance: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(tmpDir, "roots.provenance.json"), provenanceData, 0644); err != nil {
+	if err := cache.SaveFile(cache.ProvenanceFilename, provenanceData, tmpDir); err != nil {
 		t.Fatalf("Failed to write provenance: %v", err)
 	}
+
+	// trustedRootData, err := ReadTestFile(TrustedRootFile)
+	// if err != nil {
+	// 	t.Fatalf("Failed to read test trusted root: %v", err)
+	// }
+	// if err := cache.SaveFile(cache.TrustedRootFilename, trustedRootData, tmpDir); err != nil {
+	// 	t.Fatalf("Failed to write trusted root: %v", err)
+	// }
 
 	// Write config
 	if configData == nil {
@@ -137,7 +147,7 @@ func CreateCacheDir(t *testing.T, configData []byte) string {
 		t.Fatalf("Invalid config JSON: %v", err)
 	}
 
-	if err := os.WriteFile(filepath.Join(tmpDir, "config.json"), configData, 0644); err != nil {
+	if err := cache.SaveFile(cache.ConfigFilename, configData, tmpDir); err != nil {
 		t.Fatalf("Failed to write config: %v", err)
 	}
 

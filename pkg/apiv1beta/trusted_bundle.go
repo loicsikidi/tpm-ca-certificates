@@ -200,9 +200,8 @@ func (tb *trustedBundle) Persist(optionalCachePath ...string) error {
 		return fmt.Errorf("failed to marshal config: %w", err)
 	}
 
-	configPath := filepath.Join(cachePath, CacheConfigFilename)
-	if err := os.WriteFile(configPath, configData, 0644); err != nil {
-		return fmt.Errorf("failed to write config: %w", err)
+	if err := cache.SaveFile(cache.ConfigFilename, configData, cachePath); err != nil {
+		return err
 	}
 
 	return nil
@@ -318,16 +317,14 @@ func Load(ctx context.Context, cfg LoadConfig) (TrustedBundle, error) {
 		return nil, err
 	}
 
-	bundlePath := filepath.Join(cfg.CachePath, CacheRootBundleFilename)
-	bundleData, err := utils.ReadFile(bundlePath)
+	bundleData, err := cache.LoadFile(cache.RootBundleFilename, cfg.CachePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read bundle: %w", err)
+		return nil, err
 	}
 
-	configPath := filepath.Join(cfg.CachePath, CacheConfigFilename)
-	configData, err := utils.ReadFile(configPath)
+	configData, err := cache.LoadFile(cache.ConfigFilename, cfg.CachePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read config: %w", err)
+		return nil, err
 	}
 
 	var cacheCfg CacheConfig
@@ -352,22 +349,19 @@ func Load(ctx context.Context, cfg LoadConfig) (TrustedBundle, error) {
 	var checksumData, checksumSigData, provenanceData []byte
 	if !skipVerify {
 		var err error
-		checksumsPath := filepath.Join(cfg.CachePath, CacheChecksumsFilename)
-		checksumData, err = utils.ReadFile(checksumsPath)
+		checksumData, err = cache.LoadFile(cache.ChecksumsFilename, cfg.CachePath)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read checksums: %w", err)
+			return nil, err
 		}
 
-		checksumsSigPath := filepath.Join(cfg.CachePath, CacheChecksumsSigFilename)
-		checksumSigData, err = utils.ReadFile(checksumsSigPath)
+		checksumSigData, err = cache.LoadFile(cache.ChecksumsSigFilename, cfg.CachePath)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read checksum signature: %w", err)
+			return nil, err
 		}
 
-		provenancePath := filepath.Join(cfg.CachePath, CacheProvenanceFilename)
-		provenanceData, err = utils.ReadFile(provenancePath)
+		provenanceData, err = cache.LoadFile(cache.ProvenanceFilename, cfg.CachePath)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read provenance: %w", err)
+			return nil, err
 		}
 
 		if _, err := VerifyTrustedBundle(ctx, VerifyConfig{

@@ -1,4 +1,4 @@
-package utils
+package utils_test
 
 import (
 	"bytes"
@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
 )
 
 func TestReadFile(t *testing.T) {
@@ -18,7 +20,7 @@ func TestReadFile(t *testing.T) {
 			t.Fatalf("failed to create test file: %v", err)
 		}
 
-		data, err := ReadFile(testFile)
+		data, err := utils.ReadFile(testFile)
 		if err != nil {
 			t.Fatalf("ReadFile() error = %v, want nil", err)
 		}
@@ -37,7 +39,7 @@ func TestReadFile(t *testing.T) {
 			t.Fatalf("failed to create test file: %v", err)
 		}
 
-		data, err := ReadFile(testFile, 10)
+		data, err := utils.ReadFile(testFile, 10)
 		if err != nil {
 			t.Fatalf("ReadFile() error = %v, want nil", err)
 		}
@@ -51,12 +53,12 @@ func TestReadFile(t *testing.T) {
 		tmpDir := t.TempDir()
 		testFile := filepath.Join(tmpDir, "large.txt")
 
-		largeContent := strings.Repeat("a", int(DefaultMaxFileSize)+1)
+		largeContent := strings.Repeat("a", int(utils.DefaultMaxFileSize)+1)
 		if err := os.WriteFile(testFile, []byte(largeContent), 0644); err != nil {
 			t.Fatalf("failed to create test file: %v", err)
 		}
 
-		_, err := ReadFile(testFile)
+		_, err := utils.ReadFile(testFile)
 		if err == nil {
 			t.Fatal("ReadFile() error = nil, want error for file too large")
 		}
@@ -75,7 +77,7 @@ func TestReadFile(t *testing.T) {
 			t.Fatalf("failed to create test file: %v", err)
 		}
 
-		_, err := ReadFile(testFile, 100)
+		_, err := utils.ReadFile(testFile, 100)
 		if err == nil {
 			t.Fatal("ReadFile() error = nil, want error for file too large")
 		}
@@ -98,7 +100,7 @@ func TestReadFile(t *testing.T) {
 			t.Fatalf("failed to create test file: %v", err)
 		}
 
-		data, err := ReadFile(testFile, maxSize)
+		data, err := utils.ReadFile(testFile, maxSize)
 		if err != nil {
 			t.Fatalf("ReadFile() error = %v, want nil", err)
 		}
@@ -117,7 +119,7 @@ func TestReadFile(t *testing.T) {
 			t.Fatalf("failed to create test file: %v", err)
 		}
 
-		data, err := ReadFile(testFile)
+		data, err := utils.ReadFile(testFile)
 		if err != nil {
 			t.Fatalf("ReadFile() error = %v, want nil", err)
 		}
@@ -142,7 +144,7 @@ func TestReadFile(t *testing.T) {
 			t.Fatalf("failed to create test file: %v", err)
 		}
 
-		data, err := ReadFile(testFile, 10, 20, 30)
+		data, err := utils.ReadFile(testFile, 10, 20, 30)
 		if err != nil {
 			t.Fatalf("ReadFile() error = %v, want nil", err)
 		}
@@ -168,7 +170,7 @@ func TestReadFile(t *testing.T) {
 			w.Write(content)
 		}()
 
-		data, err := ReadFile("-")
+		data, err := utils.ReadFile("-")
 		if err != nil {
 			t.Fatalf("ReadFile(\"-\") error = %v, want nil", err)
 		}
@@ -194,7 +196,7 @@ func TestReadFile(t *testing.T) {
 			w.Write(content)
 		}()
 
-		data, err := ReadFile("-", 10)
+		data, err := utils.ReadFile("-", 10)
 		if err != nil {
 			t.Fatalf("ReadFile(\"-\", 10) error = %v, want nil", err)
 		}
@@ -220,7 +222,7 @@ func TestReadFile(t *testing.T) {
 			w.Write(content)
 		}()
 
-		_, err = ReadFile("-", 100)
+		_, err = utils.ReadFile("-", 100)
 		if err == nil {
 			t.Fatal("ReadFile(\"-\", 100) error = nil, want error for stdin too large")
 		}
@@ -249,7 +251,7 @@ func TestReadFile(t *testing.T) {
 			w.Write(content)
 		}()
 
-		data, err := ReadFile("-")
+		data, err := utils.ReadFile("-")
 		if err != nil {
 			t.Fatalf("ReadFile(\"-\") error = %v, want nil", err)
 		}
@@ -273,7 +275,7 @@ func TestReadFile(t *testing.T) {
 			w.Close()
 		}()
 
-		data, err := ReadFile("-")
+		data, err := utils.ReadFile("-")
 		if err != nil {
 			t.Fatalf("ReadFile(\"-\") error = %v, want nil", err)
 		}
@@ -297,7 +299,7 @@ func TestReadFile(t *testing.T) {
 		r.Close()
 		w.Close()
 
-		_, err = ReadFile("-")
+		_, err = utils.ReadFile("-")
 		if err == nil {
 			t.Fatal("ReadFile(\"-\") error = nil, want error for closed stdin")
 		}

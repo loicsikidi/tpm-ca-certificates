@@ -508,23 +508,15 @@ func (sr *SaveResponse) Persist(outputDir string) error {
 		}
 	}
 
-	// Write core bundle assets
 	if err := writeBundleAssets(outputDir, sr.RootBundle, sr.Checksum, sr.ChecksumSignature, sr.RootProvenance); err != nil {
 		return err
 	}
-
-	// Write trusted root
-	trustedRootPath := filepath.Join(outputDir, CacheTrustedRootFilename)
-	if err := os.WriteFile(trustedRootPath, sr.TrustedRoot, 0600); err != nil {
-		return fmt.Errorf("failed to write trusted root: %w", err)
+	if err := cache.SaveFile(cache.TrustedRootFilename, sr.TrustedRoot, outputDir); err != nil {
+		return err
 	}
-
-	// Write cache config
-	configPath := filepath.Join(outputDir, CacheConfigFilename)
-	if err := os.WriteFile(configPath, sr.CacheConfig, 0644); err != nil {
-		return fmt.Errorf("failed to write cache config: %w", err)
+	if err := cache.SaveFile(cache.ConfigFilename, sr.CacheConfig, outputDir); err != nil {
+		return err
 	}
-
 	return nil
 }
 
