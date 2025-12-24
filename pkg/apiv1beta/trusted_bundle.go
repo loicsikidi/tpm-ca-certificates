@@ -274,6 +274,14 @@ type LoadConfig struct {
 	//
 	// Optional. By default the bundle will be verified using Cosign and GitHub Attestations.
 	SkipVerify bool
+
+	// OfflineMode enables offline verification mode using assets stored in the cache directory.
+	//
+	// This mode automatically disables auto-update since the cached trusted-root.json may not work
+	// with future bundles due to Sigstore key rotation.
+	//
+	// Optional. Default is false (online mode).
+	OfflineMode bool
 }
 
 // CheckAndSetDefaults validates and sets default values.
@@ -283,6 +291,9 @@ func (c *LoadConfig) CheckAndSetDefaults() error {
 	}
 	if !utils.DirExists(c.CachePath) {
 		return fmt.Errorf("cache directory does not exist: %s", c.CachePath)
+	}
+	if c.OfflineMode && c.DisableLocalCache {
+		return fmt.Errorf("offline mode requires local cache to be enabled")
 	}
 	return nil
 }
@@ -346,7 +357,7 @@ func Load(ctx context.Context, cfg LoadConfig) (TrustedBundle, error) {
 		skipVerify = cacheCfg.SkipVerify
 	}
 
-	var checksumData, checksumSigData, provenanceData []byte
+	var checksumData, checksumSigData, provenanceData, trustedRootData []byte
 	if !skipVerify {
 		var err error
 		checksumData, err = cache.LoadFile(cache.ChecksumsFilename, cfg.CachePath)
@@ -364,11 +375,21 @@ func Load(ctx context.Context, cfg LoadConfig) (TrustedBundle, error) {
 			return nil, err
 		}
 
+		// In offline mode, load trusted-root.json from cache
+		if cfg.OfflineMode {
+			trustedRootPath := filepath.Join(cfg.CachePath, CacheTrustedRootFilename)
+			trustedRootData, err = utils.ReadFile(trustedRootPath)
+			if err != nil {
+				return nil, fmt.Errorf("failed to read trusted root (required for offline mode): %w", err)
+			}
+		}
+
 		if _, err := VerifyTrustedBundle(ctx, VerifyConfig{
 			Bundle:            bundleData,
 			Checksum:          checksumData,
 			ChecksumSignature: checksumSigData,
 			Provenance:        provenanceData,
+			TrustedRoot:       trustedRootData,
 			DisableLocalCache: cfg.DisableLocalCache,
 		}); err != nil {
 			return nil, fmt.Errorf("verification failed: %w", err)
@@ -389,10 +410,13 @@ func Load(ctx context.Context, cfg LoadConfig) (TrustedBundle, error) {
 	tbImpl.assets.checksumSignature = checksumSigData
 	tbImpl.assets.provenance = provenanceData
 
-	if !cacheCfg.AutoUpdate.DisableAutoUpdate {
-		tb.(*trustedBundle).startWatcher(ctx, cfg, cacheCfg.AutoUpdate.Interval)
+	// In offline mode, auto-update must be disabled since the cached trusted-root.json
+	// may not work with future bundles due to Sigstore key rotation
+	if cacheCfg.AutoUpdate != nil {
+		if !cfg.OfflineMode && !cacheCfg.AutoUpdate.DisableAutoUpdate {
+			tb.(*trustedBundle).startWatcher(ctx, cfg, cacheCfg.AutoUpdate.Interval)
+		}
 	}
-
 	return tb, nil
 }
 
