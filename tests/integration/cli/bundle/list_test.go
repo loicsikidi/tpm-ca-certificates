@@ -1,7 +1,6 @@
 package bundle_test
 
 import (
-	"context"
 	"strings"
 	"testing"
 
@@ -85,7 +84,7 @@ func TestListCommand(t *testing.T) {
 			cmd := list.NewCommand()
 			cmd.SetArgs(tt.args)
 
-			err := cmd.ExecuteContext(context.Background())
+			err := cmd.ExecuteContext(t.Context())
 
 			if tt.wantErr {
 				if err == nil {
@@ -120,7 +119,7 @@ func TestListCommandOutput(t *testing.T) {
 	cmd := list.NewCommand()
 	cmd.SetArgs([]string{"--limit", "3"})
 
-	err := cmd.ExecuteContext(context.Background())
+	err := cmd.ExecuteContext(t.Context())
 	if err != nil {
 		t.Skipf("skipping output test due to network error: %v", err)
 		return
@@ -141,7 +140,7 @@ func TestListCommandWithRealAPI(t *testing.T) {
 		SortOrder: github.SortOrderDesc,
 	}
 
-	releases, err := client.GetReleases(context.Background(), github.SourceRepo, opts)
+	releases, err := client.GetReleases(t.Context(), github.SourceRepo, opts)
 	if err != nil {
 		t.Fatalf("failed to fetch releases: %v", err)
 	}

@@ -1,7 +1,6 @@
 package apiv1beta
 
 import (
-	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -223,7 +222,6 @@ func TestCacheConfigValidation(t *testing.T) {
 }
 
 func TestVerifyTrustedBundleWithCustomTrustedRoot(t *testing.T) {
-	ctx := context.Background()
 
 	t.Run("verifies bundle with custom trusted root", func(t *testing.T) {
 		// Load all required test data
@@ -253,7 +251,7 @@ func TestVerifyTrustedBundleWithCustomTrustedRoot(t *testing.T) {
 		}
 
 		// Verify with custom trusted root (offline mode)
-		result, err := VerifyTrustedBundle(ctx, VerifyConfig{
+		result, err := VerifyTrustedBundle(t.Context(), VerifyConfig{
 			Bundle:            bundleData,
 			Checksum:          checksumData,
 			ChecksumSignature: checksumSigData,
@@ -297,7 +295,7 @@ func TestVerifyTrustedBundleWithCustomTrustedRoot(t *testing.T) {
 		}
 
 		// Try to verify with invalid JSON
-		_, err = VerifyTrustedBundle(ctx, VerifyConfig{
+		_, err = VerifyTrustedBundle(t.Context(), VerifyConfig{
 			Bundle:            bundleData,
 			Checksum:          checksumData,
 			ChecksumSignature: checksumSigData,

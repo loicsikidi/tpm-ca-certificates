@@ -1,7 +1,6 @@
 package bundle_test
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -111,7 +110,7 @@ func TestSaveCommand(t *testing.T) {
 			}
 
 			// Run the save command
-			err := save.Run(context.Background(), &tt.opts)
+			err := save.Run(t.Context(), &tt.opts)
 
 			// Check error expectation
 			if tt.expectError && err == nil {
@@ -146,13 +145,13 @@ func TestSaveCommandForceFlag(t *testing.T) {
 			LocalCache: false,
 		}
 
-		err := save.Run(context.Background(), &opts)
+		err := save.Run(t.Context(), &opts)
 		if err != nil {
 			t.Fatalf("first save failed: %v", err)
 		}
 
 		// Second save with force flag should succeed
-		err = save.Run(context.Background(), &opts)
+		err = save.Run(t.Context(), &opts)
 		if err != nil {
 			t.Fatalf("second save with force flag failed: %v", err)
 		}

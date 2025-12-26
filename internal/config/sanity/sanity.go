@@ -1,6 +1,7 @@
 package sanity
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"sync"
@@ -163,7 +164,7 @@ func (c *Checker) Check(cfg *config.TPMRootsConfig, workers int, thresholdDays i
 
 // checkCertificate validates a single certificate and checks its expiration.
 func (c *Checker) checkCertificate(cert config.Certificate, vendorID, vendorName string, thresholdDays int) (*ValidationError, *ExpirationWarning, error) {
-	x509Cert, err := c.downloader.DownloadCertificate(cert.URL)
+	x509Cert, err := c.downloader.DownloadCertificate(context.Background(), cert.URL)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to download certificate %q from vendor %q: %w", cert.Name, vendorName, err)
 	}

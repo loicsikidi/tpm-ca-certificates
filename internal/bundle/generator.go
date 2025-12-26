@@ -1,6 +1,7 @@
 package bundle
 
 import (
+	"context"
 	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/x509"
@@ -199,7 +200,7 @@ func (g *Generator) GenerateWithMetadata(cfg *config.TPMRootsConfig, workers int
 
 // processCertificate downloads, validates, and converts a certificate to PEM with a comment header.
 func (g *Generator) processCertificate(cert config.Certificate, vendorID string) (string, error) {
-	x509Cert, err := g.downloader.DownloadCertificate(cert.URL)
+	x509Cert, err := g.downloader.DownloadCertificate(context.Background(), cert.URL)
 	if err != nil {
 		return "", err
 	}

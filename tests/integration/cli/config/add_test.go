@@ -148,7 +148,7 @@ vendors:
 			tt.opts.ConfigPath = configPath
 
 			// Run the add command
-			err := certificates.RunAdd(&tt.opts)
+			err := certificates.Run(t.Context(), &tt.opts)
 
 			// Check error expectation
 			if tt.expectError && err == nil {
@@ -298,7 +298,7 @@ vendors:
 				Fingerprint:   tt.fingerprint,
 			}
 
-			err := certificates.RunAdd(opts)
+			err := certificates.Run(t.Context(), opts)
 
 			if tt.expectError {
 				if err == nil {

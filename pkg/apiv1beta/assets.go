@@ -195,7 +195,8 @@ func getAssetsFromGitHub(ctx context.Context, cfg assetsConfig) (*assets, error)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal provenance: %w", err)
 		}
-		response.provenance = provenanceJSON
+		compactJSON, _ := utils.JsonCompact(provenanceJSON) // should not fail
+		response.provenance = compactJSON
 	}
 
 	return response, nil

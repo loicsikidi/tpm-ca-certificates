@@ -1,5 +1,5 @@
 extensions = ["md"]
-timeout = 5
+timeout = 5 # in seconds
 header = { "accept" = "text/html" }
 accept = [
     "200",
@@ -11,5 +11,4 @@ exclude = [
     '^https://www\.st\.com',
     '^https://software\.intel\.com',
     '^https://(.*\.)?github(usercontent)?\.(com|io)',
-    '^http://invalid-url-that-should-fail\.local',
 ]

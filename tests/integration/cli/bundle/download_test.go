@@ -2,7 +2,6 @@ package bundle_test
 
 import (
 	"bytes"
-	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"io"
@@ -50,7 +49,7 @@ func TestDownloadCommand(t *testing.T) {
 			// Run download in a goroutine
 			errCh := make(chan error, 1)
 			go func() {
-				errCh <- download.Run(context.Background(), opts)
+				errCh <- download.Run(t.Context(), opts)
 			}()
 
 			// Read output

@@ -36,11 +36,7 @@ func DirExists(path string) bool {
 // If filename is "-", reads from stdin.
 // Default maximum size is [DefaultMaxFileSize], but can be overridden by providing a custom maxSize in bytes.
 func ReadFile(filename string, optionalMaxSize ...int64) ([]byte, error) {
-	maxSize, err := OptionalArg(optionalMaxSize)
-	if err != nil {
-		maxSize = DefaultMaxFileSize
-	}
-
+	maxSize := OptionalArgWithDefault(optionalMaxSize, DefaultMaxFileSize)
 	var reader io.Reader
 	if filename == "-" {
 		reader = os.Stdin
