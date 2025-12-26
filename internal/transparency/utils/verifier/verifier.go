@@ -53,11 +53,7 @@ func New(cfg Config) (*verify.Verifier, error) {
 
 // GetDefaultTUFOptions returns TUF options with sane defaults for Sigstore usage.
 func GetDefaultTUFOptions(optionalClient ...utils.HttpClient) *tuf.Options {
-	client, err := utils.OptionalArg(optionalClient)
-	if err != nil {
-		client = nil
-	}
-
+	client := utils.OptionalArg(optionalClient)
 	opts := tuf.DefaultOptions()
 
 	// Store TUF cache in a directory owned by tpmtb for better isolation
@@ -90,11 +86,7 @@ func GetDefaultTUFOptions(optionalClient ...utils.HttpClient) *tuf.Options {
 //	}
 //	os.WriteFile("trusted-root.json", trustedRootJSON, 0644)
 func FetchTrustedRoot(optionalClient ...utils.HttpClient) ([]byte, error) {
-	client, err := utils.OptionalArg(optionalClient)
-	if err != nil {
-		client = nil
-	}
-
+	client := utils.OptionalArg(optionalClient)
 	opts := GetDefaultTUFOptions(client)
 	opts.DisableLocalCache = true
 
@@ -108,5 +100,10 @@ func FetchTrustedRoot(optionalClient ...utils.HttpClient) ([]byte, error) {
 		return nil, fmt.Errorf("failed to retrieve trusted_root.json via TUF: %w", err)
 	}
 
-	return target, nil
+	output, err := utils.JsonCompact(target)
+	if err != nil {
+		return nil, err
+	}
+
+	return output, nil
 }

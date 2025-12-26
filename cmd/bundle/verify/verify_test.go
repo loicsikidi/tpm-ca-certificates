@@ -1,7 +1,6 @@
 package verify
 
 import (
-	"context"
 	"encoding/json"
 	"testing"
 	"time"
@@ -57,7 +56,7 @@ func TestRunOfflineMode(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cmd := &cobra.Command{}
-			cmd.SetContext(context.Background())
+			cmd.SetContext(t.Context())
 
 			err := run(cmd, tt.args, tt.opts)
 
@@ -112,7 +111,7 @@ func TestRunWithCacheDir(t *testing.T) {
 			cacheDir := testutil.CreateCacheDir(t, cacheConfigData)
 
 			cmd := &cobra.Command{}
-			cmd.SetContext(context.Background())
+			cmd.SetContext(t.Context())
 
 			args := []string{cacheDir + "/" + testutil.BundleFile}
 			err = run(cmd, args, tt.opts)

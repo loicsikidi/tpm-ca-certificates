@@ -1,7 +1,6 @@
 package integration_test
 
 import (
-	"context"
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
@@ -24,15 +23,13 @@ func TestVerifyTrustedBundle(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	ctx := context.Background()
-
 	t.Run("VerifyWithAutoDetectedMetadataAndDownloadedChecksums", func(t *testing.T) {
 		if testing.Short() {
 			t.Skip("Skipping integration test in short mode")
 		}
 
 		// First download a bundle
-		trustedBundle, err := apiv1beta.GetTrustedBundle(ctx, apiv1beta.GetConfig{
+		trustedBundle, err := apiv1beta.GetTrustedBundle(t.Context(), apiv1beta.GetConfig{
 			Date:       testutil.BundleVersion,
 			SkipVerify: true,
 		})
@@ -41,7 +38,7 @@ func TestVerifyTrustedBundle(t *testing.T) {
 		}
 
 		// Now verify it with auto-detected metadata and auto-downloaded checksums
-		_, err = apiv1beta.VerifyTrustedBundle(ctx, apiv1beta.VerifyConfig{
+		_, err = apiv1beta.VerifyTrustedBundle(t.Context(), apiv1beta.VerifyConfig{
 			Bundle: trustedBundle.GetRaw(),
 		})
 		if err != nil {
@@ -50,7 +47,7 @@ func TestVerifyTrustedBundle(t *testing.T) {
 	})
 
 	t.Run("EmptyBundleError", func(t *testing.T) {
-		_, err := apiv1beta.VerifyTrustedBundle(ctx, apiv1beta.VerifyConfig{
+		_, err := apiv1beta.VerifyTrustedBundle(t.Context(), apiv1beta.VerifyConfig{
 			Bundle: []byte{},
 		})
 		if err == nil {
@@ -64,7 +61,7 @@ func TestVerifyTrustedBundle(t *testing.T) {
 
 	t.Run("InvalidBundleMetadata", func(t *testing.T) {
 		// Bundle with metadata that has Date but no Commit
-		_, err := apiv1beta.VerifyTrustedBundle(ctx, apiv1beta.VerifyConfig{
+		_, err := apiv1beta.VerifyTrustedBundle(t.Context(), apiv1beta.VerifyConfig{
 			Bundle: []byte("dummy"),
 			BundleMetadata: &bundle.Metadata{
 				Date:   testutil.BundleVersion,
@@ -82,7 +79,7 @@ func TestVerifyTrustedBundle(t *testing.T) {
 
 	t.Run("InvalidBundleContent", func(t *testing.T) {
 		// Bundle without proper metadata headers should fail parsing
-		_, err := apiv1beta.VerifyTrustedBundle(ctx, apiv1beta.VerifyConfig{
+		_, err := apiv1beta.VerifyTrustedBundle(t.Context(), apiv1beta.VerifyConfig{
 			Bundle: []byte("invalid bundle content without metadata"),
 		})
 		if err == nil {
@@ -100,7 +97,6 @@ func TestGetTrustedBundle(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	ctx := context.Background()
 	t.Parallel()
 
 	t.Run("fetch and parse latest bundle", func(t *testing.T) {
@@ -112,7 +108,7 @@ func TestGetTrustedBundle(t *testing.T) {
 			CachePath: t.TempDir(),
 		}
 
-		tb, err := apiv1beta.GetTrustedBundle(ctx, cfg)
+		tb, err := apiv1beta.GetTrustedBundle(t.Context(), cfg)
 		if err != nil {
 			t.Fatalf("GetTrustedBundle() error = %v", err)
 		}
@@ -158,7 +154,7 @@ func TestGetTrustedBundle(t *testing.T) {
 			CachePath: t.TempDir(),
 		}
 
-		tb, err := apiv1beta.GetTrustedBundle(ctx, cfg)
+		tb, err := apiv1beta.GetTrustedBundle(t.Context(), cfg)
 		if err != nil {
 			t.Fatalf("GetTrustedBundle() error = %v", err)
 		}
@@ -178,7 +174,7 @@ func TestGetTrustedBundle(t *testing.T) {
 			CachePath: t.TempDir(),
 		}
 
-		tb, err := apiv1beta.GetTrustedBundle(ctx, cfg)
+		tb, err := apiv1beta.GetTrustedBundle(t.Context(), cfg)
 		if err != nil {
 			t.Fatalf("GetTrustedBundle() error = %v", err)
 		}
@@ -201,7 +197,7 @@ func TestGetTrustedBundle(t *testing.T) {
 			CachePath: t.TempDir(),
 		}
 
-		tb, err := apiv1beta.GetTrustedBundle(ctx, cfg)
+		tb, err := apiv1beta.GetTrustedBundle(t.Context(), cfg)
 		if err != nil {
 			t.Fatalf("GetTrustedBundle() error = %v", err)
 		}
@@ -245,7 +241,7 @@ func TestGetTrustedBundle(t *testing.T) {
 			CachePath: t.TempDir(),
 		}
 
-		tb, err := apiv1beta.GetTrustedBundle(ctx, cfg)
+		tb, err := apiv1beta.GetTrustedBundle(t.Context(), cfg)
 		if err != nil {
 			t.Fatalf("GetTrustedBundle() error = %v", err)
 		}
@@ -268,7 +264,7 @@ func TestGetTrustedBundle(t *testing.T) {
 			CachePath: t.TempDir(),
 		}
 
-		tb, err := apiv1beta.GetTrustedBundle(ctx, cfg)
+		tb, err := apiv1beta.GetTrustedBundle(t.Context(), cfg)
 		if err != nil {
 			t.Fatalf("GetTrustedBundle() error = %v", err)
 		}
@@ -309,7 +305,6 @@ func TestTrustedBundle_ThreadSafety(t *testing.T) {
 		t.Skip("Skipping thread safety test in short mode")
 	}
 
-	ctx := context.Background()
 	cfg := apiv1beta.GetConfig{
 		SkipVerify: true,
 		AutoUpdate: apiv1beta.AutoUpdateConfig{
@@ -317,7 +312,7 @@ func TestTrustedBundle_ThreadSafety(t *testing.T) {
 		},
 	}
 
-	tb, err := apiv1beta.GetTrustedBundle(ctx, cfg)
+	tb, err := apiv1beta.GetTrustedBundle(t.Context(), cfg)
 	if err != nil {
 		t.Fatalf("GetTrustedBundle() error = %v", err)
 	}
@@ -373,8 +368,6 @@ func TestSmartCache(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	ctx := context.Background()
-
 	t.Run("first fetch downloads and caches bundle", func(t *testing.T) {
 		tmpDir := t.TempDir()
 
@@ -388,7 +381,7 @@ func TestSmartCache(t *testing.T) {
 			},
 		}
 
-		tb, err := apiv1beta.GetTrustedBundle(ctx, cfg)
+		tb, err := apiv1beta.GetTrustedBundle(t.Context(), cfg)
 		if err != nil {
 			t.Fatalf("First GetTrustedBundle() error = %v", err)
 		}
@@ -434,7 +427,7 @@ func TestSmartCache(t *testing.T) {
 			},
 		}
 
-		tb1, err := apiv1beta.GetTrustedBundle(ctx, cfg1)
+		tb1, err := apiv1beta.GetTrustedBundle(t.Context(), cfg1)
 		if err != nil {
 			t.Fatalf("First GetTrustedBundle() error = %v", err)
 		}
@@ -461,7 +454,7 @@ func TestSmartCache(t *testing.T) {
 			},
 		}
 
-		tb2, err := apiv1beta.GetTrustedBundle(ctx, cfg2)
+		tb2, err := apiv1beta.GetTrustedBundle(t.Context(), cfg2)
 		if err != nil {
 			t.Fatalf("Second GetTrustedBundle() error = %v", err)
 		}
@@ -497,7 +490,7 @@ func TestSmartCache(t *testing.T) {
 			},
 		}
 
-		tb1, err := apiv1beta.GetTrustedBundle(ctx, cfg1)
+		tb1, err := apiv1beta.GetTrustedBundle(t.Context(), cfg1)
 		if err != nil {
 			t.Fatalf("First GetTrustedBundle() error = %v", err)
 		}
@@ -513,7 +506,7 @@ func TestSmartCache(t *testing.T) {
 			},
 		}
 
-		tb2, err := apiv1beta.GetTrustedBundle(ctx, cfg2)
+		tb2, err := apiv1beta.GetTrustedBundle(t.Context(), cfg2)
 		if err != nil {
 			t.Fatalf("Second GetTrustedBundle() error = %v", err)
 		}
@@ -556,7 +549,7 @@ func TestSmartCache(t *testing.T) {
 			},
 		}
 
-		tb, err := apiv1beta.GetTrustedBundle(ctx, cfg)
+		tb, err := apiv1beta.GetTrustedBundle(t.Context(), cfg)
 		if err != nil {
 			t.Fatalf("GetTrustedBundle() error = %v", err)
 		}
@@ -577,7 +570,6 @@ func TestLoad(t *testing.T) {
 
 	t.Parallel()
 
-	ctx := context.Background()
 	// cfg := apiv1beta.CacheConfig{
 	// 	Version:       testutil.BundleVersion,
 	// 	AutoUpdate:    &apiv1beta.AutoUpdateConfig{},
@@ -592,7 +584,7 @@ func TestLoad(t *testing.T) {
 	// t.Run("load from cache without network requests", func(t *testing.T) {
 	// 	tmpDir := testutil.CreateCacheDir(t, configData)
 
-	// 	tb, err := apiv1beta.Load(ctx, apiv1beta.LoadConfig{
+	// 	tb, err := apiv1beta.Load(t.Context(), apiv1beta.LoadConfig{
 	// 		CachePath:  tmpDir,
 	// 		SkipVerify: false,
 	// 	})
@@ -625,7 +617,7 @@ func TestLoad(t *testing.T) {
 	// 	}
 
 	// 	// Load should fail because provenance is missing
-	// 	_, err := apiv1beta.Load(ctx, apiv1beta.LoadConfig{
+	// 	_, err := apiv1beta.Load(t.Context(), apiv1beta.LoadConfig{
 	// 		CachePath:  tmpDir,
 	// 		SkipVerify: false,
 	// 	})
@@ -639,7 +631,7 @@ func TestLoad(t *testing.T) {
 	// })
 
 	// t.Run("load with missing cache directory", func(t *testing.T) {
-	// 	_, err := apiv1beta.Load(ctx, apiv1beta.LoadConfig{
+	// 	_, err := apiv1beta.Load(t.Context(), apiv1beta.LoadConfig{
 	// 		CachePath: "/nonexistent/directory",
 	// 	})
 	// 	if err == nil {
@@ -670,7 +662,7 @@ func TestLoad(t *testing.T) {
 		tmpDir := testutil.CreateCacheDir(t, configData)
 
 		// Load the bundle from cache (old version)
-		tb, err := apiv1beta.Load(ctx, apiv1beta.LoadConfig{
+		tb, err := apiv1beta.Load(t.Context(), apiv1beta.LoadConfig{
 			CachePath:  tmpDir,
 			SkipVerify: true,
 		})
@@ -727,14 +719,13 @@ func TestSave(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	ctx := context.Background()
 	t.Parallel()
 
 	t.Run("save bundle with all verification assets", func(t *testing.T) {
 		tmpDir := t.TempDir()
 
 		// Save the latest bundle
-		resp, err := apiv1beta.Save(ctx, apiv1beta.SaveConfig{
+		resp, err := apiv1beta.Save(t.Context(), apiv1beta.SaveConfig{
 			CachePath: tmpDir,
 		})
 		if err != nil {
@@ -787,7 +778,7 @@ func TestSave(t *testing.T) {
 		tmpDir := t.TempDir()
 
 		// Save a specific date with vendor filter
-		resp, err := apiv1beta.Save(ctx, apiv1beta.SaveConfig{
+		resp, err := apiv1beta.Save(t.Context(), apiv1beta.SaveConfig{
 			Date:      testutil.BundleVersion,
 			VendorIDs: []apiv1beta.VendorID{apiv1beta.IFX, apiv1beta.NTC},
 			CachePath: tmpDir,
@@ -815,7 +806,7 @@ func TestSave(t *testing.T) {
 		tmpDir := t.TempDir()
 
 		// Save and persist
-		resp, err := apiv1beta.Save(ctx, apiv1beta.SaveConfig{
+		resp, err := apiv1beta.Save(t.Context(), apiv1beta.SaveConfig{
 			Date:      testutil.BundleVersion,
 			CachePath: tmpDir,
 		})
@@ -864,7 +855,7 @@ func TestSave(t *testing.T) {
 		tmpDir := t.TempDir()
 
 		// Save bundle
-		resp, err := apiv1beta.Save(ctx, apiv1beta.SaveConfig{
+		resp, err := apiv1beta.Save(t.Context(), apiv1beta.SaveConfig{
 			Date:      testutil.BundleVersion,
 			CachePath: tmpDir,
 		})
@@ -879,7 +870,7 @@ func TestSave(t *testing.T) {
 		}
 
 		// Load the saved bundle from cache
-		tb, err := apiv1beta.Load(ctx, apiv1beta.LoadConfig{
+		tb, err := apiv1beta.Load(t.Context(), apiv1beta.LoadConfig{
 			CachePath:  cacheDir,
 			SkipVerify: false, // Verify using cached assets
 		})

@@ -165,12 +165,9 @@ func (tb *trustedBundle) Persist(optionalCachePath ...string) error {
 		return ErrCannotPersistTrustedBundle
 	}
 
-	cachePath, err := utils.OptionalArg(optionalCachePath)
-	if err != nil {
-		cachePath = cache.CacheDir()
-	}
-
-	cachePath = filepath.Clean(cachePath)
+	cachePath := filepath.Clean(
+		utils.OptionalArgWithDefault(optionalCachePath, cache.CacheDir()),
+	)
 
 	if !utils.DirExists(cachePath) {
 		if err := os.MkdirAll(cachePath, 0700); err != nil {
@@ -377,10 +374,9 @@ func Load(ctx context.Context, cfg LoadConfig) (TrustedBundle, error) {
 
 		// In offline mode, load trusted-root.json from cache
 		if cfg.OfflineMode {
-			trustedRootPath := filepath.Join(cfg.CachePath, CacheTrustedRootFilename)
-			trustedRootData, err = utils.ReadFile(trustedRootPath)
+			trustedRootData, err = cache.LoadFile(cache.TrustedRootFilename, cfg.CachePath)
 			if err != nil {
-				return nil, fmt.Errorf("failed to read trusted root (required for offline mode): %w", err)
+				return nil, err
 			}
 		}
 

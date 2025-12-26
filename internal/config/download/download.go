@@ -1,6 +1,7 @@
 package download
 
 import (
+	"context"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
@@ -15,14 +16,13 @@ type Client struct {
 	HTTPClient utils.HttpClient
 }
 
+var defaultClient = &http.Client{
+	Timeout: 5 * time.Second,
+}
+
 // NewClient creates a new download client with sensible defaults.
 func NewClient(optionalClient ...utils.HttpClient) *Client {
-	client, err := utils.OptionalArg(optionalClient)
-	if err != nil {
-		client = &http.Client{
-			Timeout: 5 * time.Second,
-		}
-	}
+	client := utils.OptionalArgWithDefault[utils.HttpClient](optionalClient, defaultClient)
 	return &Client{
 		HTTPClient: client,
 	}
@@ -36,12 +36,12 @@ func NewClient(optionalClient ...utils.HttpClient) *Client {
 // Example:
 //
 //	client := download.NewClient()
-//	certBytes, err := client.DownloadCertificate("https://example.com/cert.cer")
+//	certBytes, err := client.DownloadCertificate(ctx, "https://example.com/cert.cer")
 //	if err != nil {
 //	    log.Fatal(err)
 //	}
-func (c *Client) DownloadCertificate(url string) (*x509.Certificate, error) {
-	data, err := utils.HttpGET(c.HTTPClient, url)
+func (c *Client) DownloadCertificate(ctx context.Context, url string) (*x509.Certificate, error) {
+	data, err := utils.HttpGET(ctx, c.HTTPClient, url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to download certificate from %s: %w", url, err)
 	}

@@ -1,6 +1,7 @@
 package certificates
 
 import (
+	"context"
 	"crypto/x509"
 	"fmt"
 	"slices"
@@ -70,7 +71,7 @@ hash algorithm (default: SHA256). Use -a to specify a different algorithm (sha1,
   tpmtb config certificates add -i STM -u "https://example.com/cert1.crt,https://example.com/cert2.crt" -f "SHA256:AB:CD:...,SHA256:12:34:..."`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return RunAdd(opts)
+			return Run(cmd.Context(), opts)
 		},
 	}
 
@@ -96,8 +97,8 @@ type certDownloadResult struct {
 	err         error
 }
 
-// RunAdd executes the add command with the given options.
-func RunAdd(opts *AddOptions) error {
+// Run executes the add command with the given options.
+func Run(ctx context.Context, opts *AddOptions) error {
 	hashAlgo, urls, fingerprints, err := validateAndPrepareInputs(opts)
 	if err != nil {
 		return err
@@ -112,7 +113,7 @@ func RunAdd(opts *AddOptions) error {
 	if workers == 0 {
 		workers = concurrency.DetectCPUCount()
 	}
-	results := downloadCertificatesParallel(urls, fingerprints, hashAlgo, workers)
+	results := downloadCertificatesParallel(ctx, urls, fingerprints, hashAlgo, workers)
 
 	successfulCerts, failures := processDownloadResults(results, cfg.Vendors[vendorIdx].Certificates, opts.Name, hashAlgo, len(urls))
 
@@ -328,7 +329,7 @@ func displayResults(successfulCerts []config.Certificate, failures []downloadFai
 }
 
 // downloadCertificatesParallel downloads multiple certificates in parallel with a goroutine limit.
-func downloadCertificatesParallel(urls []string, fingerprints []string, hashAlgo string, maxWorkers int) []certDownloadResult {
+func downloadCertificatesParallel(ctx context.Context, urls []string, fingerprints []string, hashAlgo string, maxWorkers int) []certDownloadResult {
 	type downloadInput struct {
 		url         string
 		fingerprint string
@@ -347,7 +348,7 @@ func downloadCertificatesParallel(urls []string, fingerprints []string, hashAlgo
 
 		// Download certificate
 		client := download.NewClient()
-		cert, err := client.DownloadCertificate(input.url)
+		cert, err := client.DownloadCertificate(ctx, input.url)
 		if err != nil {
 			result.err = err
 			return result

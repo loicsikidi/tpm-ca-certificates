@@ -21,7 +21,7 @@ func TestDownloadCertificate(t *testing.T) {
 		defer server.Close()
 
 		client := download.NewClient(server.Client())
-		_, err := client.DownloadCertificate(server.URL)
+		_, err := client.DownloadCertificate(t.Context(), server.URL)
 		if err != nil {
 			t.Fatalf("DownloadCertificate() error = %v", err)
 		}
@@ -34,7 +34,7 @@ func TestDownloadCertificate(t *testing.T) {
 		defer server.Close()
 
 		client := download.NewClient(server.Client())
-		_, err := client.DownloadCertificate(server.URL)
+		_, err := client.DownloadCertificate(t.Context(), server.URL)
 		if err == nil {
 			t.Error("DownloadCertificate() expected error for 404")
 		}
@@ -54,7 +54,7 @@ func TestDownloadCertificate(t *testing.T) {
 		defer server.Close()
 
 		client := download.NewClient(server.Client())
-		_, err := client.DownloadCertificate(server.URL)
+		_, err := client.DownloadCertificate(t.Context(), server.URL)
 		if err == nil {
 			t.Error("DownloadCertificate() expected error for empty response")
 		}
@@ -65,7 +65,7 @@ func TestDownloadCertificate(t *testing.T) {
 
 	t.Run("invalid url", func(t *testing.T) {
 		client := download.NewClient()
-		_, err := client.DownloadCertificate("://invalid-url")
+		_, err := client.DownloadCertificate(t.Context(), "://invalid-url")
 		if err == nil {
 			t.Error("DownloadCertificate() expected error for invalid URL")
 		}

@@ -37,10 +37,7 @@ type HTTPClient struct {
 // The client uses the provided http.Client for making requests.
 // If nil is provided, http.DefaultClient is used.
 func NewHTTPClient(optionalClient ...utils.HttpClient) *HTTPClient {
-	client, err := utils.OptionalArg(optionalClient)
-	if err != nil {
-		client = http.DefaultClient
-	}
+	client := utils.OptionalArgWithDefault[utils.HttpClient](optionalClient, http.DefaultClient)
 	return &HTTPClient{
 		client: client,
 		token:  os.Getenv("GITHUB_TOKEN"),
@@ -118,7 +115,7 @@ func (c *HTTPClient) GetAttestations(ctx context.Context, repo Repo, digest stri
 // GitHub stores bundles as snappy-compressed protobuf JSON at bundle_url.
 // However, for inline bundles in the API response, no decompression is needed.
 func (c *HTTPClient) fetchBundle(ctx context.Context, bundleURL string) (*bundle.Bundle, error) {
-	bundleBytes, err := utils.HttpGET(c.client, bundleURL)
+	bundleBytes, err := utils.HttpGET(ctx, c.client, bundleURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch bundle: %w", err)
 	}
@@ -322,7 +319,7 @@ func (c *HTTPClient) DownloadReleaseAsset(ctx context.Context, repo Repo, tag, a
 		return nil, fmt.Errorf("asset %q not found in release %q", assetName, tag)
 	}
 
-	data, err := utils.HttpGET(c.client, assetURL)
+	data, err := utils.HttpGET(ctx, c.client, assetURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to download file: %w", err)
 	}
