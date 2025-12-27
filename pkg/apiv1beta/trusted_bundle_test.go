@@ -32,7 +32,7 @@ func TestPersist(t *testing.T) {
 	t.Run("persist and verify files", func(t *testing.T) {
 		tmpDir := t.TempDir()
 
-		bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
+		bundleData, err := testutil.ReadTestFile(testutil.RootBundleFile)
 		if err != nil {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
@@ -94,7 +94,7 @@ func TestPersist(t *testing.T) {
 		}
 
 		// Load and persist new bundle
-		bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
+		bundleData, err := testutil.ReadTestFile(testutil.RootBundleFile)
 		if err != nil {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
@@ -123,7 +123,7 @@ func TestPersist(t *testing.T) {
 
 func TestGetVendors(t *testing.T) {
 	t.Run("returns all vendors when no filter", func(t *testing.T) {
-		bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
+		bundleData, err := testutil.ReadTestFile(testutil.RootBundleFile)
 		if err != nil {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
@@ -146,7 +146,7 @@ func TestGetVendors(t *testing.T) {
 	})
 
 	t.Run("returns only filtered vendors with certificates", func(t *testing.T) {
-		bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
+		bundleData, err := testutil.ReadTestFile(testutil.RootBundleFile)
 		if err != nil {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
@@ -169,7 +169,7 @@ func TestGetVendors(t *testing.T) {
 	})
 
 	t.Run("excludes filtered vendors without certificates", func(t *testing.T) {
-		bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
+		bundleData, err := testutil.ReadTestFile(testutil.RootBundleFile)
 		if err != nil {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
@@ -190,7 +190,7 @@ func TestGetVendors(t *testing.T) {
 	})
 
 	t.Run("returns only filtered vendors that exist in catalog", func(t *testing.T) {
-		bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
+		bundleData, err := testutil.ReadTestFile(testutil.RootBundleFile)
 		if err != nil {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
@@ -258,7 +258,7 @@ func TestLoadOfflineMode(t *testing.T) {
 		// Create cache without trusted-root.json
 		tmpDir := t.TempDir()
 
-		bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
+		bundleData, err := testutil.ReadTestFile(testutil.RootBundleFile)
 		if err != nil {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
@@ -279,7 +279,7 @@ func TestLoadOfflineMode(t *testing.T) {
 		for _, filename := range []string{
 			testutil.ChecksumFile,
 			testutil.ChecksumSigstoreFile,
-			testutil.ProvenanceFile,
+			testutil.RootProvenanceFile,
 		} {
 			data, err := testutil.ReadTestFile(filename)
 			if err != nil {

@@ -38,7 +38,7 @@ func TestVerifyIntegration(t *testing.T) {
 
 	// Step 1: Read bundle and compute digest
 	t.Log("Step 1: Reading bundle and computing digest...")
-	bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
+	bundleData, err := testutil.ReadTestFile(testutil.RootBundleFile)
 	if err != nil {
 		t.Fatalf("Failed to read bundle: %v", err)
 	}
@@ -73,7 +73,7 @@ func TestVerifyIntegration(t *testing.T) {
 	}
 	t.Log("✓ Verifier created")
 
-	provenanceData, err := testutil.ReadTestFile(testutil.ProvenanceFile)
+	provenanceData, err := testutil.ReadTestFile(testutil.RootProvenanceFile)
 	if err != nil {
 		t.Fatalf("Failed to read provenance: %v", err)
 	}
@@ -104,7 +104,7 @@ func TestVerifyWithInvalidCommit(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
+	bundleData, err := testutil.ReadTestFile(testutil.RootBundleFile)
 	if err != nil {
 		t.Fatalf("Failed to read bundle: %v", err)
 	}
@@ -134,7 +134,7 @@ func TestVerifyWithInvalidCommit(t *testing.T) {
 		t.Fatalf("Failed to create verifier: %v", err)
 	}
 
-	provenanceData, err := testutil.ReadTestFile(testutil.ProvenanceFile)
+	provenanceData, err := testutil.ReadTestFile(testutil.RootProvenanceFile)
 	if err != nil {
 		t.Fatalf("Failed to read provenance: %v", err)
 	}
@@ -154,7 +154,7 @@ func TestVerifyWithInvalidDate(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
+	bundleData, err := testutil.ReadTestFile(testutil.RootBundleFile)
 	if err != nil {
 		t.Fatalf("Failed to read bundle: %v", err)
 	}
@@ -184,7 +184,7 @@ func TestVerifyWithInvalidDate(t *testing.T) {
 		t.Fatalf("Failed to create verifier: %v", err)
 	}
 
-	provenanceData, err := testutil.ReadTestFile(testutil.ProvenanceFile)
+	provenanceData, err := testutil.ReadTestFile(testutil.RootProvenanceFile)
 	if err != nil {
 		t.Fatalf("Failed to read provenance: %v", err)
 	}
@@ -200,7 +200,7 @@ func TestVerifyWithInvalidDate(t *testing.T) {
 
 // TestDigestComputation validates the digest computation separately.
 func TestDigestComputation(t *testing.T) {
-	bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
+	bundleData, err := testutil.ReadTestFile(testutil.RootBundleFile)
 	if err != nil {
 		t.Fatalf("Failed to read bundle: %v", err)
 	}

@@ -172,7 +172,7 @@ func TestGetBundleFromCache(t *testing.T) {
 		tmpDir := t.TempDir()
 
 		// Read test bundle
-		bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
+		bundleData, err := testutil.ReadTestFile(testutil.RootBundleFile)
 		if err != nil {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
@@ -225,7 +225,7 @@ func TestVerifyTrustedBundleWithCustomTrustedRoot(t *testing.T) {
 
 	t.Run("verifies bundle with custom trusted root", func(t *testing.T) {
 		// Load all required test data
-		bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
+		bundleData, err := testutil.ReadTestFile(testutil.RootBundleFile)
 		if err != nil {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
@@ -240,7 +240,7 @@ func TestVerifyTrustedBundleWithCustomTrustedRoot(t *testing.T) {
 			t.Fatalf("Failed to read checksum signature: %v", err)
 		}
 
-		provenanceData, err := testutil.ReadTestFile(testutil.ProvenanceFile)
+		provenanceData, err := testutil.ReadTestFile(testutil.RootProvenanceFile)
 		if err != nil {
 			t.Fatalf("Failed to read provenance: %v", err)
 		}
@@ -274,7 +274,7 @@ func TestVerifyTrustedBundleWithCustomTrustedRoot(t *testing.T) {
 	})
 
 	t.Run("fails with invalid trusted root JSON", func(t *testing.T) {
-		bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
+		bundleData, err := testutil.ReadTestFile(testutil.RootBundleFile)
 		if err != nil {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
@@ -289,7 +289,7 @@ func TestVerifyTrustedBundleWithCustomTrustedRoot(t *testing.T) {
 			t.Fatalf("Failed to read checksum signature: %v", err)
 		}
 
-		provenanceData, err := testutil.ReadTestFile(testutil.ProvenanceFile)
+		provenanceData, err := testutil.ReadTestFile(testutil.RootProvenanceFile)
 		if err != nil {
 			t.Fatalf("Failed to read provenance: %v", err)
 		}

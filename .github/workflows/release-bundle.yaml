@@ -30,19 +30,33 @@ jobs:
       - name: Install Cosign
         uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
 
-      - name: Generate TPM trust bundle and sign checksum
+      - name: Generate TPM trust bundles (root and intermediate) and sign checksum
         run: |
-          # Generate the TPM trust bundle (with maximum concurrency to speed up downloads)
+          # Generate the TPM root trust bundle (with maximum concurrency to speed up downloads)
           go run ./ bundle generate --workers 10 --output tpm-ca-certificates.pem
 
           # Verify that the bundle was generated
           test -f tpm-ca-certificates.pem || exit 1
 
+          # Display stats for the logs
+          echo "Root bundle size: $(wc -c < tpm-ca-certificates.pem) bytes"
+
           # Generate the checksum
           sha256sum tpm-ca-certificates.pem > checksums.txt
 
+          # Generate the TPM intermediate trust bundle (with maximum concurrency to speed up downloads)
+          go run ./ bundle generate --workers 10 --config .tpm-intermediates.yaml --output tpm-intermediate-ca-certificates.pem
+
+          # Verify that the bundle was generated
+          test -f tpm-intermediate-ca-certificates.pem || exit 1
+
           # Display stats for the logs
-          echo "Bundle size: $(wc -c < tpm-ca-certificates.pem) bytes"
+          echo "Intermediate bundle size: $(wc -c < tpm-intermediate-ca-certificates.pem) bytes"
+
+          # Append the intermediate bundle checksum
+          sha256sum tpm-intermediate-ca-certificates.pem >> checksums.txt
+
+          # Display the checksum file
           cat checksums.txt
 
           ## Sign the checksum with Cosign

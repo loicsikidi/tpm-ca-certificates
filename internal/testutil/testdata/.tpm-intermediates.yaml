@@ -1,0 +1,19 @@
+---
+version: "alpha"
+vendors:
+    - id: "IFX"
+      name: "Infineon"
+      certificates:
+        - name: "Infineon OPTIGA(TM) ECC Manufacturing CA 000"
+          url: "https://pki.infineon.com/OptigaEccMfrCA000/OptigaEccMfrCA000.crt"
+          validation:
+            fingerprint:
+                sha256: "28:4B:B4:91:4B:65:E9:3A:4B:42:1F:77:66:86:E3:27:7A:EA:C7:63:47:3D:EF:1A:C9:57:6A:17:E2:A7:41:E8"
+    - id: "NTC"
+      name: "Nuvoton Technology"
+      certificates:
+        - name: "NPCTxxx ECC384 LeafCA 012110"
+          url: "https://www.nuvoton.com/security/NTC-TPM-EK-Cert/NPCTxxxECC384LeafCA012110.cer"
+          validation:
+            fingerprint:
+                sha1: "E0:C1:51:21:59:88:F3:89:08:45:81:BF:45:AF:B8:F1:52:C0:D6:23"
