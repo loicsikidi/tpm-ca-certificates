@@ -43,7 +43,7 @@ tpmtb bundle download --date 2025-12-03
 ```
 
 **What happens under the hood:**
-1. 📥 Downloads `tpm-ca-certificates.pem` from GitHub release
+1. 📥 Downloads `tpm-ca-certificates.pem` and `tpm-intermediate-ca-certificates.pem` from GitHub release
 2. 📋 Downloads `checksums.txt` and `checksums.txt.sigstore.json`
 3. 🔐 Verifies both **integrity** (Cosign signature) and **provenance** (SLSA attestation)
 4. 🗑️ Clean the current directory by removing checksum files
@@ -107,8 +107,11 @@ tpmtb bundle verify tpm-ca-certificates.pem \
   --checksums-signature checksums.txt.sigstore.json
 ```
 
+The verification process works the same way for both root and intermediate bundles.
+
 > [!TIP]
 > `MIRROR.tpm-ca-certificates.pem` and `MIRROR.tpm-intermediate-ca-certificates.pem` are available in the repository for convenience, to allow users to see the latest bundle directly without going through GitHub releases.
+
 
 ## Alternative Verification Methods 🔬
 
@@ -157,6 +160,7 @@ Once the checksum integrity is established, verify the **provenance** using GitH
 
 ```bash
 gh attestation verify tpm-ca-certificates.pem --repo loicsikidi/tpm-ca-certificates
+gh attestation verify tpm-intermediate-ca-certificates.pem --repo loicsikidi/tpm-ca-certificates
 ```
 
 ### Reproducibility Verification
@@ -172,11 +176,13 @@ git clone https://github.com/loicsikidi/tpm-ca-certificates
 cd tpm-ca-certificates
 git checkout $DATE
 
-# Regenerate the bundle
+# Regenerate each bundle
 tpmtb bunde generate --workers 10 --output tpm-ca-certificates.pem
+tpmtb bunde generate --workers 10 --config .tpm-intermediates.yaml --output tpm-intermediate-ca-certificates.pem
 
 # Compare checksums
 sha256sum tpm-ca-certificates.pem
+sha256sum tpm-intermediate-ca-certificates.pem
 ```
 
 Compare the output with the checksum in `checksums.txt` from the release.
