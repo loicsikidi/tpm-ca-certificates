@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	// BundleFile is the name of the test bundle file.
-	BundleFile = "tpm-ca-certificates.pem"
+	// RootBundleFile is the name of the test bundle file.
+	RootBundleFile = "tpm-ca-certificates.pem"
 
 	// ChecksumFile is the name of the test checksum file.
 	ChecksumFile = "checksums.txt"
@@ -23,11 +23,14 @@ const (
 	// ChecksumSigstoreFile is the name of the test sigstore signature file.
 	ChecksumSigstoreFile = "checksums.txt.sigstore.json"
 
-	// ProvenanceFile is the name of the test provenance file.
-	ProvenanceFile = "roots.provenance.json"
+	// RootProvenanceFile is the name of the test provenance file.
+	RootProvenanceFile = "roots.provenance.json"
 
-	// ConfigFile is the name of the test config file.
-	ConfigFile = ".tpm-roots.yaml"
+	// RootConfigFile is the name of the test config file.
+	RootConfigFile = ".tpm-roots.yaml"
+
+	// IntermediateConfigFile is the name of the intermediate config file.
+	IntermediateConfigFile = ".tpm-intermediates.yaml"
 
 	// TrustedRootFile is the name of the trusted root file.
 	TrustedRootFile = "trusted-root.json"
@@ -48,7 +51,7 @@ var (
 
 func init() {
 	once.Do(func() {
-		rawBundle, err := ReadTestFile(BundleFile)
+		rawBundle, err := ReadTestFile(RootBundleFile)
 		if err != nil {
 			panic("failed to read embedded test bundle: " + err.Error())
 		}
@@ -99,11 +102,11 @@ func CreateCacheDir(t *testing.T, configData []byte) string {
 	tmpDir := t.TempDir()
 
 	// Read and write test files
-	bundleData, err := ReadTestFile(BundleFile)
+	rootBundleData, err := ReadTestFile(RootBundleFile)
 	if err != nil {
 		t.Fatalf("Failed to read test bundle: %v", err)
 	}
-	if err := cache.SaveFile(cache.RootBundleFilename, bundleData, tmpDir); err != nil {
+	if err := cache.SaveFile(cache.RootBundleFilename, rootBundleData, tmpDir); err != nil {
 		t.Fatalf("Failed to write bundle: %v", err)
 	}
 
@@ -123,7 +126,7 @@ func CreateCacheDir(t *testing.T, configData []byte) string {
 		t.Fatalf("Failed to write checksum signature: %v", err)
 	}
 
-	provenanceData, err := ReadTestFile(ProvenanceFile)
+	provenanceData, err := ReadTestFile(RootProvenanceFile)
 	if err != nil {
 		t.Fatalf("Failed to read test provenance: %v", err)
 	}

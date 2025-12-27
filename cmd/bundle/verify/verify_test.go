@@ -39,7 +39,7 @@ func TestRunOfflineMode(t *testing.T) {
 				CacheDir: cacheDir,
 				Offline:  true,
 			},
-			args:    []string{cacheDir + "/" + testutil.BundleFile},
+			args:    []string{cacheDir + "/" + testutil.RootBundleFile},
 			wantErr: false,
 		},
 		{
@@ -48,7 +48,7 @@ func TestRunOfflineMode(t *testing.T) {
 				CacheDir: "/nonexistent/path",
 				Offline:  true,
 			},
-			args:    []string{cacheDir + "/" + testutil.BundleFile},
+			args:    []string{cacheDir + "/" + testutil.RootBundleFile},
 			wantErr: true,
 		},
 	}
@@ -113,7 +113,7 @@ func TestRunWithCacheDir(t *testing.T) {
 			cmd := &cobra.Command{}
 			cmd.SetContext(t.Context())
 
-			args := []string{cacheDir + "/" + testutil.BundleFile}
+			args := []string{cacheDir + "/" + testutil.RootBundleFile}
 			err = run(cmd, args, tt.opts)
 
 			if (err != nil) != tt.wantErr {

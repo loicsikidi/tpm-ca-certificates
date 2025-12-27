@@ -16,7 +16,7 @@ func TestGenerate(t *testing.T) {
 		}
 
 		// Load test config
-		configData, err := testutil.ReadTestFile(testutil.ConfigFile)
+		configData, err := testutil.ReadTestFile(testutil.RootConfigFile)
 		if err != nil {
 			t.Fatalf("Failed to read test config: %v", err)
 		}
@@ -33,7 +33,7 @@ func TestGenerate(t *testing.T) {
 		bundles := make([]string, iterations)
 
 		for i := range iterations {
-			bundle, err := gen.GenerateWithMetadata(&cfg, 10, "", "2025-01-01", "abc123")
+			bundle, err := gen.GenerateWithMetadata(&cfg, 10, "", "2025-01-01", "abc123", bundle.TypeRoot)
 			if err != nil {
 				t.Fatalf("Generate() iteration %d error = %v", i+1, err)
 			}

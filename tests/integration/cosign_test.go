@@ -42,7 +42,7 @@ func TestCosignVerification(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to read signature file: %v", err)
 	}
-	bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
+	bundleData, err := testutil.ReadTestFile(testutil.RootBundleFile)
 	if err != nil {
 		t.Fatalf("Failed to read bundle file: %v", err)
 	}
@@ -56,7 +56,7 @@ func TestCosignVerification(t *testing.T) {
 	verifierCfg := verifier.Config{}
 
 	t.Run("VerifyValidSignature", func(t *testing.T) {
-		result, err := cosign.VerifyChecksum(t.Context(), cfg, verifierCfg, checksumData, signatureData, bundleData, testutil.BundleFile)
+		result, err := cosign.VerifyChecksum(t.Context(), cfg, verifierCfg, checksumData, signatureData, bundleData, testutil.RootBundleFile)
 		if err != nil {
 			t.Fatalf("Expected successful verification, got error: %v", err)
 		}
@@ -70,7 +70,7 @@ func TestCosignVerification(t *testing.T) {
 		invalidData := []byte("invalid content\n")
 
 		// Verification should fail because checksum doesn't match
-		_, err = cosign.VerifyChecksum(t.Context(), cfg, verifierCfg, checksumData, signatureData, invalidData, testutil.BundleFile)
+		_, err = cosign.VerifyChecksum(t.Context(), cfg, verifierCfg, checksumData, signatureData, invalidData, testutil.RootBundleFile)
 		if err == nil {
 			t.Fatal("Expected verification to fail with invalid checksum, but it succeeded")
 		}
@@ -83,7 +83,7 @@ func TestCosignVerification(t *testing.T) {
 		// Use invalid signature data
 		invalidSignature := []byte("invalid json")
 
-		_, err = cosign.VerifyChecksum(t.Context(), cfg, verifierCfg, checksumData, invalidSignature, bundleData, testutil.BundleFile)
+		_, err = cosign.VerifyChecksum(t.Context(), cfg, verifierCfg, checksumData, invalidSignature, bundleData, testutil.RootBundleFile)
 		if err == nil {
 			t.Fatal("Expected verification to fail with invalid signature data, but it succeeded")
 		}
@@ -101,7 +101,7 @@ func TestFindChecksumFiles(t *testing.T) {
 		checksumPath := filepath.Join(tmpDir, "checksums.txt")
 		signaturePath := filepath.Join(tmpDir, "checksums.txt.sigstore.json")
 
-		bundleData, _ := testutil.ReadTestFile(testutil.BundleFile)
+		bundleData, _ := testutil.ReadTestFile(testutil.RootBundleFile)
 		checksumData, _ := testutil.ReadTestFile(testutil.ChecksumFile)
 		signatureData, _ := testutil.ReadTestFile(testutil.ChecksumSigstoreFile)
 
@@ -185,12 +185,12 @@ func TestValidateChecksum(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to read checksum file: %v", err)
 		}
-		bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
+		bundleData, err := testutil.ReadTestFile(testutil.RootBundleFile)
 		if err != nil {
 			t.Fatalf("Failed to read bundle file: %v", err)
 		}
 
-		err = cosign.ValidateChecksum(checksumData, bundleData, testutil.BundleFile)
+		err = cosign.ValidateChecksum(checksumData, bundleData, testutil.RootBundleFile)
 		if err != nil {
 			t.Errorf("Expected checksum validation to succeed, got error: %v", err)
 		}
@@ -205,7 +205,7 @@ func TestValidateChecksum(t *testing.T) {
 		// Use invalid artifact data
 		invalidData := []byte("wrong content\n")
 
-		err = cosign.ValidateChecksum(checksumData, invalidData, testutil.BundleFile)
+		err = cosign.ValidateChecksum(checksumData, invalidData, testutil.RootBundleFile)
 		if err == nil {
 			t.Fatal("Expected checksum validation to fail")
 		}

@@ -11,7 +11,7 @@ import (
 
 func TestParseBundle(t *testing.T) {
 	t.Run("valid bundle from testdata", func(t *testing.T) {
-		bundleData, err := testutil.ReadTestFile(testutil.BundleFile)
+		bundleData, err := testutil.ReadTestFile(testutil.RootBundleFile)
 		if err != nil {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
@@ -199,7 +199,7 @@ MIIBdjCCARygAwIBAgIRAKjIOzWTCC66SJLRB5eewJMwCgYIKoZIzj0EAwIwGTEX
 
 func TestParseMetadata_RealBundle(t *testing.T) {
 	// Read the embedded test bundle
-	data, err := testutil.ReadTestFile(testutil.BundleFile)
+	data, err := testutil.ReadTestFile(testutil.RootBundleFile)
 	if err != nil {
 		t.Fatalf("Failed to read test bundle: %v", err)
 	}

@@ -22,7 +22,7 @@ func TestValidateCommand(t *testing.T) {
 		{
 			name: "valid bundle without quiet",
 			getBundleData: func() ([]byte, error) {
-				return testutil.ReadTestFile(testutil.BundleFile)
+				return testutil.ReadTestFile(testutil.RootBundleFile)
 			},
 			quiet:        false,
 			wantExitCode: 0,
@@ -31,7 +31,7 @@ func TestValidateCommand(t *testing.T) {
 		{
 			name: "valid bundle with quiet",
 			getBundleData: func() ([]byte, error) {
-				return testutil.ReadTestFile(testutil.BundleFile)
+				return testutil.ReadTestFile(testutil.RootBundleFile)
 			},
 			quiet:        true,
 			wantExitCode: 0,

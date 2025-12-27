@@ -12,7 +12,7 @@ import (
 
 func TestValidateBundle_ValidBundle(t *testing.T) {
 	// Read the valid test bundle
-	data, err := testutil.ReadTestFile(testutil.BundleFile)
+	data, err := testutil.ReadTestFile(testutil.RootBundleFile)
 	if err != nil {
 		t.Fatalf("failed to read test bundle: %v", err)
 	}
@@ -347,7 +347,7 @@ func TestValidateBundleFile(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Test valid bundle
-	validData, err := testutil.ReadTestFile(testutil.BundleFile)
+	validData, err := testutil.ReadTestFile(testutil.RootBundleFile)
 	if err != nil {
 		t.Fatalf("failed to read test bundle: %v", err)
 	}

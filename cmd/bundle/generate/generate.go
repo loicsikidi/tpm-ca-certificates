@@ -1,8 +1,10 @@
 package generate
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/concurrency"
@@ -11,16 +13,20 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	configPath string
-	outputPath string
-	workers    int
-	date       string
-	commit     string
-)
+// Opts represents the configuration options for the generate command.
+type Opts struct {
+	ConfigPath string
+	OutputPath string
+	Workers    int
+	Date       string
+	Commit     string
+	Type       string
+}
 
 // NewCommand creates the generate command.
 func NewCommand() *cobra.Command {
+	o := &Opts{}
+
 	cmd := &cobra.Command{
 		Use:   "generate",
 		Short: "generate TPM trust bundle from a configuration file",
@@ -42,48 +48,57 @@ By default, output is written to stdout. Use --output to write to a file instead
   # Use custom config file
   tpmtb generate --config custom-roots.yaml --output bundle.pem`,
 		SilenceUsage: true,
-		RunE:         run,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return Run(cmd.Context(), o)
+		},
 	}
 
-	cmd.Flags().StringVarP(&configPath, "config", "c", ".tpm-roots.yaml",
+	cmd.Flags().StringVarP(&o.ConfigPath, "config", "c", ".tpm-roots.yaml",
 		"Path to TPM roots configuration file")
-	cmd.Flags().StringVarP(&outputPath, "output", "o", "",
+	cmd.Flags().StringVarP(&o.OutputPath, "output", "o", "",
 		"Output file path (default: stdout)")
-	cmd.Flags().IntVarP(&workers, "workers", "j", 0,
+	cmd.Flags().IntVarP(&o.Workers, "workers", "j", 0,
 		fmt.Sprintf("Number of workers to use (0=auto-detect, max=%d)", concurrency.MaxWorkers))
-	cmd.Flags().StringVar(&date, "date", "",
+	cmd.Flags().StringVar(&o.Date, "date", "",
 		"Bundle generation date in YYYY-MM-DD format (default: auto-detect from git)")
-	cmd.Flags().StringVar(&commit, "commit", "",
+	cmd.Flags().StringVar(&o.Commit, "commit", "",
 		"Git commit hash (default: auto-detect from git)")
+	cmd.Flags().StringVarP(&o.Type, "type", "t", "",
+		"Bundle type: root or intermediate (default: auto-detect from config filename)")
 
 	return cmd
 }
 
-func run(cmd *cobra.Command, args []string) error {
-	cfg, err := config.LoadConfig(configPath)
+func Run(ctx context.Context, o *Opts) error {
+	cfg, err := config.LoadConfig(o.ConfigPath)
 	if err != nil {
 		return fmt.Errorf("failed to load configuration: %w", err)
 	}
 
-	if workers > concurrency.MaxWorkers {
-		return fmt.Errorf("concurrency value %d exceeds maximum allowed (%d)", workers, concurrency.MaxWorkers)
+	if o.Workers > concurrency.MaxWorkers {
+		return fmt.Errorf("concurrency value %d exceeds maximum allowed (%d)", o.Workers, concurrency.MaxWorkers)
 	}
 
-	if (date != "" && commit == "") || (date == "" && commit != "") {
+	bundleType, err := resolveBundleType(o.Type, o.ConfigPath)
+	if err != nil {
+		return fmt.Errorf("failed to resolve bundle type: %w", err)
+	}
+
+	if (o.Date != "" && o.Commit == "") || (o.Date == "" && o.Commit != "") {
 		return fmt.Errorf("both --date and --commit flags must be provided together")
 	}
 
 	var bundleDate, bundleCommit string
 
-	if date != "" && commit != "" {
-		if err := bundle.ValidateDate(date); err != nil {
+	if o.Date != "" && o.Commit != "" {
+		if err := bundle.ValidateDate(o.Date); err != nil {
 			return fmt.Errorf("invalid --date flag: %w", err)
 		}
-		if err := bundle.ValidateCommit(commit); err != nil {
+		if err := bundle.ValidateCommit(o.Commit); err != nil {
 			return fmt.Errorf("invalid --commit flag: %w", err)
 		}
-		bundleDate = date
-		bundleCommit = commit
+		bundleDate = o.Date
+		bundleCommit = o.Commit
 	} else {
 		// Auto-detect from git
 		bundleDate, bundleCommit, err = resolveGitMetadata()
@@ -93,15 +108,15 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 
 	gen := bundle.NewGenerator()
-	pemBundle, err := gen.GenerateWithMetadata(cfg, workers, outputPath, bundleDate, bundleCommit)
+	pemBundle, err := gen.GenerateWithMetadata(cfg, o.Workers, o.OutputPath, bundleDate, bundleCommit, bundleType)
 	if err != nil {
 		return fmt.Errorf("failed to generate bundle: %w", err)
 	}
 
-	if outputPath == "" {
+	if o.OutputPath == "" {
 		fmt.Println(pemBundle)
 	} else {
-		if err := os.WriteFile(outputPath, []byte(pemBundle), 0644); err != nil {
+		if err := os.WriteFile(o.OutputPath, []byte(pemBundle), 0644); err != nil {
 			return fmt.Errorf("failed to write output file: %w", err)
 		}
 	}
@@ -130,4 +145,30 @@ func resolveGitMetadata() (string, string, error) {
 	}
 
 	return info.Tag, info.Commit, nil
+}
+
+// resolveBundleType determines the bundle type based on the --type flag or config filename.
+//
+// Priority:
+//  1. If typeFlag is provided (non-empty), use it
+//  2. Otherwise, infer from config filename:
+//     - ".tpm-intermediates.yaml" → intermediate
+//     - anything else → root
+func resolveBundleType(typeFlag, configPath string) (bundle.BundleType, error) {
+	// If type is explicitly provided, use it
+	if typeFlag != "" {
+		bundleType := bundle.BundleType(typeFlag)
+		if err := bundleType.Validate(); err != nil {
+			return "", err
+		}
+		return bundleType, nil
+	}
+
+	// Auto-detect from config filename (check basename only)
+	basename := filepath.Base(configPath)
+	if basename == ".tpm-intermediates.yaml" {
+		return bundle.TypeIntermediate, nil
+	}
+
+	return bundle.TypeRoot, nil
 }

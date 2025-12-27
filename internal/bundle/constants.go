@@ -1,5 +1,62 @@
 package bundle
 
+import "fmt"
+
+// BundleType represents the type of TPM trust bundle.
+type BundleType string
+
+const (
+	// TypeUnspecified indicates that the bundle type was not specified.
+	// This is used as a sentinel value to trigger automatic detection.
+	TypeUnspecified BundleType = ""
+
+	// TypeRoot indicates a bundle containing root certificates.
+	TypeRoot BundleType = "root"
+
+	// TypeIntermediate indicates a bundle containing intermediate certificates.
+	TypeIntermediate BundleType = "intermediate"
+)
+
+// String returns the string representation of the bundle type.
+func (t BundleType) String() string {
+	return string(t)
+}
+
+// Validate checks if the bundle type is valid.
+func (t BundleType) Validate() error {
+	switch t {
+	case TypeUnspecified, TypeRoot, TypeIntermediate:
+		return nil
+	default:
+		return fmt.Errorf("invalid bundle type %q: must be one of [root, intermediate]", t)
+	}
+}
+
+// DefaultFilename returns the default output filename for the bundle type.
+func (t BundleType) DefaultFilename() string {
+	switch t {
+	case TypeIntermediate:
+		return "tpm-intermediate-ca-certificates.pem"
+	case TypeRoot, TypeUnspecified:
+		fallthrough
+	default:
+		return "tpm-ca-certificates.pem"
+	}
+}
+
+// Description returns the human-readable description for the bundle type
+// used in the bundle header.
+func (t BundleType) Description() string {
+	switch t {
+	case TypeIntermediate:
+		return "TPM Intermediate Endorsement Certificates"
+	case TypeRoot, TypeUnspecified:
+		fallthrough
+	default:
+		return "TPM Root Endorsement Certificates"
+	}
+}
+
 // Metadata prefixes used in the bundle format.
 const (
 	// GlobalMetadataPrefix is the prefix for global metadata lines.

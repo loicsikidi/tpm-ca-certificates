@@ -15,6 +15,7 @@ release:
   mode: append
   extra_files:
     - glob: ./tpm-ca-certificates.pem
+    - glob: ./tpm-intermediate-ca-certificates.pem
     - glob: ./checksums.txt
     - glob: ./checksums.txt.sigstore.json
   header: |
@@ -27,6 +28,7 @@ release:
     ### Artifacts
 
     - **`tpm-ca-certificates.pem`** - The TPM trust bundle
+    - **`tpm-intermediate-ca-certificates.pem`** - The TPM intermediate trust bundle
     - **`checksums.txt`** - SHA-256 checksum
     - **`checksums.txt.sigstore.json`** - Sigstore signature bundle for checksum verification
 
@@ -42,12 +44,16 @@ release:
     #### Option 1: tpmtb CLI
 
     > [!NOTE]
-    > The following commands verify the **integrity** and **provenance** of the `tpm-ca-certificates.pem` artifact
+    > The following commands verify the **integrity** and **provenance** of each *bundle* artifact.
     >
     > `tpmtb` is able to verify Github attestation signatures and Cosign keyless signatures natively (no need to install Cosign or gh).
 
+    > [!TIP]
+    > Make sure to use **`tpmtb >= v0.5.0`** to support intermediate bundle verification.
+
     ```bash
     tpmtb bundle verify tpm-ca-certificates.pem
+    tpmtb bundle verify tpm-intermediate-ca-certificates.pem --type intermediate
     ```
 
     #### Option 2: Cosign and GitHub CLI
@@ -79,12 +85,13 @@ release:
 
     ```bash
     gh attestation verify tpm-ca-certificates.pem --repo loicsikidi/{{ .ProjectName }}
+    gh attestation verify tpm-intermediate-ca-certificates.pem --repo loicsikidi/{{ .ProjectName }}
     ```
 
     #### Option 3: Reproducibility
 
     > [!WARNING]
-    > This method only verifies the **integrity** of `tpm-ca-certificates.pem` file.
+    > This method only verifies the **integrity** of each bundle.
     > To be fully secure it MUST be used in addition with `gh attestation verify` to validate provenance.
 
     ```bash
@@ -92,6 +99,7 @@ release:
     cd {{ .ProjectName }}
     git checkout {{ .Tag }}
     go run ./ generate --workers 10 --output tpm-ca-certificates.pem
+    go run ./ generate --workers 10 --config .tpm-intermediates.yaml --output tpm-intermediate-ca-certificates.pem --type intermediate
     sha256sum tpm-ca-certificates.pem  # Compare with checksums.txt
     ```
   footer: |

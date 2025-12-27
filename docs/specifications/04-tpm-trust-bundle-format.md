@@ -9,6 +9,7 @@
 | alpha   | 2025-12-08 | Loïc Sikidi | Clarify "Not Valid After" field alignment formatting |
 | alpha   | 2025-12-15 | Loïc Sikidi | Clarify bundle format applies to both root and intermediate certificates |
 | alpha   | 2025-12-23 | Loïc Sikidi | Add precision about bundle type identification in global metadata |
+| alpha   | 2025-12-27 | Loïc Sikidi | Add precision about filename placeholder in global metadata |
 
 ## Overview
 
@@ -76,7 +77,10 @@ Global metadata uses a double-hash (`##`) prefix to distinguish it from certific
 
 - Each line starts with `##` followed by a space
 - The block begins with an empty line (`##` alone)
-- The filename placeholder `<FILENAME>` indicates the bundle output filename (defaults to `tpm-ca-certificates.pem`)
+- The filename placeholder `<FILENAME>` indicates the bundle output filename
+   - Defaults to:
+      - `tpm-ca-certificates.pem` for root bundle
+      - `tpm-intermediate-ca-certificates.pem` for intermediate bundle
 - Two required metadata fields:
   - **Date**: Bundle generation date in `YYYY-MM-DD` format (matches release tag)
   - **Commit**: Full Git commit hash (40 characters) from which the bundle was generated

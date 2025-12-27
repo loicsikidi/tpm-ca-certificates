@@ -30,11 +30,16 @@ jobs:
           install-mode: binary
           skip-cache: true
 
-  lint-tpm-roots:
-    name: lint .tpm-roots.yaml
+  lint-tpm-config:
+    name: lint ${{ matrix.config }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    strategy:
+      matrix:
+        include:
+          - config: .tpm-roots.yaml
+          - config: .tpm-intermediates.yaml
     steps:
       - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
@@ -45,17 +50,17 @@ jobs:
       - uses: geomys/sandboxed-step@7d75eb49d17fdeeb3656b3a57d35932d205bcfb9 # v1.2.1
         with:
           run: |
-            if ! go run ./ config format --config .tpm-roots.yaml --dry-run; then
-              echo ".tpm-roots.yaml needs formatting ⛔"
-              echo "Run 'tpmtb config format --config .tpm-roots.yaml' to fix it."
+            if ! go run ./ config format --config ${{ matrix.config }} --dry-run; then
+              echo "${{ matrix.config }} needs formatting ⛔"
+              echo "Run 'tpmtb config format --config ${{ matrix.config }}' to fix it."
               exit 1
             fi
-            if ! go run ./ config validate --config .tpm-roots.yaml; then
+            if ! go run ./ config validate --config ${{ matrix.config }}; then
               echo "validate command failed ⛔"
               exit 1
             fi
             if ! go run ./ bundle generate \
-              --config .tpm-roots.yaml \
+              --config ${{ matrix.config }} \
               --output test-bundle.pem \
               --date 1970-01-01 \
               --commit 0000000000000000000000000000000000000000; then
