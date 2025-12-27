@@ -13,14 +13,14 @@ This turned out to be a real treasure hunt!
 
 ## Certificate Inventory
 
-| Certificate Name | Source | Does the source reference a fingerprint? |
-|-----------------|--------|------------------------------------------|
-| Infineon OPTIGA(TM) ECC Root CA | Official documentation | No |
-| Infineon OPTIGA(TM) RSA Root CA | PKI endpoint discovery | No |
-| Infineon OPTIGA(TM) ECC Root CA 2 | GitHub repository + PKI endpoint | No |
-| Infineon OPTIGA(TM) RSA Root CA 2 | GitHub repository + PKI endpoint | No |
-| Infineon OPTIGA(TM) ECC Root CA 3 | PKI endpoint discovery | No |
-| Infineon OPTIGA(TM) RSA Root CA 3 | PKI endpoint discovery | No |
+| Certificate Name | Type | Source | Does the source reference a fingerprint? |
+|-----------------|------|--------|------------------------------------------|
+| Infineon OPTIGA(TM) ECC Root CA | Root | Official documentation | No |
+| Infineon OPTIGA(TM) RSA Root CA | Root | PKI endpoint discovery | No |
+| Infineon OPTIGA(TM) ECC Root CA 2 | Root | GitHub repository + PKI endpoint | No |
+| Infineon OPTIGA(TM) RSA Root CA 2 | Root | GitHub repository + PKI endpoint | No |
+| Infineon OPTIGA(TM) ECC Root CA 3 | Root | PKI endpoint discovery | No |
+| Infineon OPTIGA(TM) RSA Root CA 3 | Root | PKI endpoint discovery | No |
 
 ## Discovery Process
 

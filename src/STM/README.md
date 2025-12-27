@@ -2,14 +2,14 @@
 
 ## Certificate Inventory
 
-| Certificate Name | Source Document | Does the source references a fingerprint? |
-|------------------|-----------------|:-----------------------------------------:|
-| GlobalSign Trusted Platform Module ECC Root CA | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
-| GlobalSign Trusted Platform Module Root CA | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
-| STM TPM ECC Root CA 01 | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
-| STM TPM EK Root CA | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
-| STSAFE ECC Root CA 02 | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
-| STSAFE RSA Root CA 02 | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
+| Certificate Name | Type | Source Document | Does the source references a fingerprint? |
+|------------------|------|-----------------|:-----------------------------------------:|
+| GlobalSign Trusted Platform Module ECC Root CA | Root | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
+| GlobalSign Trusted Platform Module Root CA | Root | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
+| STM TPM ECC Root CA 01 | Root | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
+| STM TPM EK Root CA | Root | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
+| STSAFE ECC Root CA 02 | Root | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
+| STSAFE RSA Root CA 02 | Root | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
 
 ## References
 

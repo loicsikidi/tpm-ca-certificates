@@ -25,25 +25,59 @@ Make sure you have:
 > [!IMPORTANT]
 > **Evidence is mandatory!** Every URL must be backed by proof (PDF, screenshot, etc.) showing how you found it on the vendor's official channels.
 
+## Understanding Certificate Types 🔐
+
+This project manages two types of TPM certificates:
+
+### Root Certificates
+- **Configuration file:** `.tpm-roots.yaml` (default)
+- **Type:** Self-signed root certificates that serve as trust anchors
+- **CLI usage:** No special flags needed (this is the default configuration)
+
+### Intermediate Certificates
+- **Configuration file:** `.tpm-intermediates.yaml`
+- **Type:** Certificates issued by root CAs to sign end-entity certificates
+- **CLI usage:** Requires `--config .tpm-intermediates.yaml` flag
+
+**Example commands:**
+
+```bash
+# Working with root certificates (default)
+tpmtb config certificates add --vendor-id NTC --url "https://..."
+
+# Working with intermediate certificates (requires --config flag)
+tpmtb config certificates add --config .tpm-intermediates.yaml \
+  --vendor-id NTC --url "https://..."
+```
+
+> [!NOTE]
+> When documenting certificates in `src/VENDOR_ID/README.md`, use the "Type" column to indicate whether each certificate is "Root" or "Intermediate".
+
 ## Two Contribution Workflows
 
 ### Workflow 1: Adding a Certificate to an Existing Vendor 📝
 
-**Use this when:** The vendor already exists in `.tpm-roots.yaml`
+**Use this when:** The vendor already exists in the configuration file (`.tpm-roots.yaml` or `.tpm-intermediates.yaml`)
 
 **Steps:**
 
 1. **Add the certificate(s)** using the CLI:
 
 ```bash
-# Single certificate
+# Adding root certificates (default)
 tpmtb config certificates add --vendor-id VENDOR_ID \
   --url "https://vendor.com/path/to/cert.cer" \
   --fingerprint "sha256:AA:BB:CC:DD:..."
 
+# Adding intermediate certificates (requires --config flag)
+tpmtb config certificates add --config .tpm-intermediates.yaml \
+  --vendor-id VENDOR_ID \
+  --url "https://vendor.com/path/to/cert.cer" \
+  --fingerprint "sha1:AA:BB:CC:DD:..."
+
 # Multiple certificates at once
 tpmtb config certificates add --vendor-id VENDOR_ID \
-  --url "https://vendor.com/cert1.cer,https://vendor.com/cert2.cer"  
+  --url "https://vendor.com/cert1.cer,https://vendor.com/cert2.cer"
 ```
 
 > [!TIP]
@@ -54,11 +88,14 @@ tpmtb config certificates add --vendor-id VENDOR_ID \
 Add the new certificate(s) to the certificate inventory table:
 
 ```markdown
-| Certificate Name | Source Document | Does the source references a fingerprint? |
-|------------------|-----------------|:-----------------------------------------:|
-| Existing Cert 1 | [doc.pdf](doc.pdf) | No |
-| **New Cert Name** | **[doc.pdf](doc.pdf)** | **No** |
+| Certificate Name | Type | Source Document | Does the source references a fingerprint? |
+|------------------|------|-----------------|:-----------------------------------------:|
+| Existing Cert 1 | Root | [doc.pdf](doc.pdf) | No |
+| **New Cert Name** | **Root/Intermediate** | **[doc.pdf](doc.pdf)** | **Yes/No** |
 ```
+
+> [!NOTE]
+> Set the "Type" column to either "Root" or "Intermediate" depending on the certificate type.
 
 3. **Add evidence files** to `src/VENDOR_ID/`:
 
@@ -73,18 +110,18 @@ src/NTC/
 4. **Format and validate:**
 
 ```bash
-# Format the configuration
+# For root certificates (default)
 tpmtb config format
-
-# Validate everything is correct
 tpmtb config validate
-
-# Generate bundle to test
 tpmtb generate
+
+# For intermediate certificates (use --config flag)
+tpmtb config format --config .tpm-intermediates.yaml
+tpmtb config validate --config .tpm-intermediates.yaml
 ```
 
 5. **Submit a pull request** with:
-   - Modified `.tpm-roots.yaml`
+   - Modified `.tpm-roots.yaml` or `.tpm-intermediates.yaml` (depending on certificate type)
    - Updated `src/VENDOR_ID/README.md`
    - New evidence files
    - Clear commit message: `rot(VENDOR_ID): add <Certificate Name>`
@@ -96,7 +133,7 @@ tpmtb generate
 
 ### Workflow 2: Adding a New Vendor + Certificates 🆕
 
-**Use this when:** The vendor doesn't exist yet in `.tpm-roots.yaml`
+**Use this when:** The vendor doesn't exist yet in the configuration files
 
 **Steps:**
 
@@ -116,10 +153,15 @@ mkdir -p src/VENDOR_ID
 3. **Add the vendor with certificates:**
 
 ```bash
-# add the vendor to the config
-tpmtb onfig vendors add VENDOR_ID VENDOR_NAME
-# add the certificates
+# For root certificates (default)
+tpmtb config vendors add VENDOR_ID VENDOR_NAME
 tpmtb config certificates add --vendor-id VENDOR_ID \
+  --url "https://vendor.com/cert1.cer,https://vendor.com/cert2.cer"
+
+# For intermediate certificates (use --config flag)
+tpmtb config vendors add --config .tpm-intermediates.yaml VENDOR_ID VENDOR_NAME
+tpmtb config certificates add --config .tpm-intermediates.yaml \
+  --vendor-id VENDOR_ID \
   --url "https://vendor.com/cert1.cer,https://vendor.com/cert2.cer"
 ```
 
@@ -132,10 +174,10 @@ Use this template:
 
 ## Certificate Inventory
 
-| Certificate Name | Source Document | Does the source references a fingerprint? |
-|------------------|-----------------|:-----------------------------------------:|
-| Certificate 1 | [vendor_doc.pdf](vendor_doc.pdf) | No |
-| Certificate 2 | [vendor_doc.pdf](vendor_doc.pdf) | No |
+| Certificate Name | Type | Source Document | Does the source references a fingerprint? |
+|------------------|------|-----------------|:-----------------------------------------:|
+| Certificate 1 | Root | [vendor_doc.pdf](vendor_doc.pdf) | No |
+| Certificate 2 | Root | [vendor_doc.pdf](vendor_doc.pdf) | No |
 
 ## References
 
@@ -180,13 +222,18 @@ And add a section in Additional Resources:
 7. **Format, validate, and test:**
 
 ```bash
+# For root certificates (default)
 tpmtb config format
 tpmtb config validate
 tpmtb generate
+
+# For intermediate certificates (use --config flag)
+tpmtb config format --config .tpm-intermediates.yaml
+tpmtb config validate --config .tpm-intermediates.yaml
 ```
 
 8. **Submit a pull request** with:
-   - Modified `.tpm-roots.yaml`
+   - Modified `.tpm-roots.yaml` or `.tpm-intermediates.yaml` (depending on certificate type)
    - New `src/VENDOR_ID/` directory with README and evidence
    - Updated `src/README.md`
    - Clear commit message: `rot(VENDOR_ID): add vendor with N certificates`
@@ -263,6 +310,7 @@ When your PR is reviewed, maintainers check:
 Before submitting your PR:
 
 ```bash
+# For root certificates (default)
 # 1. Format the config
 tpmtb config format
 
@@ -277,6 +325,15 @@ grep "Certificate: Your Certificate Name" test-bundle.pem
 
 # 5. Count total certificates
 grep -c "BEGIN CERTIFICATE" test-bundle.pem
+
+# For intermediate certificates (use --config flag)
+# 1. Format the config
+tpmtb config format --config .tpm-intermediates.yaml
+
+# 2. Validate everything
+tpmtb config validate --config .tpm-intermediates.yaml
+
+# Note: Intermediate certificates are not included in the bundle generation
 ```
 
 ## After You Submit 🚀

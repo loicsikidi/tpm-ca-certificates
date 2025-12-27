@@ -8,20 +8,22 @@ This guide is for anyone who wants to understand how TPM trust bundles are gener
 
 **What you'll learn:**
 - How `.tpm-roots.yaml` drives bundle generation
+- The difference between root and intermediate certificates
 - The role of evidence in the `src/` directory
 - The automated verification process
 
 ---
 
-## The Three Pillars of Trust
+## The Two Pillars of Trust
 
-### 1. `.tpm-roots.yaml` - The Source of Truth
+### 1. Configuration Files - The Source of Truth
 
-This YAML file is the heart of the system. It's designed to be:
+This project manages two types of TPM certificates, each with its own configuration file:
 
-- ✅ **Human-readable:** Anyone can understand what certificates are included
-- ✅ **Verifiable:** Clear provenance for every certificate URL
-- ✅ **Auditable:** Git history tracks every change
+#### Root Certificates (`.tpm-roots.yaml`)
+- **Purpose:** Self-signed root certificates that serve as trust anchors
+- **Used for:** Bundle generation and distribution
+- **Format:** Human-readable YAML
 
 ```yaml
 ---
@@ -36,6 +38,16 @@ vendors:
             fingerprint:
                 sha1: "65:5E:44:5E:96:54:5C:F3:E4:84:82:94:9B:35:A7:CE:B3:46:58:CC"
 ```
+
+#### Intermediate Certificates (`.tpm-intermediates.yaml`)
+- **Purpose:** Certificates issued by root CAs to sign end-entity certificates
+- **Used for:** Verification chains (not included in the bundle)
+- **Format:** Same structure as `.tpm-roots.yaml`
+
+Both files are designed to be:
+- ✅ **Human-readable:** Anyone can understand what certificates are included
+- ✅ **Verifiable:** Clear provenance for every certificate URL
+- ✅ **Auditable:** Git history tracks every change
 
 **Key principle:** Every certificate must have a publicly accessible URL.
 
@@ -69,28 +81,19 @@ src/
 > [!NOTE]
 > Check out [src/README.md](../../../src/README.md) for the complete vendor evidence index.
 
-### 3. Pull Request + Evidence = Trust
-
-Want to add a new certificate? Here's the deal:
-
-1. **Modify** `.tpm-roots.yaml` with the new certificate
-2. **Provide evidence** in `src/VENDOR_ID/`
-3. **Submit a PR** for review
-
-**No evidence = No merge.** It's that simple.
-
-The human review process ensures:
-- ✅ URLs point to legitimate vendor sources
-- ✅ Evidence is credible and properly archived
-- ✅ Fingerprints match vendor documentation (when available)
-
 ## How Bundle Generation Works
+
+> [!NOTE]
+> Bundle generation only uses **root certificates** from `.tpm-roots.yaml`. Intermediate certificates in `.tpm-intermediates.yaml` are tracked for verification purposes but not included in the bundle.
 
 ### Step 1: Configuration Validation
 
 ```bash
-# Validate the configuration file
+# Validate root certificates (used for bundle generation)
 tpmtb config validate
+
+# Validate intermediate certificates (optional)
+tpmtb config validate --config .tpm-intermediates.yaml
 ```
 
 The CLI checks:
@@ -102,14 +105,14 @@ The CLI checks:
 > [!IMPORTANT]
 > Only valid configurations can generate bundles. This prevents accidental inclusion of malformed data.
 
-### Step 2: Certificate Download & Verification
+### Step 2: Generate the Bundle
 
 ```bash
-# Generate bundle with parallel downloads
+# Generate bundle with parallel downloads (uses .tpm-roots.yaml)
 tpmtb generate --workers 10 --output tpm-ca-certificates.pem
 ```
 
-For each certificate:
+For each root certificate:
 1. **Download** from the vendor URL (HTTPS only)
 2. **Verify** fingerprint matches the configuration
 3. **Extract** certificate metadata (issuer, subject, validity, etc.)
