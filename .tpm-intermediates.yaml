@@ -1,0 +1,26 @@
+---
+version: "alpha"
+vendors:
+    - id: "NTC"
+      name: "Nuvoton Technology"
+      certificates:
+        - name: "NPCTxxx ECC384 LeafCA 012110"
+          url: "https://www.nuvoton.com/security/NTC-TPM-EK-Cert/NPCTxxxECC384LeafCA012110.cer"
+          validation:
+            fingerprint:
+                sha1: "E0:C1:51:21:59:88:F3:89:08:45:81:BF:45:AF:B8:F1:52:C0:D6:23"
+        - name: "NPCTxxx ECC384 LeafCA 012111"
+          url: "https://www.nuvoton.com/security/NTC-TPM-EK-Cert/NPCTxxxECC384LeafCA012111.cer"
+          validation:
+            fingerprint:
+                sha1: "97:B6:7D:12:D8:F6:AE:14:24:58:48:45:93:DA:3B:7A:91:D6:46:74"
+        - name: "NPCTxxx ECC384 LeafCA 022110"
+          url: "https://www.nuvoton.com/security/NTC-TPM-EK-Cert/NPCTxxxECC384LeafCA022110.cer"
+          validation:
+            fingerprint:
+                sha1: "D1:2E:C7:AB:A8:53:12:4C:D8:75:BE:9F:EB:0A:21:20:8A:97:26:D8"
+        - name: "NPCTxxx ECC384 LeafCA 022111"
+          url: "https://www.nuvoton.com/security/NTC-TPM-EK-Cert/NPCTxxxECC384LeafCA022111.cer"
+          validation:
+            fingerprint:
+                sha1: "E2:12:26:B8:26:A3:81:01:25:4D:E7:90:01:A7:63:33:4D:B5:97:71"
