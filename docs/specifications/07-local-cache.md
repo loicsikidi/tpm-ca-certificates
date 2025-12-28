@@ -6,6 +6,7 @@
 |---------|------------|-------------|------------------|
 | alpha   | 2025-12-15 | Loïc Sikidi | Initial version  |
 | alpha   | 2025-12-23 | Loïc Sikidi | Fix typos        |
+| alpha   | 2025-12-28 | Loïc Sikidi | Use single provenance.json file instead of separate roots/intermediates files |
 
 ## Overview
 
@@ -24,10 +25,9 @@ $HOME/.tpmtb/
 ├── checksums.txt
 ├── checksums.txt.sigstore.json
 ├── tpm-ca-certificates.pem
-├── roots.provenance.json
+├── provenance.json
 ├── trusted-root.json
 ├── tpm-intermediate-ca-certificates.pem # reserved for future use
-├── intermediates.provenance.json        # reserved for future use
 └── .sigstore/roots/**                   # cache directory used by 'sigstore-go'
 ```
 
@@ -52,10 +52,10 @@ This behavior will reduce the impact of GitHub API rate-limiting while ensuring 
 
 * `tpm-ca-certificates.pem`: The TPM certificate bundle
 * `checksums.txt` and `checksums.txt.sigstore.json`: For TPM bundle integrity and provenance verification
-* `roots.provenance.json`: For TPM bundle provenance verification
+* `provenance.json`: For TPM bundle provenance verification (contains both root and intermediate certificate provenance information)
 
 > [!NOTE]
-> The files `tpm-intermediate-ca-certificates.pem` and `intermediates.provenance.json` are reserved for future use.
+> The file `tpm-intermediate-ca-certificates.pem` is reserved for future use.
 
 #### Special Case: Read-Only Filesystem
 
@@ -133,7 +133,7 @@ func (tb *TrustedBundle) Persist(ctx context.Context) error
    - `tpm-ca-certificates.pem`
    - `checksums.txt`
    - `checksums.txt.sigstore.json`
-   - `roots.provenance.json`
+   - `provenance.json`
    - `config.json` (metadata about the cache)
 3. Return error if filesystem is read-only
 
@@ -152,7 +152,7 @@ func Save(ctx context.Context, cfg SaveConfig) (SaveResponse, error)
    - `tpm-ca-certificates.pem`
    - `checksums.txt`
    - `checksums.txt.sigstore.json`
-   - `roots.provenance.json`
+   - `provenance.json`
    - `trusted-root.json`
    - `config.json`
 4. Optionally copy to local cache if `--local-cache` flag is set
@@ -169,9 +169,8 @@ type SaveConfig struct {
 
 type SaveResponse struct {
    RootBundle             []byte
-   RootProvenance         []byte
    IntermediateBundle     []byte
-   IntermediateProvenance []byte
+   Provenance             []byte
    Checksum               []byte
    ChecksumSignature      []byte
    TrustedRoot            []byte

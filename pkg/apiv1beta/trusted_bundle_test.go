@@ -140,8 +140,8 @@ func TestGetVendors(t *testing.T) {
 
 		// Verify we get all vendors from the catalog
 		tbImpl := tb.(*trustedBundle)
-		if len(vendors) != len(tbImpl.catalog) {
-			t.Fatalf("Expected %d vendors, got %d", len(tbImpl.catalog), len(vendors))
+		if len(vendors) != len(tbImpl.rootCatalog) {
+			t.Fatalf("Expected %d vendors, got %d", len(tbImpl.rootCatalog), len(vendors))
 		}
 	})
 
@@ -215,7 +215,7 @@ func TestGetVendors(t *testing.T) {
 
 	t.Run("returns empty slice when catalog is empty", func(t *testing.T) {
 		tb := &trustedBundle{
-			catalog: make(map[VendorID][]*x509.Certificate),
+			rootCatalog: make(map[VendorID][]*x509.Certificate),
 		}
 
 		vendors := tb.GetVendors()
@@ -279,7 +279,7 @@ func TestLoadOfflineMode(t *testing.T) {
 		for _, filename := range []string{
 			testutil.ChecksumFile,
 			testutil.ChecksumSigstoreFile,
-			testutil.RootProvenanceFile,
+			testutil.ProvenanceFile,
 		} {
 			data, err := testutil.ReadTestFile(filename)
 			if err != nil {

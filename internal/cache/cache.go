@@ -19,6 +19,9 @@ const (
 	// RootBundleFilename is the root bundle file name.
 	RootBundleFilename = "tpm-ca-certificates.pem"
 
+	// IntermediateBundleFilename is the intermediate bundle file name.
+	IntermediateBundleFilename = "tpm-intermediate-ca-certificates.pem"
+
 	// ChecksumsFilename is the checksums file name.
 	ChecksumsFilename = "checksums.txt"
 
@@ -26,7 +29,7 @@ const (
 	ChecksumsSigFilename = "checksums.txt.sigstore.json"
 
 	// ProvenanceFilename is the provenance file name.
-	ProvenanceFilename = "roots.provenance.json"
+	ProvenanceFilename = "provenance.json"
 
 	// TrustedRootFilename is the trusted root file name.
 	TrustedRootFilename = "trusted-root.json"
@@ -35,6 +38,7 @@ const (
 // Filenames is the list of all expected cache files.
 var Filenames = []string{
 	RootBundleFilename,
+	IntermediateBundleFilename,
 	ChecksumsFilename,
 	ChecksumsSigFilename,
 	ProvenanceFilename,
@@ -68,6 +72,10 @@ func ValidateCacheFiles(cacheDir string) error {
 	var missingFiles []string
 
 	for _, filename := range Filenames {
+		if filename == IntermediateBundleFilename {
+			// Intermediate bundle is optional
+			continue
+		}
 		filePath := filepath.Join(cacheDir, filename)
 		if !utils.FileExists(filePath) {
 			missingFiles = append(missingFiles, filename)

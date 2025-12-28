@@ -12,12 +12,13 @@ import (
 
 // Aliases for backward compatibility - these constants are now defined in internal/cache
 const (
-	CacheConfigFilename       = cache.ConfigFilename
-	CacheRootBundleFilename   = cache.RootBundleFilename
-	CacheChecksumsFilename    = cache.ChecksumsFilename
-	CacheChecksumsSigFilename = cache.ChecksumsSigFilename
-	CacheProvenanceFilename   = cache.ProvenanceFilename
-	CacheTrustedRootFilename  = cache.TrustedRootFilename
+	CacheConfigFilename             = cache.ConfigFilename
+	CacheRootBundleFilename         = cache.RootBundleFilename
+	CacheIntermediateBundleFilename = cache.IntermediateBundleFilename
+	CacheChecksumsFilename          = cache.ChecksumsFilename
+	CacheChecksumsSigFilename       = cache.ChecksumsSigFilename
+	CacheProvenanceFilename         = cache.ProvenanceFilename
+	CacheTrustedRootFilename        = cache.TrustedRootFilename
 )
 
 // CacheFilenames is the list of all expected cache files.

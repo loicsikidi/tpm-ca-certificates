@@ -17,6 +17,19 @@ func TestValidateCacheFiles(t *testing.T) {
 			name: "all files present",
 			setupFiles: []string{
 				RootBundleFilename,
+				IntermediateBundleFilename,
+				ChecksumsFilename,
+				ChecksumsSigFilename,
+				ProvenanceFilename,
+				TrustedRootFilename,
+				ConfigFilename,
+			},
+			wantErr: false,
+		},
+		{
+			name: "missing intermediate bundle (optional)",
+			setupFiles: []string{
+				RootBundleFilename,
 				ChecksumsFilename,
 				ChecksumsSigFilename,
 				ProvenanceFilename,

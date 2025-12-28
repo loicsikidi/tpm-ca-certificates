@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	bundlepkg "github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/github"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/cosign"
 	transparencyGithub "github.com/loicsikidi/tpm-ca-certificates/internal/transparency/github"
@@ -16,10 +17,6 @@ import (
 	"github.com/sigstore/sigstore-go/pkg/bundle"
 	"github.com/sigstore/sigstore-go/pkg/root"
 	"github.com/sigstore/sigstore-go/pkg/verify"
-)
-
-const (
-	bundleFilename = "tpm-ca-certificates.pem"
 )
 
 // Config contains configuration for bundle verification.
@@ -173,6 +170,11 @@ func (v *Verifier) verifyCosign(ctx context.Context, bundleData, checksumsData, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to produce sigstore verifier config: %w", err)
 	}
+	metadata, err := bundlepkg.ParseMetadata(bundleData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse bundle metadata: %w", err)
+	}
+	bundleFilename := bundlepkg.FilenamebyBundleType[metadata.Type]
 	result, err := cosign.VerifyChecksum(ctx, v.GetPolicyConfig(), verifierCfg, checksumsData, checksumsSigData, bundleData, bundleFilename)
 	if err != nil {
 		return nil, err

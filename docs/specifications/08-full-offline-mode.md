@@ -5,6 +5,7 @@
 | Version |    Date    |   Author    |   Description    |
 |---------|------------|-------------|------------------|
 | alpha   | 2025-12-15 | Loïc Sikidi | Initial version  |
+| alpha   | 2025-12-27 | Loïc Sikidi | Adapt the specification to use a single provenance file |
 
 ## Overview
 
@@ -72,7 +73,7 @@ Both bundles (roots and intermediates) are generated and released together (see 
 
 ### Verification Process
 
-The intermediate bundle follows the same verification process as the root bundle (see [Bundle Verification](05-bundle-verification.md)). Local cache will include both bundles and their respective provenance files, required for offline verification.
+The intermediate bundle follows the same verification process as the root bundle (see [Bundle Verification](05-bundle-verification.md)). Local cache will include a single provenance attestation file (`provenance.json`) containing information for both root and intermediate bundles.
 
 ## API Changes
 

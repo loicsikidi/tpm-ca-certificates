@@ -28,9 +28,10 @@ var (
 )
 
 const (
-	bundleFilename = "tpm-ca-certificates.pem"
-	checksumsFile  = "checksums.txt"
-	checksumsSig   = "checksums.txt.sigstore.json"
+	bundleFilename             = cache.RootBundleFilename
+	intermediateBundleFilename = cache.IntermediateBundleFilename
+	checksumsFile              = cache.ChecksumsFilename
+	checksumsSig               = cache.ChecksumsSigFilename
 )
 
 var (
@@ -214,8 +215,9 @@ func GetTrustedBundle(ctx context.Context, cfg GetConfig) (TrustedBundle, error)
 	}
 
 	if !cfg.SkipVerify {
+		// Verify root bundle
 		if _, err := VerifyTrustedBundle(ctx, VerifyConfig{
-			Bundle:            assets.bundleData,
+			Bundle:            assets.rootBundleData,
 			Checksum:          assets.checksum,
 			ChecksumSignature: assets.checksumSignature,
 			Provenance:        assets.provenance,
@@ -223,11 +225,26 @@ func GetTrustedBundle(ctx context.Context, cfg GetConfig) (TrustedBundle, error)
 			HTTPClient:        cfg.HTTPClient,
 			DisableLocalCache: cfg.DisableLocalCache,
 		}); err != nil {
-			return nil, fmt.Errorf("verification failed: %w", err)
+			return nil, fmt.Errorf("root bundle verification failed: %w", err)
+		}
+
+		// Verify intermediate bundle if present
+		if len(assets.intermediateBundleData) > 0 {
+			if _, err := VerifyTrustedBundle(ctx, VerifyConfig{
+				Bundle:            assets.intermediateBundleData,
+				Checksum:          assets.checksum,
+				ChecksumSignature: assets.checksumSignature,
+				Provenance:        assets.provenance,
+				sourceRepo:        cfg.sourceRepo,
+				HTTPClient:        cfg.HTTPClient,
+				DisableLocalCache: cfg.DisableLocalCache,
+			}); err != nil {
+				return nil, fmt.Errorf("intermediate bundle verification failed: %w", err)
+			}
 		}
 	}
 
-	tb, err := newTrustedBundle(assets.bundleData)
+	tb, err := newTrustedBundle(assets.rootBundleData, assets.intermediateBundleData)
 	if err != nil {
 		return nil, err
 	}
@@ -238,6 +255,15 @@ func GetTrustedBundle(ctx context.Context, cfg GetConfig) (TrustedBundle, error)
 	tbImpl.vendorFilter = cfg.VendorIDs
 	tbImpl.autoUpdateCfg = &cfg.AutoUpdate
 	tbImpl.assets = assets
+
+	// Parse intermediate bundle metadata if present
+	if len(assets.intermediateBundleData) > 0 {
+		intermediateMetadata, err := bundle.ParseMetadata(assets.intermediateBundleData)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse intermediate bundle metadata: %w", err)
+		}
+		tbImpl.intermediateMetadata = intermediateMetadata
+	}
 
 	if !cfg.DisableLocalCache {
 		// Persist only if not already cached
@@ -476,18 +502,13 @@ type SaveResponse struct {
 	// RootBundle is the TPM root CA certificates bundle (PEM format).
 	RootBundle []byte
 
-	// RootProvenance is the GitHub Attestation provenance for the root bundle.
-	RootProvenance []byte
+	// Provenance is the GitHub Attestation provenance for produced bundle.
+	Provenance []byte
 
 	// IntermediateBundle is the TPM intermediate CA certificates bundle (PEM format).
 	//
-	// Reserved for future use.
+	// This field will be empty if the release does not contain an intermediate bundle.
 	IntermediateBundle []byte
-
-	// IntermediateProvenance is the GitHub Attestation provenance for the intermediate bundle.
-	//
-	// Reserved for future use.
-	IntermediateProvenance []byte
 
 	// Checksum is the checksums.txt file content.
 	Checksum []byte
@@ -518,9 +539,17 @@ func (sr *SaveResponse) Persist(outputDir string) error {
 		}
 	}
 
-	if err := writeBundleAssets(outputDir, sr.RootBundle, sr.Checksum, sr.ChecksumSignature, sr.RootProvenance); err != nil {
+	if err := writeBundleAssets(outputDir, sr.RootBundle, sr.Checksum, sr.ChecksumSignature, sr.Provenance); err != nil {
 		return err
 	}
+
+	// Save intermediate bundle if present
+	if len(sr.IntermediateBundle) > 0 {
+		if err := cache.SaveFile(cache.IntermediateBundleFilename, sr.IntermediateBundle, outputDir); err != nil {
+			return err
+		}
+	}
+
 	if err := cache.SaveFile(cache.TrustedRootFilename, sr.TrustedRoot, outputDir); err != nil {
 		return err
 	}
@@ -585,7 +614,7 @@ func Save(ctx context.Context, cfg SaveConfig) (*SaveResponse, error) {
 	// Extract assets from the trusted bundle
 	tbImpl := tb.(*trustedBundle)
 	assets := tbImpl.assets
-	metadata := tbImpl.metadata
+	metadata := tbImpl.rootMetadata
 
 	// Build cache config
 	cacheCfg := CacheConfig{
@@ -602,11 +631,12 @@ func Save(ctx context.Context, cfg SaveConfig) (*SaveResponse, error) {
 	}
 
 	return &SaveResponse{
-		RootBundle:        assets.bundleData,
-		RootProvenance:    assets.provenance,
-		Checksum:          assets.checksum,
-		ChecksumSignature: assets.checksumSignature,
-		TrustedRoot:       trustedRoot,
-		CacheConfig:       cacheConfigData,
+		RootBundle:         assets.rootBundleData,
+		Provenance:         assets.provenance,
+		IntermediateBundle: assets.intermediateBundleData,
+		Checksum:           assets.checksum,
+		ChecksumSignature:  assets.checksumSignature,
+		TrustedRoot:        trustedRoot,
+		CacheConfig:        cacheConfigData,
 	}, nil
 }

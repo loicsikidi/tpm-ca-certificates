@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/x509"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -30,13 +31,21 @@ import (
 //	defer tb.Stop()
 //
 //	certPool := tb.GetRoots()
-//	metadata := tb.GetMetadata()
+//	metadata := tb.GetRootMetadata()
 type TrustedBundle interface {
-	// GetRaw returns the raw PEM-encoded bundle.
-	GetRaw() []byte
+	// GetRawRoot returns the raw PEM-encoded root bundle.
+	GetRawRoot() []byte
 
-	// GetMetadata returns the bundle metadata (date and commit).
-	GetMetadata() *bundle.Metadata
+	// GetRawIntermediate returns the raw PEM-encoded intermediate bundle if available.
+	// Returns nil if the intermediate bundle is not present in the release.
+	GetRawIntermediate() []byte
+
+	// GetRootMetadata returns the root bundle metadata (date and commit).
+	GetRootMetadata() *bundle.Metadata
+
+	// GetIntermediateMetadata returns the intermediate bundle metadata if available.
+	// Returns nil if the intermediate bundle is not present in the release.
+	GetIntermediateMetadata() *bundle.Metadata
 
 	// GetVendors returns the list of vendor IDs in the bundle.
 	GetVendors() []VendorID
@@ -44,6 +53,10 @@ type TrustedBundle interface {
 	// GetRoots returns an [x509.CertPool] containing all certificates from the bundle,
 	// or only certificates from specified vendors if the bundle was created with VendorIDs filter.
 	GetRoots() *x509.CertPool
+
+	// GetIntermediates returns an [x509.CertPool] containing all intermediate certificates from the bundle,
+	// or only intermediate certificates from specified vendors if the bundle was created with VendorIDs filter.
+	GetIntermediates() *x509.CertPool
 
 	// Persist marshals bundle and its verification assets to disk at the specified cache path.
 	//
@@ -62,10 +75,12 @@ type TrustedBundle interface {
 
 // trustedBundle is the internal implementation of [TrustedBundle].
 type trustedBundle struct {
-	mu       sync.RWMutex
-	assets   *assets
-	metadata *bundle.Metadata
-	catalog  map[vendors.ID][]*x509.Certificate
+	mu                   sync.RWMutex
+	assets               *assets
+	rootMetadata         *bundle.Metadata
+	intermediateMetadata *bundle.Metadata
+	rootCatalog          map[vendors.ID][]*x509.Certificate
+	intermediateCatalog  map[vendors.ID][]*x509.Certificate
 
 	// vendorFilter is the list of vendors to filter when calling GetRoots.
 	// If empty, all certificates are returned.
@@ -80,22 +95,45 @@ type trustedBundle struct {
 	stopOnce    sync.Once
 }
 
-// GetRaw returns the raw PEM-encoded bundle.
-func (tb *trustedBundle) GetRaw() []byte {
+// GetRawRoot returns the raw PEM-encoded bundle.
+func (tb *trustedBundle) GetRawRoot() []byte {
 	tb.mu.RLock()
 	defer tb.mu.RUnlock()
 
 	// Return a copy to prevent external modifications
-	return slices.Clone(tb.assets.bundleData)
+	return slices.Clone(tb.assets.rootBundleData)
 }
 
-// GetMetadata returns the bundle metadata.
-func (tb *trustedBundle) GetMetadata() *bundle.Metadata {
+// GetRawIntermediate returns the raw PEM-encoded intermediate bundle if available.
+func (tb *trustedBundle) GetRawIntermediate() []byte {
 	tb.mu.RLock()
 	defer tb.mu.RUnlock()
 
 	// Return a copy to prevent external modifications
-	metadata := *tb.metadata
+	return slices.Clone(tb.assets.intermediateBundleData)
+}
+
+// GetRootMetadata returns the bundle metadata.
+func (tb *trustedBundle) GetRootMetadata() *bundle.Metadata {
+	tb.mu.RLock()
+	defer tb.mu.RUnlock()
+
+	// Return a copy to prevent external modifications
+	metadata := *tb.rootMetadata
+	return &metadata
+}
+
+// GetIntermediateMetadata returns the intermediate bundle metadata if available.
+func (tb *trustedBundle) GetIntermediateMetadata() *bundle.Metadata {
+	tb.mu.RLock()
+	defer tb.mu.RUnlock()
+
+	if tb.intermediateMetadata == nil {
+		return nil
+	}
+
+	// Return a copy to prevent external modifications
+	metadata := *tb.intermediateMetadata
 	return &metadata
 }
 
@@ -110,15 +148,15 @@ func (tb *trustedBundle) GetVendors() []VendorID {
 	if len(tb.vendorFilter) > 0 {
 		vendors := make([]VendorID, 0, len(tb.vendorFilter))
 		for _, vendorID := range tb.vendorFilter {
-			if _, ok := tb.catalog[vendorID]; ok {
+			if _, ok := tb.rootCatalog[vendorID]; ok {
 				vendors = append(vendors, vendorID)
 			}
 		}
 		return vendors
 	}
 
-	vendors := make([]VendorID, 0, len(tb.catalog))
-	for vendorID := range tb.catalog {
+	vendors := make([]VendorID, 0, len(tb.rootCatalog))
+	for vendorID := range tb.rootCatalog {
 		vendors = append(vendors, vendorID)
 	}
 	return vendors
@@ -132,11 +170,28 @@ func (tb *trustedBundle) GetRoots() *x509.CertPool {
 	tb.mu.RLock()
 	defer tb.mu.RUnlock()
 
+	return tb.buildCertPool(tb.rootCatalog)
+}
+
+// GetIntermediates returns an x509.CertPool containing intermediate certificates.
+//
+// If the bundle was created with VendorIDs filter, only certificates from those vendors are included.
+// Otherwise, all certificates from the bundle are included.
+// Returns an empty pool if no intermediate bundle is available.
+func (tb *trustedBundle) GetIntermediates() *x509.CertPool {
+	tb.mu.RLock()
+	defer tb.mu.RUnlock()
+
+	return tb.buildCertPool(tb.intermediateCatalog)
+}
+
+// buildCertPool creates an x509.CertPool from the given catalog, applying vendor filters if configured.
+func (tb *trustedBundle) buildCertPool(catalog map[vendors.ID][]*x509.Certificate) *x509.CertPool {
 	pool := x509.NewCertPool()
 
 	// If no vendor filter, add all certificates
 	if len(tb.vendorFilter) == 0 {
-		for _, certs := range tb.catalog {
+		for _, certs := range catalog {
 			for _, cert := range certs {
 				pool.AddCert(cert)
 			}
@@ -146,7 +201,7 @@ func (tb *trustedBundle) GetRoots() *x509.CertPool {
 
 	// Add only certificates from specified vendors
 	for _, vendorID := range tb.vendorFilter {
-		if certs, ok := tb.catalog[vendorID]; ok {
+		if certs, ok := catalog[vendorID]; ok {
 			for _, cert := range certs {
 				pool.AddCert(cert)
 			}
@@ -176,8 +231,15 @@ func (tb *trustedBundle) Persist(optionalCachePath ...string) error {
 	}
 
 	// Write core bundle assets
-	if err := writeBundleAssets(cachePath, tb.assets.bundleData, tb.assets.checksum, tb.assets.checksumSignature, tb.assets.provenance); err != nil {
+	if err := writeBundleAssets(cachePath, tb.assets.rootBundleData, tb.assets.checksum, tb.assets.checksumSignature, tb.assets.provenance); err != nil {
 		return err
+	}
+
+	// Write intermediate bundle if present
+	if len(tb.assets.intermediateBundleData) > 0 {
+		if err := cache.SaveFile(cache.IntermediateBundleFilename, tb.assets.intermediateBundleData, cachePath); err != nil {
+			return err
+		}
 	}
 
 	skipVerify := (len(tb.assets.checksum) == 0 &&
@@ -185,7 +247,7 @@ func (tb *trustedBundle) Persist(optionalCachePath ...string) error {
 		len(tb.assets.provenance) == 0)
 
 	cfg := CacheConfig{
-		Version:       tb.metadata.Date,
+		Version:       tb.rootMetadata.Date,
 		AutoUpdate:    tb.autoUpdateCfg,
 		VendorIDs:     tb.vendorFilter,
 		LastTimestamp: time.Now(),
@@ -224,13 +286,14 @@ func (tb *trustedBundle) Stop() error {
 }
 
 // update atomically updates the bundle data.
-func (tb *trustedBundle) update(assets *assets, metadata *bundle.Metadata, catalog map[vendors.ID][]*x509.Certificate) {
+func (tb *trustedBundle) update(assets *assets, metadata *bundle.Metadata, intermediateMetadata *bundle.Metadata, catalog map[vendors.ID][]*x509.Certificate) {
 	tb.mu.Lock()
 	defer tb.mu.Unlock()
 
 	tb.assets = assets
-	tb.metadata = metadata
-	tb.catalog = catalog
+	tb.rootMetadata = metadata
+	tb.intermediateMetadata = intermediateMetadata
+	tb.rootCatalog = catalog
 }
 
 // AutoUpdateConfig configures automatic updates of the bundle.
@@ -325,8 +388,14 @@ func Load(ctx context.Context, cfg LoadConfig) (TrustedBundle, error) {
 		return nil, err
 	}
 
-	bundleData, err := cache.LoadFile(cache.RootBundleFilename, cfg.CachePath)
+	rootBundleData, err := cache.LoadFile(cache.RootBundleFilename, cfg.CachePath)
 	if err != nil {
+		return nil, err
+	}
+	// first releases did not have intermediate bundle
+	// so we ignore os.ErrNotExist here
+	intermediateBundleData, err := cache.LoadFile(cache.IntermediateBundleFilename, cfg.CachePath)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return nil, err
 	}
 
@@ -381,19 +450,31 @@ func Load(ctx context.Context, cfg LoadConfig) (TrustedBundle, error) {
 		}
 
 		if _, err := VerifyTrustedBundle(ctx, VerifyConfig{
-			Bundle:            bundleData,
+			Bundle:            rootBundleData,
 			Checksum:          checksumData,
 			ChecksumSignature: checksumSigData,
 			Provenance:        provenanceData,
 			TrustedRoot:       trustedRootData,
 			DisableLocalCache: cfg.DisableLocalCache,
 		}); err != nil {
-			return nil, fmt.Errorf("verification failed: %w", err)
+			return nil, fmt.Errorf("root verification failed: %w", err)
+		}
+		// we do this check for backward compatibility
+		if len(intermediateBundleData) > 0 {
+			if _, err := VerifyTrustedBundle(ctx, VerifyConfig{
+				Bundle:            intermediateBundleData,
+				Checksum:          checksumData,
+				ChecksumSignature: checksumSigData,
+				Provenance:        provenanceData,
+				TrustedRoot:       trustedRootData,
+				DisableLocalCache: cfg.DisableLocalCache,
+			}); err != nil {
+				return nil, fmt.Errorf("intermediate bundle verification failed: %w", err)
+			}
 		}
 	}
 
-	// Create TrustedBundle from the loaded data
-	tb, err := newTrustedBundle(bundleData)
+	tb, err := newTrustedBundle(rootBundleData, intermediateBundleData)
 	if err != nil {
 		return nil, err
 	}
@@ -464,15 +545,15 @@ func (tb *trustedBundle) checkAndUpdate(ctx context.Context, cfg updaterConfig) 
 	}
 
 	// Check if the date is newer
-	currentMetadata := tb.GetMetadata()
-	newMetadata := newBundle.GetMetadata()
+	currentMetadata := tb.GetRootMetadata()
+	newMetadata := newBundle.GetRootMetadata()
 	if newMetadata.Date <= currentMetadata.Date {
 		// No update needed
 		return
 	}
 
 	newTB := newBundle.(*trustedBundle)
-	tb.update(newTB.assets, newTB.metadata, newTB.catalog)
+	tb.update(newTB.assets, newTB.rootMetadata, newTB.intermediateMetadata, newTB.rootCatalog)
 
 	// Persist the updated bundle if local cache is enabled
 	if !cfg.GetDisableLocalCache() {
@@ -482,22 +563,34 @@ func (tb *trustedBundle) checkAndUpdate(ctx context.Context, cfg updaterConfig) 
 }
 
 // newTrustedBundle creates a TrustedBundle from raw bundle data.
-func newTrustedBundle(b []byte) (TrustedBundle, error) {
-	metadata, err := bundle.ParseMetadata(b)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse bundle metadata: %w", err)
-	}
-
-	catalog, err := bundle.ParseBundle(b)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse bundle: %w", err)
-	}
-
+func newTrustedBundle(bundles ...[]byte) (TrustedBundle, error) {
 	tb := &trustedBundle{
-		assets:   &assets{bundleData: b},
-		metadata: metadata,
-		catalog:  catalog,
+		assets: &assets{},
 	}
+	for _, b := range bundles {
+		if len(b) == 0 {
+			continue
+		}
+		metadata, err := bundle.ParseMetadata(b)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse bundle metadata: %w", err)
+		}
 
+		catalog, err := bundle.ParseBundle(b)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse bundle: %w", err)
+		}
+
+		if metadata.Type == bundle.TypeRoot {
+			tb.assets.rootBundleData = b
+			tb.rootMetadata = metadata
+			tb.rootCatalog = catalog
+		}
+		if metadata.Type == bundle.TypeIntermediate {
+			tb.assets.intermediateBundleData = b
+			tb.intermediateMetadata = metadata
+			tb.intermediateCatalog = catalog
+		}
+	}
 	return tb, nil
 }
