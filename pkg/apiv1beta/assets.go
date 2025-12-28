@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/loicsikidi/tpm-ca-certificates/internal/cache"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/github"
@@ -59,10 +58,11 @@ func (c *assetsConfig) shouldFetchVerificationAssets() bool {
 }
 
 type assets struct {
-	bundleData        []byte
-	checksum          []byte
-	checksumSignature []byte
-	provenance        []byte
+	rootBundleData         []byte
+	intermediateBundleData []byte
+	checksum               []byte
+	checksumSignature      []byte
+	provenance             []byte
 }
 
 func getAssets(ctx context.Context, cfg assetsConfig) (*assets, error) {
@@ -95,18 +95,18 @@ func getAssets(ctx context.Context, cfg assetsConfig) (*assets, error) {
 
 // getAssetsFromCache retrieves a TPM trust bundle and its verification assets from local cache.
 func getAssetsFromCache(cfg assetsConfig) (*assets, error) {
-	bundleData := bytes.Clone(cfg.bundle)
-	if len(bundleData) == 0 {
-		var err error
-		bundlePath := filepath.Join(cfg.cachePath, CacheRootBundleFilename)
-		bundleData, err = os.ReadFile(bundlePath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read bundle from cache: %w", err)
-		}
+	rootBundleData, err := cache.LoadFile(cache.RootBundleFilename, cfg.cachePath)
+	if err != nil {
+		return nil, err
+	}
+	intermediateBundleData, err := cache.LoadFile(cache.IntermediateBundleFilename, cfg.cachePath)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return nil, err
 	}
 
 	result := &assets{
-		bundleData: bundleData,
+		rootBundleData:         rootBundleData,
+		intermediateBundleData: intermediateBundleData,
 	}
 
 	if !cfg.shouldFetchVerificationAssets() {
@@ -157,7 +157,7 @@ func getAssetsFromGitHub(ctx context.Context, cfg assetsConfig) (*assets, error)
 	}
 
 	response := &assets{
-		bundleData: bundleData,
+		rootBundleData: bundleData,
 	}
 
 	if !cfg.shouldFetchVerificationAssets() {
@@ -180,9 +180,18 @@ func getAssetsFromGitHub(ctx context.Context, cfg assetsConfig) (*assets, error)
 		response.checksumSignature = checksumSig
 	}
 
+	// Download intermediate bundle if present in checksums.txt
+	if len(response.checksum) > 0 && hasIntermediateBundle(response.checksum) {
+		intermediateBundle, err := client.DownloadReleaseAsset(ctx, *cfg.sourceRepo, cfg.tag, intermediateBundleFilename)
+		if err != nil {
+			return nil, fmt.Errorf("failed to download intermediate bundle: %w", err)
+		}
+		response.intermediateBundleData = intermediateBundle
+	}
+
 	// Download provenance attestation if requested
 	if cfg.downloadProvenance {
-		bundleDigest := digest.ComputeSHA256(response.bundleData)
+		bundleDigest := digest.ComputeSHA256(response.rootBundleData)
 		attestations, err := client.GetAttestations(ctx, *cfg.sourceRepo, bundleDigest)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get attestations: %w", err)
@@ -200,6 +209,11 @@ func getAssetsFromGitHub(ctx context.Context, cfg assetsConfig) (*assets, error)
 	}
 
 	return response, nil
+}
+
+// hasIntermediateBundle checks if the checksums.txt file contains an entry for the intermediate bundle.
+func hasIntermediateBundle(checksumData []byte) bool {
+	return bytes.Contains(checksumData, []byte(intermediateBundleFilename))
 }
 
 // getReleaseTag determines which release to fetch.

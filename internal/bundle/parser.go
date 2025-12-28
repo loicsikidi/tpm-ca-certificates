@@ -9,13 +9,20 @@ import (
 	"io"
 	"strings"
 
+	"github.com/loicsikidi/tpm-ca-certificates/internal/cache"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config/vendors"
 )
+
+var FilenamebyBundleType = map[BundleType]string{
+	TypeRoot:         cache.RootBundleFilename,
+	TypeIntermediate: cache.IntermediateBundleFilename,
+}
 
 // Metadata represents the global metadata from a TPM trust bundle.
 type Metadata struct {
 	Date   string
 	Commit string
+	Type   BundleType
 }
 
 func (m *Metadata) Check() error {
@@ -31,6 +38,9 @@ func (m *Metadata) Check() error {
 	if err := ValidateCommit(m.Commit); err != nil {
 		return err
 	}
+	if err := m.Type.Validate(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -42,6 +52,7 @@ func ParseMetadata(data []byte) (*Metadata, error) {
 // ParseMetadataFromReader reads a TPM trust bundle from an [io.Reader] and extracts the global metadata.
 func ParseMetadataFromReader(reader io.Reader) (*Metadata, error) {
 	var metadata Metadata
+	metadata.Type = TypeUnspecified
 	scanner := bufio.NewScanner(reader)
 
 	// Parse the header comments (lines starting with ##)
@@ -62,6 +73,13 @@ func ParseMetadataFromReader(reader io.Reader) (*Metadata, error) {
 		if after, ok := strings.CutPrefix(line, MetadataKeyCommit.String()); ok {
 			metadata.Commit = strings.TrimSpace(after)
 		}
+
+		// Detect bundle type from filename in header
+		if strings.Contains(line, cache.IntermediateBundleFilename) {
+			metadata.Type = TypeIntermediate
+		} else if strings.Contains(line, cache.RootBundleFilename) {
+			metadata.Type = TypeRoot
+		}
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -75,6 +93,11 @@ func ParseMetadataFromReader(reader io.Reader) (*Metadata, error) {
 
 	if metadata.Commit == "" {
 		return nil, fmt.Errorf("bundle does not contain required '%s' metadata in header", MetadataKeyCommit.Key())
+	}
+
+	// If type is still unspecified, default to root for backward compatibility
+	if metadata.Type == TypeUnspecified {
+		metadata.Type = TypeRoot
 	}
 
 	return &metadata, nil

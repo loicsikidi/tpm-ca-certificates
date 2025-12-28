@@ -23,8 +23,8 @@ const (
 	// ChecksumSigstoreFile is the name of the test sigstore signature file.
 	ChecksumSigstoreFile = "checksums.txt.sigstore.json"
 
-	// RootProvenanceFile is the name of the test provenance file.
-	RootProvenanceFile = "roots.provenance.json"
+	// ProvenanceFile is the name of the test provenance file.
+	ProvenanceFile = "provenance.json"
 
 	// RootConfigFile is the name of the test config file.
 	RootConfigFile = ".tpm-roots.yaml"
@@ -126,7 +126,7 @@ func CreateCacheDir(t *testing.T, configData []byte) string {
 		t.Fatalf("Failed to write checksum signature: %v", err)
 	}
 
-	provenanceData, err := ReadTestFile(RootProvenanceFile)
+	provenanceData, err := ReadTestFile(ProvenanceFile)
 	if err != nil {
 		t.Fatalf("Failed to read test provenance: %v", err)
 	}

@@ -1,6 +1,10 @@
 package bundle
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/loicsikidi/tpm-ca-certificates/internal/cache"
+)
 
 // BundleType represents the type of TPM trust bundle.
 type BundleType string
@@ -36,11 +40,11 @@ func (t BundleType) Validate() error {
 func (t BundleType) DefaultFilename() string {
 	switch t {
 	case TypeIntermediate:
-		return "tpm-intermediate-ca-certificates.pem"
+		return cache.IntermediateBundleFilename
 	case TypeRoot, TypeUnspecified:
 		fallthrough
 	default:
-		return "tpm-ca-certificates.pem"
+		return cache.RootBundleFilename
 	}
 }
 

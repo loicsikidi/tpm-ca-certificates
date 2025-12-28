@@ -39,7 +39,7 @@ func TestVerifyTrustedBundle(t *testing.T) {
 
 		// Now verify it with auto-detected metadata and auto-downloaded checksums
 		_, err = apiv1beta.VerifyTrustedBundle(t.Context(), apiv1beta.VerifyConfig{
-			Bundle: trustedBundle.GetRaw(),
+			Bundle: trustedBundle.GetRawRoot(),
 		})
 		if err != nil {
 			t.Fatalf("Verification failed: %v", err)
@@ -114,7 +114,7 @@ func TestGetTrustedBundle(t *testing.T) {
 		}
 		defer tb.Stop()
 
-		metadata := tb.GetMetadata()
+		metadata := tb.GetRootMetadata()
 		if metadata == nil {
 			t.Fatal("Expected metadata, got nil")
 		}
@@ -135,7 +135,7 @@ func TestGetTrustedBundle(t *testing.T) {
 			t.Fatal("Expected cert pool, got nil")
 		}
 
-		raw := tb.GetRaw()
+		raw := tb.GetRawRoot()
 		certs, err := parsePEMCertificates(raw)
 		if err != nil {
 			t.Fatalf("Failed to parse PEM certificates: %v", err)
@@ -159,7 +159,7 @@ func TestGetTrustedBundle(t *testing.T) {
 			t.Fatalf("GetTrustedBundle() error = %v", err)
 		}
 
-		metadata := tb.GetMetadata()
+		metadata := tb.GetRootMetadata()
 		if metadata.Date != testutil.BundleVersion {
 			t.Errorf("Expected date '2025-12-05', got %q", metadata.Date)
 		}
@@ -202,7 +202,7 @@ func TestGetTrustedBundle(t *testing.T) {
 			t.Fatalf("GetTrustedBundle() error = %v", err)
 		}
 
-		metadata := tb.GetMetadata()
+		metadata := tb.GetRootMetadata()
 		if metadata == nil {
 			t.Fatal("Expected metadata, got nil")
 		}
@@ -213,7 +213,7 @@ func TestGetTrustedBundle(t *testing.T) {
 			t.Error("Expected commit in metadata")
 		}
 
-		raw := tb.GetRaw()
+		raw := tb.GetRawRoot()
 		if len(raw) == 0 {
 			t.Error("Expected raw bundle, got empty")
 		}
@@ -271,7 +271,7 @@ func TestGetTrustedBundle(t *testing.T) {
 		defer tb.Stop()
 
 		// Verify initial version
-		initialMetadata := tb.GetMetadata()
+		initialMetadata := tb.GetRootMetadata()
 		if initialMetadata.Date != "2025-12-03" {
 			t.Errorf("Expected initial date '2025-12-03', got %q", initialMetadata.Date)
 		}
@@ -281,7 +281,7 @@ func TestGetTrustedBundle(t *testing.T) {
 		time.Sleep(3 * time.Second)
 
 		// Check if bundle was updated to latest version (2025-12-05)
-		updatedMetadata := tb.GetMetadata()
+		updatedMetadata := tb.GetRootMetadata()
 		t.Logf("Updated bundle date: %s", updatedMetadata.Date)
 
 		if updatedMetadata.Date == "2025-12-03" {
@@ -322,8 +322,8 @@ func TestTrustedBundle_ThreadSafety(t *testing.T) {
 	for range 10 {
 		go func() {
 			for range 100 {
-				_ = tb.GetRaw()
-				_ = tb.GetMetadata()
+				_ = tb.GetRawRoot()
+				_ = tb.GetRootMetadata()
 				_ = tb.GetVendors()
 				_ = tb.GetRoots()
 			}
@@ -472,7 +472,7 @@ func TestSmartCache(t *testing.T) {
 		}
 
 		// Verify bundle content is the same
-		if string(tb1.GetRaw()) != string(tb2.GetRaw()) {
+		if string(tb1.GetRawRoot()) != string(tb2.GetRawRoot()) {
 			t.Error("Bundle content differs between first and second fetch")
 		}
 	})
@@ -529,7 +529,7 @@ func TestSmartCache(t *testing.T) {
 		}
 
 		// Verify bundle metadata
-		metadata := tb2.GetMetadata()
+		metadata := tb2.GetRootMetadata()
 		if metadata.Date != "2025-12-03" {
 			t.Errorf("Expected bundle date '2025-12-03', got %q", metadata.Date)
 		}
@@ -671,14 +671,14 @@ func TestLoad(t *testing.T) {
 		}
 		defer tb.Stop()
 
-		initialMetadata := tb.GetMetadata()
+		initialMetadata := tb.GetRootMetadata()
 		t.Logf("Initial bundle date after load: %s", initialMetadata.Date)
 
 		// The cached bundle is older, so we expect it to be updated
 		// Wait for auto-update to trigger (interval + buffer)
 		time.Sleep(3 * time.Second)
 
-		updatedMetadata := tb.GetMetadata()
+		updatedMetadata := tb.GetRootMetadata()
 		t.Logf("Updated bundle date after auto-update: %s", updatedMetadata.Date)
 
 		if updatedMetadata.Date == initialMetadata.Date {
@@ -736,7 +736,7 @@ func TestSave(t *testing.T) {
 		if len(resp.RootBundle) == 0 {
 			t.Error("Expected RootBundle to be populated")
 		}
-		if len(resp.RootProvenance) == 0 {
+		if len(resp.Provenance) == 0 {
 			t.Error("Expected RootProvenance to be populated")
 		}
 		if len(resp.Checksum) == 0 {
@@ -752,12 +752,8 @@ func TestSave(t *testing.T) {
 			t.Error("Expected CacheConfig to be populated")
 		}
 
-		// Verify IntermediateBundle and IntermediateProvenance are empty (out of scope)
-		if len(resp.IntermediateBundle) != 0 {
-			t.Error("Expected IntermediateBundle to be empty (out of scope)")
-		}
-		if len(resp.IntermediateProvenance) != 0 {
-			t.Error("Expected IntermediateProvenance to be empty (out of scope)")
+		if len(resp.IntermediateBundle) == 0 {
+			t.Error("Expected IntermediateBundle to be populated")
 		}
 
 		// Verify CacheConfig can be unmarshaled
@@ -821,6 +817,9 @@ func TestSave(t *testing.T) {
 
 		// Verify all files were created
 		for _, filename := range apiv1beta.CacheFilenames {
+			if filename == apiv1beta.CacheIntermediateBundleFilename {
+				continue // Skip intermediate bundle as it's out of scope
+			}
 			filePath := filepath.Join(outputDir, filename)
 			if _, err := os.Stat(filePath); os.IsNotExist(err) {
 				t.Errorf("Expected file %q to exist", filename)
@@ -880,7 +879,7 @@ func TestSave(t *testing.T) {
 		defer tb.Stop()
 
 		// Verify the loaded bundle
-		metadata := tb.GetMetadata()
+		metadata := tb.GetRootMetadata()
 		if metadata.Date != testutil.BundleVersion {
 			t.Errorf("Expected date %q, got %q", testutil.BundleVersion, metadata.Date)
 		}

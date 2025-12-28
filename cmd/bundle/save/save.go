@@ -118,6 +118,9 @@ func Run(ctx context.Context, o *Opts) error {
 
 	cli.Display("Saved files:")
 	cli.Display("  - %s", apiv1beta.CacheRootBundleFilename)
+	if len(resp.IntermediateBundle) > 0 {
+		cli.Display("  - %s", apiv1beta.CacheIntermediateBundleFilename)
+	}
 	cli.Display("  - %s", apiv1beta.CacheChecksumsFilename)
 	cli.Display("  - %s", apiv1beta.CacheChecksumsSigFilename)
 	cli.Display("  - %s", apiv1beta.CacheProvenanceFilename)

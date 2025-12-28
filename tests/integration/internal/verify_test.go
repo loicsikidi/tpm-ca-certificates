@@ -73,7 +73,7 @@ func TestVerifyIntegration(t *testing.T) {
 	}
 	t.Log("✓ Verifier created")
 
-	provenanceData, err := testutil.ReadTestFile(testutil.RootProvenanceFile)
+	provenanceData, err := testutil.ReadTestFile(testutil.ProvenanceFile)
 	if err != nil {
 		t.Fatalf("Failed to read provenance: %v", err)
 	}
@@ -134,7 +134,7 @@ func TestVerifyWithInvalidCommit(t *testing.T) {
 		t.Fatalf("Failed to create verifier: %v", err)
 	}
 
-	provenanceData, err := testutil.ReadTestFile(testutil.RootProvenanceFile)
+	provenanceData, err := testutil.ReadTestFile(testutil.ProvenanceFile)
 	if err != nil {
 		t.Fatalf("Failed to read provenance: %v", err)
 	}
@@ -184,7 +184,7 @@ func TestVerifyWithInvalidDate(t *testing.T) {
 		t.Fatalf("Failed to create verifier: %v", err)
 	}
 
-	provenanceData, err := testutil.ReadTestFile(testutil.RootProvenanceFile)
+	provenanceData, err := testutil.ReadTestFile(testutil.ProvenanceFile)
 	if err != nil {
 		t.Fatalf("Failed to read provenance: %v", err)
 	}

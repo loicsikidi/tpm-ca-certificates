@@ -109,7 +109,7 @@ func TestGetBundleFromCache(t *testing.T) {
 			t.Fatalf("Failed to load from cache: %v", err)
 		}
 
-		if len(result.bundleData) == 0 {
+		if len(result.rootBundleData) == 0 {
 			t.Fatal("Bundle data is empty")
 		}
 		if len(result.checksum) == 0 {
@@ -139,7 +139,7 @@ func TestGetBundleFromCache(t *testing.T) {
 			t.Fatalf("Failed to load from cache: %v", err)
 		}
 
-		if len(result.bundleData) == 0 {
+		if len(result.rootBundleData) == 0 {
 			t.Fatal("Bundle data is empty")
 		}
 		if len(result.checksum) != 0 {
@@ -240,7 +240,7 @@ func TestVerifyTrustedBundleWithCustomTrustedRoot(t *testing.T) {
 			t.Fatalf("Failed to read checksum signature: %v", err)
 		}
 
-		provenanceData, err := testutil.ReadTestFile(testutil.RootProvenanceFile)
+		provenanceData, err := testutil.ReadTestFile(testutil.ProvenanceFile)
 		if err != nil {
 			t.Fatalf("Failed to read provenance: %v", err)
 		}
@@ -289,7 +289,7 @@ func TestVerifyTrustedBundleWithCustomTrustedRoot(t *testing.T) {
 			t.Fatalf("Failed to read checksum signature: %v", err)
 		}
 
-		provenanceData, err := testutil.ReadTestFile(testutil.RootProvenanceFile)
+		provenanceData, err := testutil.ReadTestFile(testutil.ProvenanceFile)
 		if err != nil {
 			t.Fatalf("Failed to read provenance: %v", err)
 		}

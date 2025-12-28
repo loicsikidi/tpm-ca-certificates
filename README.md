@@ -98,7 +98,8 @@ tpmtb bundle download
 > [!TIP]
 > When using the OCI image, you can output the bundle to stdout (since the container filesystem is read-only):
 > ```bash
-> docker run --rm ghcr.io/loicsikidi/tpm-ca-certificates/tpmtb:latest bundle download --output-dir - > tpm-ca-certificates.pem
+> docker run --rm ghcr.io/loicsikidi/tpm-ca-certificates/tpmtb:latest bundle download --type root --output-dir - > tpm-ca-certificates.pem
+> docker run --rm ghcr.io/loicsikidi/tpm-ca-certificates/tpmtb:latest bundle download --type intermediate --output-dir - > tpm-intermediate-ca-certificates.pem
 > ```
 
 Now you can use `tpm-ca-certificates.pem` as the trusted root certificate bundle for your TPM interactions 💫.

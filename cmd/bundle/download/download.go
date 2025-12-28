@@ -7,14 +7,11 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/cli"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
 	"github.com/loicsikidi/tpm-ca-certificates/pkg/apiv1beta"
 	"github.com/spf13/cobra"
-)
-
-const (
-	bundleFilename = apiv1beta.CacheRootBundleFilename
 )
 
 // Opts holds the configuration for the download command.
@@ -23,6 +20,8 @@ type Opts struct {
 	Force      bool
 	Date       string
 	OutputDir  string
+	Type       string
+	CacheDir   string
 }
 
 // NewCommand creates the download command.
@@ -42,6 +41,12 @@ verify its authenticity using the same verification process as the verify comman
   # Download a specific bundle by date
   tpmtb bundle download --date 2025-12-03
 
+  # Download only the root bundle
+  tpmtb bundle download --type root
+
+  # Download only the intermediate bundle
+  tpmtb bundle download --type intermediate
+
   # Download without verification
   tpmtb bundle download --skip-verify
 
@@ -51,8 +56,8 @@ verify its authenticity using the same verification process as the verify comman
   # Download to a specific directory
   tpmtb bundle download --output-dir /tmp
 
-  # Print bundle to stdout
-  tpmtb bundle download --output-dir -`,
+  # Print bundle to stdout (requires --type)
+  tpmtb bundle download --output-dir - --type root`,
 		Args:         cobra.NoArgs,
 		SilenceUsage: true,
 		RunE:         func(cmd *cobra.Command, args []string) error { return Run(cmd.Context(), opts) },
@@ -66,8 +71,17 @@ verify its authenticity using the same verification process as the verify comman
 		"Bundle release date (YYYY-MM-DD), default: latest")
 	cmd.Flags().StringVarP(&opts.OutputDir, "output-dir", "o", ".",
 		"Output directory for downloaded files (use '-' to print to stdout)")
+	cmd.Flags().StringVarP(&opts.Type, "type", "t", "",
+		"Bundle type: root, intermediate, or empty for both (default: download both bundles when available)")
 
 	return cmd
+}
+
+// bundleInfo holds information about a bundle to save on disk.
+type bundleInfo struct {
+	data     []byte
+	filename string
+	label    string
 }
 
 // Run executes the download command.
@@ -76,18 +90,15 @@ func Run(ctx context.Context, o *Opts) error {
 		return fmt.Errorf("output directory %s does not exist", o.OutputDir)
 	}
 
-	var bundlePath string
-	if o.OutputDir != "-" {
-		bundlePath = filepath.Join(o.OutputDir, bundleFilename)
+	// Validate and parse bundle type
+	bundleType := bundle.BundleType(o.Type)
+	if err := bundleType.Validate(); err != nil {
+		return err
+	}
 
-		if utils.FileExists(bundlePath) && !o.Force {
-			cli.DisplayWarning("File %s already exists.", bundlePath)
-			if !cli.PromptConfirmation("Override?") {
-				fmt.Println()
-				return fmt.Errorf("download cancelled")
-			}
-			fmt.Println()
-		}
+	// Validate stdout usage
+	if o.OutputDir == "-" && bundleType == bundle.TypeUnspecified {
+		return fmt.Errorf("when using stdout (--output-dir -), you must specify --type (root or intermediate)")
 	}
 
 	if o.Date == "" {
@@ -99,6 +110,7 @@ func Run(ctx context.Context, o *Opts) error {
 	cfg := apiv1beta.GetConfig{
 		Date:       o.Date,
 		SkipVerify: o.SkipVerify,
+		CachePath:  o.CacheDir,
 	}
 
 	trustedBundle, err := apiv1beta.GetTrustedBundle(ctx, cfg)
@@ -115,16 +127,75 @@ func Run(ctx context.Context, o *Opts) error {
 		displaySuccess(o, "✅ Bundle verified")
 	}
 
+	var bundleInfos []bundleInfo
+	switch bundleType {
+	case bundle.TypeRoot:
+		bundleInfos = []bundleInfo{
+			{
+				data:     trustedBundle.GetRawRoot(),
+				filename: apiv1beta.CacheRootBundleFilename,
+				label:    "root",
+			},
+		}
+	case bundle.TypeIntermediate:
+		intermediateData := trustedBundle.GetRawIntermediate()
+		if len(intermediateData) == 0 {
+			return fmt.Errorf("intermediate bundle not available for this release")
+		}
+		bundleInfos = []bundleInfo{
+			{
+				data:     intermediateData,
+				filename: apiv1beta.CacheIntermediateBundleFilename,
+				label:    "intermediate",
+			},
+		}
+	case bundle.TypeUnspecified:
+		// Save both bundles when available
+		bundleInfos = []bundleInfo{
+			{
+				data:     trustedBundle.GetRawRoot(),
+				filename: apiv1beta.CacheRootBundleFilename,
+				label:    "root",
+			},
+		}
+		if intermediateData := trustedBundle.GetRawIntermediate(); len(intermediateData) > 0 {
+			bundleInfos = append(bundleInfos, bundleInfo{
+				data:     intermediateData,
+				filename: apiv1beta.CacheIntermediateBundleFilename,
+				label:    "intermediate",
+			})
+		}
+	}
+
+	// Handle stdout output
 	if o.OutputDir == "-" {
-		_, err = os.Stdout.Write(trustedBundle.GetRaw())
+		_, err = os.Stdout.Write(bundleInfos[0].data)
 		return err
 	}
 
-	if err := os.WriteFile(bundlePath, trustedBundle.GetRaw(), 0644); err != nil {
-		return fmt.Errorf("failed to write bundle to disk: %w", err)
+	// Check for existing files before writing
+	if !o.Force {
+		for _, info := range bundleInfos {
+			bundlePath := filepath.Join(o.OutputDir, info.filename)
+			if utils.FileExists(bundlePath) {
+				cli.DisplayWarning("File %s already exists.", bundlePath)
+				if !cli.PromptConfirmation("Override?") {
+					fmt.Println()
+					return fmt.Errorf("download cancelled")
+				}
+				fmt.Println()
+				break
+			}
+		}
 	}
 
-	cli.DisplaySuccess("✅ Downloaded bundle to %s", bundlePath)
+	for _, info := range bundleInfos {
+		bundlePath := filepath.Join(o.OutputDir, info.filename)
+		if err := os.WriteFile(bundlePath, info.data, 0644); err != nil {
+			return fmt.Errorf("failed to write %s bundle to disk: %w", info.label, err)
+		}
+		cli.DisplaySuccess("✅ Downloaded %s bundle to %s", info.label, bundlePath)
+	}
 
 	return nil
 }
