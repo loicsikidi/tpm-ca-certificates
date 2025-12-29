@@ -177,8 +177,8 @@ cd tpm-ca-certificates
 git checkout $DATE
 
 # Regenerate each bundle
-tpmtb bunde generate --workers 10 --output tpm-ca-certificates.pem
-tpmtb bunde generate --workers 10 --config .tpm-intermediates.yaml --output tpm-intermediate-ca-certificates.pem
+tpmtb bundle generate --workers 10 --output tpm-ca-certificates.pem
+tpmtb bundle generate --workers 10 --config .tpm-intermediates.yaml --output tpm-intermediate-ca-certificates.pem
 
 # Compare checksums
 sha256sum tpm-ca-certificates.pem

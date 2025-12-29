@@ -119,12 +119,12 @@ defer tb.Stop()
 Access bundle metadata to understand which version you're using:
 
 ```go
-metadata := tb.GetMetadata()
+metadata := tb.GetRootMetadata()
 log.Printf("Bundle date: %s", metadata.Date)
 log.Printf("Bundle commit: %s", metadata.Commit)
 
 // Get raw PEM-encoded bundle
-rawBundle := tb.GetRaw()
+rawBundle := tb.GetRawRoot()
 ```
 
 ## Advanced Usage 🔧
@@ -285,7 +285,7 @@ if err := tb.Persist("/custom/cache/path"); err != nil {
 - `tpm-ca-certificates.pem` - The bundle itself
 - `checksums.txt` - SHA256 checksums
 - `checksums.txt.sigstore.json` - Cosign signature
-- `roots.provenance.json` - GitHub attestation
+- `provenance.json` - GitHub attestation
 - `config.json` - Bundle configuration (vendor filter, auto-update settings)
 
 ### Load from Disk
@@ -428,7 +428,7 @@ func main() {
 	defer tb.Stop()
 
 	// Log bundle information
-	metadata := tb.GetMetadata()
+	metadata := tb.GetRootMetadata()
 	log.Printf("Using bundle from %s (commit: %s)", metadata.Date, metadata.Commit)
 
 	vendors := tb.GetVendors()
@@ -481,7 +481,8 @@ if errors.Is(err, apiv1beta.ErrBundleVerificationFailed) {
 
 ## Next Steps 🚀
 
-- 🤝 Want to contribute? Check the [Contributing Guide](./05-contributing.md)
+- 🔒 Working in secure environments? Learn about [Offline Mode](./05-offline-mode.md)
+- 🤝 Want to contribute? Check the [Contributing Guide](./06-contributing.md)
 
 ## Additional Resources 📚
 
