@@ -9,7 +9,7 @@
   version =
     if src != null
     then "unstable"
-    else "0.5.0-rc1";
+    else "0.6.0";
 in
   buildGo125Module {
     pname = "tpmtb";
@@ -23,7 +23,7 @@ in
           owner = "loicsikidi";
           repo = "tpm-ca-certificates";
           tag = "v${version}";
-          hash = "sha256-akjBqYuFRWmtyIf81Bc1ZQBDt9HzHch/XQQ8PmpVKps=";
+          hash = "sha256-VzGshqMsqWfDWjJYr3U7IMli9Ht7WK1+y0prbyyXHAk=";
         };
 
     vendorHash = "sha256-SV1wuv+Kcju1u2I7EKTzSldad3VJfRquXwqQWDwgrsM=";
