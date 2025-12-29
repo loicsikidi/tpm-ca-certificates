@@ -320,7 +320,50 @@ defer tb.Stop()
 
 ### Custom HTTP Client
 
-Use a custom HTTP client for proxies or custom transport:
+#### Global HTTP Client Configuration
+
+Set a custom HTTP client globally for all API calls:
+
+```go
+import (
+	"net/http"
+	"time"
+
+	"github.com/loicsikidi/tpm-ca-certificates/pkg/apiv1beta"
+)
+
+func init() {
+	// Configure custom client with timeouts and proxy
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+		Transport: &http.Transport{
+			Proxy:                 http.ProxyFromEnvironment,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		},
+	}
+
+	// Set global HTTP client
+	apiv1beta.SetHTTPClient(client)
+}
+
+func main() {
+	ctx := context.Background()
+
+	// This will use the global HTTP client
+	tb, err := apiv1beta.GetTrustedBundle(ctx, apiv1beta.GetConfig{})
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer tb.Stop()
+}
+```
+
+#### Per-Request Configuration
+
+Use a custom HTTP client for specific requests:
 
 ```go
 import "net/http"
@@ -340,6 +383,9 @@ if err != nil {
 }
 defer tb.Stop()
 ```
+
+> [!NOTE]
+> Per-request HTTP client configuration takes precedence over the global setting.
 
 ## Persisting and Loading Bundles 💾
 
@@ -379,14 +425,14 @@ Load a previously persisted bundle:
 
 ```go
 // Load from default location ($HOME/.tpmtb)
-tb, err := apiv1beta.Load(ctx, apiv1beta.LoadConfig{})
+tb, err := apiv1beta.LoadTrustedBundle(ctx, apiv1beta.LoadConfig{})
 if err != nil {
 	log.Fatal(err)
 }
 defer tb.Stop()
 
 // Or load from a custom location
-tb, err = apiv1beta.Load(ctx, apiv1beta.LoadConfig{
+tb, err = apiv1beta.LoadTrustedBundle(ctx, apiv1beta.LoadConfig{
 	CachePath: "/custom/cache/path",
 })
 if err != nil {
@@ -421,7 +467,7 @@ if err := tb.Persist(); err != nil {
 tb.Stop()
 
 // Later run: Load persisted bundle - auto-update resumes automatically
-tb, err = apiv1beta.Load(ctx, apiv1beta.LoadConfig{})
+tb, err = apiv1beta.LoadTrustedBundle(ctx, apiv1beta.LoadConfig{})
 if err != nil {
 	log.Fatal(err)
 }

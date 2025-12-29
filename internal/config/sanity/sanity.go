@@ -76,7 +76,7 @@ func NewChecker() *Checker {
 }
 
 // NewCheckerWithClient creates a new sanity checker with a custom HTTP client.
-func NewCheckerWithClient(client utils.HttpClient) *Checker {
+func NewCheckerWithClient(client utils.HTTPClient) *Checker {
 	return &Checker{
 		downloader: download.NewClient(client),
 	}

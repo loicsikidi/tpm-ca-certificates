@@ -75,7 +75,7 @@ To achieve this, in addition to the assets used in online mode, the TUF trust ch
 The API will introduce a new method to produce a local cache eligible for offline verification:
 
 ```go
-func Save(ctx context.Context, cfg SaveConfig) (SaveResponse, error)
+func SaveTrustedBundle(ctx context.Context, cfg SaveConfig) (SaveResponse, error)
 ```
 
 This API will be used by the `tpmtb` CLI tool via a new command:
@@ -87,7 +87,7 @@ tpmtb bundle save --output-dir <path> <path-to-bundle> [--local-cache]
 Now, to load a TPM bundle in offline mode, the user can use the existing `Load` method:
 
 ```go
-func Load(ctx context.Context, cfg LoadConfig) (TrustedBundle, error)
+func LoadTrustedBundle(ctx context.Context, cfg LoadConfig) (TrustedBundle, error)
 ```
 
 However, `LoadConfig` will have a new attribute `OfflineMode bool` that will indicate to the API that the cache has all the necessary resources for offline verification.
@@ -140,7 +140,7 @@ func (tb *TrustedBundle) Persist(ctx context.Context) error
 ### Save Method
 
 ```go
-func Save(ctx context.Context, cfg SaveConfig) (SaveResponse, error)
+func SaveTrustedBundle(ctx context.Context, cfg SaveConfig) (SaveResponse, error)
 ```
 
 **Purpose:** Create a local cache eligible for offline verification.
@@ -181,7 +181,7 @@ type SaveResponse struct {
 ### Load Method (Updated)
 
 ```go
-func Load(ctx context.Context, cfg LoadConfig) (TrustedBundle, error)
+func LoadTrustedBundle(ctx context.Context, cfg LoadConfig) (TrustedBundle, error)
 ```
 
 **Behavior:**

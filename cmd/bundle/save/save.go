@@ -99,7 +99,7 @@ func Run(ctx context.Context, o *Opts) error {
 		VendorIDs: parsedVendorIDs,
 	}
 
-	resp, err := apiv1beta.Save(ctx, cfg)
+	resp, err := apiv1beta.SaveTrustedBundle(ctx, cfg)
 	if err != nil {
 		return fmt.Errorf("failed to save bundle: %w", err)
 	}

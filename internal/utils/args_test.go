@@ -27,15 +27,15 @@ func TestOptionalArg(t *testing.T) {
 			want: 0,
 		},
 	}
-	tinterface := []TestCase[utils.HttpClient]{
+	tinterface := []TestCase[utils.HTTPClient]{
 		{
 			name: "argument provided",
-			args: []utils.HttpClient{http.DefaultClient},
+			args: []utils.HTTPClient{http.DefaultClient},
 			want: http.DefaultClient,
 		},
 		{
 			name: "argument not provided",
-			args: []utils.HttpClient{},
+			args: []utils.HTTPClient{},
 			want: nil,
 		},
 	}

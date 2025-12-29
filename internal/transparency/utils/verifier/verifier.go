@@ -25,7 +25,7 @@ var (
 
 type Config struct {
 	Root       root.TrustedMaterial
-	HTTPClient utils.HttpClient
+	HTTPClient utils.HTTPClient
 	Options    []verify.VerifierOption
 }
 
@@ -52,7 +52,7 @@ func New(cfg Config) (*verify.Verifier, error) {
 }
 
 // GetDefaultTUFOptions returns TUF options with sane defaults for Sigstore usage.
-func GetDefaultTUFOptions(optionalClient ...utils.HttpClient) *tuf.Options {
+func GetDefaultTUFOptions(optionalClient ...utils.HTTPClient) *tuf.Options {
 	client := utils.OptionalArg(optionalClient)
 	opts := tuf.DefaultOptions()
 
@@ -85,7 +85,7 @@ func GetDefaultTUFOptions(optionalClient ...utils.HttpClient) *tuf.Options {
 //	    log.Fatal(err)
 //	}
 //	os.WriteFile("trusted-root.json", trustedRootJSON, 0644)
-func FetchTrustedRoot(optionalClient ...utils.HttpClient) ([]byte, error) {
+func FetchTrustedRoot(optionalClient ...utils.HTTPClient) ([]byte, error) {
 	client := utils.OptionalArg(optionalClient)
 	opts := GetDefaultTUFOptions(client)
 	opts.DisableLocalCache = true

@@ -45,7 +45,7 @@ type Config struct {
 	// HTTPClient is the HTTP client to use for requests.
 	//
 	// Optional. If nil, it stays nil and default HTTP client will be used.
-	HTTPClient utils.HttpClient
+	HTTPClient utils.HTTPClient
 
 	// DisableLocalCache mode allows to work on a read-only
 	// files system if this is set, cache path is ignored.
