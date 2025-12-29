@@ -58,6 +58,22 @@ type TrustedBundle interface {
 	// or only intermediate certificates from specified vendors if the bundle was created with VendorIDs filter.
 	GetIntermediates() *x509.CertPool
 
+	// GetVerifyOptions returns [x509.VerifyOptions] configured for TPM certificate verification.
+	GetVerifyOptions() x509.VerifyOptions
+
+	// VerifyCertificate verifies a certificate against the bundle's trust anchors.
+	//
+	// This method handles TPM-specific certificate quirks:
+	//   - Clears UnhandledCriticalExtensions to work around TPM-specific OIDs
+	//
+	// Returns an error if the certificate cannot be verified.
+	VerifyCertificate(cert *x509.Certificate) error
+
+	// Contains checks if a certificate is stored in the bundle.
+	//
+	// Returns true if the certificate is found in either the root or intermediate catalogs.
+	Contains(cert *x509.Certificate) bool
+
 	// Persist marshals bundle and its verification assets to disk at the specified cache path.
 	//
 	// Notes:
@@ -209,6 +225,55 @@ func (tb *trustedBundle) buildCertPool(catalog map[vendors.ID][]*x509.Certificat
 	}
 
 	return pool
+}
+
+// GetVerifyOptions returns x509.VerifyOptions configured for TPM certificate verification.
+func (tb *trustedBundle) GetVerifyOptions() x509.VerifyOptions {
+	tb.mu.RLock()
+	defer tb.mu.RUnlock()
+
+	return x509.VerifyOptions{
+		Roots:         tb.buildCertPool(tb.rootCatalog),
+		Intermediates: tb.buildCertPool(tb.intermediateCatalog),
+		// TPM EK certificates don't have standard key usages, so we need to allow any usage
+		KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageAny},
+	}
+}
+
+// VerifyCertificate verifies a certificate against the bundle's trust anchors.
+func (tb *trustedBundle) VerifyCertificate(cert *x509.Certificate) error {
+	// Copy the EK certificate and mark all critical extensions as handled
+	// to work around TPM-specific OIDs that x509 doesn't recognize
+	ekCopy := *cert
+	ekCopy.UnhandledCriticalExtensions = nil
+
+	opts := tb.GetVerifyOptions()
+	_, err := ekCopy.Verify(opts)
+	return err
+}
+
+// Contains checks if a certificate is stored in the bundle.
+func (tb *trustedBundle) Contains(cert *x509.Certificate) bool {
+	tb.mu.RLock()
+	defer tb.mu.RUnlock()
+
+	for _, certs := range tb.rootCatalog {
+		for _, c := range certs {
+			if c.Equal(cert) {
+				return true
+			}
+		}
+	}
+
+	for _, certs := range tb.intermediateCatalog {
+		for _, c := range certs {
+			if c.Equal(cert) {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 // Persist writes the bundle and its configuration to disk.
