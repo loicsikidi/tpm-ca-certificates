@@ -88,7 +88,7 @@ jobs:
         run: |
           echo "Renaming Go scripts..."
           mv scripts/scan-infineon-pki.gos scripts/scan-infineon-pki.go
-          mv scripts/verify-infineon-coverage.go scripts/verify-infineon-coverage.go
+          mv scripts/verify-infineon-coverage.gos scripts/verify-infineon-coverage.go
           echo "Scanning Infineon PKI for available certificates..."
           nix-shell --run 'scripts/scan-infineon-pki.go --out /tmp/infineon-available.txt'
           echo "Verifying all available certificates are in config..."
