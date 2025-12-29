@@ -1,4 +1,4 @@
-# STMicroelectronics (STM) TPM Root Certificates
+# STMicroelectronics (STM) TPM Certificates
 
 ## Certificate Inventory
 
@@ -10,6 +10,27 @@
 | STM TPM EK Root CA | Root | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
 | STSAFE ECC Root CA 02 | Root | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
 | STSAFE RSA Root CA 02 | Root | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
+| STM TPM ECC Intermediate CA 01 | Intermediate | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
+| STM TPM ECC Intermediate CA 02 | Intermediate | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
+| STM TPM ECC Intermediate CA 03 | Intermediate | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
+| STM TPM ECC384 Intermediate CA 01 | Intermediate | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
+| STM TPM ECC384 Intermediate CA 02 | Intermediate | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
+| STM TPM ECC384 Intermediate CA 03 for CISCO | Intermediate | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
+| STM TPM EK Intermediate CA 01 | Intermediate | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
+| STM TPM EK Intermediate CA 02 | Intermediate | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
+| STM TPM EK Intermediate CA 03 | Intermediate | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
+| STM TPM EK Intermediate CA 04 | Intermediate | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
+| STM TPM EK Intermediate CA 05 | Intermediate | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
+| STM TPM EK Intermediate CA 06 | Intermediate | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
+| STM TPM EK Intermediate CA 07 | Intermediate | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
+| STSAFE TPM ECC Intermediate CA 10 | Intermediate | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
+| STSAFE TPM ECC Intermediate CA 11 | Intermediate | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
+| STSAFE TPM ECC Intermediate CA 20 | Intermediate | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
+| STSAFE TPM ECC Intermediate CA 21 | Intermediate | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
+| STSAFE TPM RSA Intermediate CA 10 | Intermediate | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
+| STSAFE TPM RSA Intermediate CA 11 | Intermediate | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
+| STSAFE TPM RSA Intermediate CA 20 | Intermediate | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
+| STSAFE TPM RSA Intermediate CA 21 | Intermediate | [en.DM00711714.pdf](en.DM00711714.pdf) | No |
 
 ## References
 
