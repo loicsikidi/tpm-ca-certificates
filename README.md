@@ -111,7 +111,7 @@ Go to [documentation index](docs/README.md) to explore concepts, guides, and spe
 ## Roadmap
 
 - [ ] Improve certificate catalog
-  - ***We are actively looking to expand the number of root certificates included in the bundle. Contributions are welcome!*** Please refer to the [Contributing Guide](docs/guides/getting-started/05-contributing.md) for details on how you could help.
+  - ***We are actively looking to expand the number of root certificates included in the bundle. Contributions are welcome!*** Please refer to the [Contributing Guide](docs/guides/getting-started/06-contributing.md) for details on how you could help.
 - [ ] Gather feedback from early adopters to improve usability and address real-world needs
    - Please open [discussions](https://github.com/loicsikidi/tpm-ca-certificates/discussions) or [issues](https://github.com/loicsikidi/tpm-ca-certificates/issues) on GitHub to share your thoughts!
 - [ ] Support offline verification mode for air-gapped or restricted environments

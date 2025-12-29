@@ -88,7 +88,7 @@ func ReadTestFile(name string) ([]byte, error) {
 //   - tpm-ca-certificates.pem (bundle)
 //   - checksums.txt
 //   - checksums.txt.sigstore.json
-//   - roots.provenance.json
+//   - provenance.json
 //   - config.json (generated from configData parameter)
 //
 // The configData parameter should be a marshaled JSON representing the cache configuration.
