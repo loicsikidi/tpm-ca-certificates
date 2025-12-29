@@ -143,6 +143,96 @@ func TestValidateAndPrepareInputs(t *testing.T) {
 			t.Errorf("validateAndPrepareInputs() error = %v, want error containing 'number of fingerprints'", err)
 		}
 	})
+
+	t.Run("infers hash algorithm from SHA256 fingerprint", func(t *testing.T) {
+		opts := &AddOptions{
+			VendorID:      "STM",
+			URL:           "https://example.com/cert.crt",
+			Fingerprint:   "SHA256:AB:CD:EF:01:23:45:67:89",
+			HashAlgorithm: "sha256", // default value
+		}
+
+		hashAlgo, urls, fingerprints, err := validateAndPrepareInputs(opts)
+		if err != nil {
+			t.Fatalf("validateAndPrepareInputs() error = %v, want nil", err)
+		}
+
+		if hashAlgo != "sha256" {
+			t.Errorf("validateAndPrepareInputs() hashAlgo = %s, want sha256", hashAlgo)
+		}
+		if len(urls) != 1 {
+			t.Fatalf("validateAndPrepareInputs() urls length = %d, want 1", len(urls))
+		}
+		if len(fingerprints) != 1 {
+			t.Fatalf("validateAndPrepareInputs() fingerprints length = %d, want 1", len(fingerprints))
+		}
+	})
+
+	t.Run("infers hash algorithm from SHA512 fingerprint", func(t *testing.T) {
+		opts := &AddOptions{
+			VendorID:      "STM",
+			URL:           "https://example.com/cert.crt",
+			Fingerprint:   "SHA512:AB:CD:EF:01:23:45:67:89",
+			HashAlgorithm: "sha256", // default value, should be overridden
+		}
+
+		hashAlgo, urls, fingerprints, err := validateAndPrepareInputs(opts)
+		if err != nil {
+			t.Fatalf("validateAndPrepareInputs() error = %v, want nil", err)
+		}
+
+		if hashAlgo != "sha512" {
+			t.Errorf("validateAndPrepareInputs() hashAlgo = %s, want sha512 (inferred from fingerprint)", hashAlgo)
+		}
+		if len(urls) != 1 {
+			t.Fatalf("validateAndPrepareInputs() urls length = %d, want 1", len(urls))
+		}
+		if len(fingerprints) != 1 {
+			t.Fatalf("validateAndPrepareInputs() fingerprints length = %d, want 1", len(fingerprints))
+		}
+	})
+
+	t.Run("infers hash algorithm from multiple fingerprints", func(t *testing.T) {
+		opts := &AddOptions{
+			VendorID:      "STM",
+			URL:           "https://example.com/cert1.crt,https://example.com/cert2.crt",
+			Fingerprint:   "SHA512:AB:CD:EF,SHA512:12:34:56",
+			HashAlgorithm: "sha256", // default value, should be overridden
+		}
+
+		hashAlgo, urls, fingerprints, err := validateAndPrepareInputs(opts)
+		if err != nil {
+			t.Fatalf("validateAndPrepareInputs() error = %v, want nil", err)
+		}
+
+		if hashAlgo != "sha512" {
+			t.Errorf("validateAndPrepareInputs() hashAlgo = %s, want sha512 (inferred from fingerprints)", hashAlgo)
+		}
+		if len(urls) != 2 {
+			t.Fatalf("validateAndPrepareInputs() urls length = %d, want 2", len(urls))
+		}
+		if len(fingerprints) != 2 {
+			t.Fatalf("validateAndPrepareInputs() fingerprints length = %d, want 2", len(fingerprints))
+		}
+	})
+
+	t.Run("rejects mixed hash algorithms in fingerprints", func(t *testing.T) {
+		opts := &AddOptions{
+			VendorID:      "STM",
+			URL:           "https://example.com/cert1.crt,https://example.com/cert2.crt",
+			Fingerprint:   "SHA256:AB:CD:EF,SHA512:12:34:56",
+			HashAlgorithm: "sha256",
+		}
+
+		_, _, _, err := validateAndPrepareInputs(opts)
+		if err == nil {
+			t.Fatal("validateAndPrepareInputs() error = nil, want error for mixed hash algorithms")
+		}
+
+		if !strings.Contains(err.Error(), "all fingerprints must use the same hash algorithm") {
+			t.Errorf("validateAndPrepareInputs() error = %v, want error containing 'all fingerprints must use the same hash algorithm'", err)
+		}
+	})
 }
 
 func TestParseFingerprint(t *testing.T) {
