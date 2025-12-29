@@ -416,7 +416,7 @@ func (c *LoadConfig) CheckAndSetDefaults() error {
 	return nil
 }
 
-func (c LoadConfig) GetHttpClient() utils.HttpClient {
+func (c LoadConfig) GetHTTPClient() utils.HTTPClient {
 	return nil
 }
 
@@ -432,16 +432,16 @@ func (c LoadConfig) GetCachePath() string {
 	return c.CachePath
 }
 
-// Load reads a persisted [TrustedBundle] from disk and verifies its integrity.
+// LoadTrustedBundle reads a persisted [TrustedBundle] from disk and verifies its integrity.
 //
 // Example:
 //
-//	tb, err := apiv1beta.Load(context.Background(), apiv1beta.LoadConfig{})
+//	tb, err := apiv1beta.LoadTrustedBundle(context.Background(), apiv1beta.LoadConfig{})
 //	if err != nil {
 //	    log.Fatal(err)
 //	}
 //	defer tb.Stop()
-func Load(ctx context.Context, cfg LoadConfig) (TrustedBundle, error) {
+func LoadTrustedBundle(ctx context.Context, cfg LoadConfig) (TrustedBundle, error) {
 	if err := cfg.CheckAndSetDefaults(); err != nil {
 		return nil, err
 	}
@@ -556,7 +556,7 @@ func Load(ctx context.Context, cfg LoadConfig) (TrustedBundle, error) {
 }
 
 type updaterConfig interface {
-	GetHttpClient() utils.HttpClient
+	GetHTTPClient() utils.HTTPClient
 	GetSkipVerify() bool
 	GetDisableLocalCache() bool
 	GetCachePath() string
@@ -592,7 +592,7 @@ func (tb *trustedBundle) checkAndUpdate(ctx context.Context, cfg updaterConfig) 
 	newBundle, err := GetTrustedBundle(ctx, GetConfig{
 		Date:       "", // Always fetch latest
 		SkipVerify: cfg.GetSkipVerify(),
-		HTTPClient: cfg.GetHttpClient(),
+		HTTPClient: cfg.GetHTTPClient(),
 		AutoUpdate: AutoUpdateConfig{
 			DisableAutoUpdate: true, // Don't start a watcher for this temporary bundle
 		},

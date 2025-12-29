@@ -25,7 +25,7 @@ type Generator struct {
 }
 
 // NewGenerator creates a new bundle generator.
-func NewGenerator(optionalClient ...utils.HttpClient) *Generator {
+func NewGenerator(optionalClient ...utils.HTTPClient) *Generator {
 	return &Generator{
 		downloader: download.NewClient(optionalClient...),
 	}

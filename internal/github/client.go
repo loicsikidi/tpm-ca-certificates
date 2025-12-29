@@ -27,7 +27,7 @@ const (
 // This client makes direct calls to the GitHub REST API without requiring
 // the gh CLI or authentication for public repositories.
 type HTTPClient struct {
-	client utils.HttpClient
+	client utils.HTTPClient
 	// used to avoid rate limiting on GitHub API in ci pipelines
 	token string
 }
@@ -36,8 +36,8 @@ type HTTPClient struct {
 //
 // The client uses the provided http.Client for making requests.
 // If nil is provided, http.DefaultClient is used.
-func NewHTTPClient(optionalClient ...utils.HttpClient) *HTTPClient {
-	client := utils.OptionalArgWithDefault[utils.HttpClient](optionalClient, http.DefaultClient)
+func NewHTTPClient(optionalClient ...utils.HTTPClient) *HTTPClient {
+	client := utils.OptionalArgWithDefault[utils.HTTPClient](optionalClient, http.DefaultClient)
 	return &HTTPClient{
 		client: client,
 		token:  os.Getenv("GITHUB_TOKEN"),

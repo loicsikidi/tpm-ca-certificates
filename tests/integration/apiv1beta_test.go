@@ -662,7 +662,7 @@ func TestLoad(t *testing.T) {
 		tmpDir := testutil.CreateCacheDir(t, configData)
 
 		// Load the bundle from cache (old version)
-		tb, err := apiv1beta.Load(t.Context(), apiv1beta.LoadConfig{
+		tb, err := apiv1beta.LoadTrustedBundle(t.Context(), apiv1beta.LoadConfig{
 			CachePath:  tmpDir,
 			SkipVerify: true,
 		})
@@ -725,11 +725,11 @@ func TestSave(t *testing.T) {
 		tmpDir := t.TempDir()
 
 		// Save the latest bundle
-		resp, err := apiv1beta.Save(t.Context(), apiv1beta.SaveConfig{
+		resp, err := apiv1beta.SaveTrustedBundle(t.Context(), apiv1beta.SaveConfig{
 			CachePath: tmpDir,
 		})
 		if err != nil {
-			t.Fatalf("Save() error = %v", err)
+			t.Fatalf("SaveTrustedBundle() error = %v", err)
 		}
 
 		// Verify SaveResponse contains all required assets
@@ -774,7 +774,7 @@ func TestSave(t *testing.T) {
 		tmpDir := t.TempDir()
 
 		// Save a specific date with vendor filter
-		resp, err := apiv1beta.Save(t.Context(), apiv1beta.SaveConfig{
+		resp, err := apiv1beta.SaveTrustedBundle(t.Context(), apiv1beta.SaveConfig{
 			Date:      testutil.BundleVersion,
 			VendorIDs: []apiv1beta.VendorID{apiv1beta.IFX, apiv1beta.NTC},
 			CachePath: tmpDir,
@@ -802,7 +802,7 @@ func TestSave(t *testing.T) {
 		tmpDir := t.TempDir()
 
 		// Save and persist
-		resp, err := apiv1beta.Save(t.Context(), apiv1beta.SaveConfig{
+		resp, err := apiv1beta.SaveTrustedBundle(t.Context(), apiv1beta.SaveConfig{
 			Date:      testutil.BundleVersion,
 			CachePath: tmpDir,
 		})
@@ -854,7 +854,7 @@ func TestSave(t *testing.T) {
 		tmpDir := t.TempDir()
 
 		// Save bundle
-		resp, err := apiv1beta.Save(t.Context(), apiv1beta.SaveConfig{
+		resp, err := apiv1beta.SaveTrustedBundle(t.Context(), apiv1beta.SaveConfig{
 			Date:      testutil.BundleVersion,
 			CachePath: tmpDir,
 		})
@@ -869,12 +869,12 @@ func TestSave(t *testing.T) {
 		}
 
 		// Load the saved bundle from cache
-		tb, err := apiv1beta.Load(t.Context(), apiv1beta.LoadConfig{
+		tb, err := apiv1beta.LoadTrustedBundle(t.Context(), apiv1beta.LoadConfig{
 			CachePath:  cacheDir,
 			SkipVerify: false, // Verify using cached assets
 		})
 		if err != nil {
-			t.Fatalf("Load() error = %v", err)
+			t.Fatalf("LoadTrustedBundle() error = %v", err)
 		}
 		defer tb.Stop()
 

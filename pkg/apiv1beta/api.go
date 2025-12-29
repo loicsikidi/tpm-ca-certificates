@@ -44,15 +44,15 @@ var (
 	ErrCannotPersistTrustedBundle = errors.New("local cache is disabled; cannot persist bundle")
 )
 
-// HttpClient returns the current HTTP client used for requests.
-func HttpClient() *http.Client {
+// HTTPClient returns the current HTTP client used for requests.
+func HTTPClient() *http.Client {
 	mu.RLock()
 	defer mu.RUnlock()
 	return httpClient
 }
 
-// SetHttpClient sets a custom HTTP client for requests.
-func SetHttpClient(client *http.Client) {
+// SetHTTPClient sets a custom HTTP client for requests.
+func SetHTTPClient(client *http.Client) {
 	mu.Lock()
 	defer mu.Unlock()
 	httpClient = client
@@ -97,7 +97,7 @@ type GetConfig struct {
 	// HTTPClient is the HTTP client to use for requests.
 	//
 	// Optional. If nil, [http.DefaultClient] will be used.
-	HTTPClient utils.HttpClient
+	HTTPClient utils.HTTPClient
 
 	// sourceRepo is the GitHub repository to fetch bundles from.
 	//
@@ -117,7 +117,7 @@ func (c *GetConfig) CheckAndSetDefaults() error {
 		return fmt.Errorf("invalid source repository: %w", err)
 	}
 	if c.HTTPClient == nil {
-		c.HTTPClient = HttpClient()
+		c.HTTPClient = HTTPClient()
 	}
 	if err := c.AutoUpdate.CheckAndSetDefaults(); err != nil {
 		return fmt.Errorf("invalid auto-update config: %w", err)
@@ -133,7 +133,7 @@ func (c *GetConfig) CheckAndSetDefaults() error {
 	return nil
 }
 
-func (c GetConfig) GetHttpClient() utils.HttpClient {
+func (c GetConfig) GetHTTPClient() utils.HTTPClient {
 	return c.HTTPClient
 }
 
@@ -312,7 +312,7 @@ type VerifyConfig struct {
 	// HTTPClient is the HTTP client to use for requests.
 	//
 	// Optional. If nil, http.DefaultClient will be used.
-	HTTPClient utils.HttpClient
+	HTTPClient utils.HTTPClient
 
 	// DisableLocalCache mode allows to work on a read-only
 	// files system if this is set, cache path is ignored.
@@ -380,7 +380,7 @@ func (c *VerifyConfig) CheckAndSetDefaults() error {
 		return fmt.Errorf("invalid source repository: %w", err)
 	}
 	if c.HTTPClient == nil {
-		c.HTTPClient = HttpClient()
+		c.HTTPClient = HTTPClient()
 	}
 
 	return nil
@@ -483,13 +483,13 @@ type SaveConfig struct {
 	// HTTPClient is the HTTP client to use for requests.
 	//
 	// Optional. If nil, [http.DefaultClient] will be used.
-	HTTPClient utils.HttpClient
+	HTTPClient utils.HTTPClient
 }
 
 // CheckAndSetDefaults validates and sets default values.
 func (c *SaveConfig) CheckAndSetDefaults() error {
 	if c.HTTPClient == nil {
-		c.HTTPClient = HttpClient()
+		c.HTTPClient = HTTPClient()
 	}
 	if c.CachePath == "" {
 		c.CachePath = cache.CacheDir()
@@ -556,7 +556,7 @@ func (sr *SaveResponse) Persist(outputDir string) error {
 	)
 }
 
-// Save retrieves a TPM trust bundle and all verification assets required for offline verification.
+// SaveTrustedBundle retrieves a TPM trust bundle and all verification assets required for offline verification.
 //
 // This function downloads the bundle, verifies it, fetches the TUF trust chains from Rekor,
 // and returns a [SaveResponse] containing all necessary files for offline verification.
@@ -567,7 +567,7 @@ func (sr *SaveResponse) Persist(outputDir string) error {
 // Example:
 //
 //	// Save the latest bundle with all verification assets
-//	resp, err := apiv1beta.Save(context.Background(), apiv1beta.SaveConfig{})
+//	resp, err := apiv1beta.SaveTrustedBundle(context.Background(), apiv1beta.SaveConfig{})
 //	if err != nil {
 //	    log.Fatal(err)
 //	}
@@ -578,11 +578,11 @@ func (sr *SaveResponse) Persist(outputDir string) error {
 //	}
 //
 //	// Save a specific date's bundle filtered by vendor
-//	resp, err = apiv1beta.Save(context.Background(), apiv1beta.SaveConfig{
+//	resp, err = apiv1beta.SaveTrustedBundle(context.Background(), apiv1beta.SaveConfig{
 //	    Date:      "2025-12-05",
 //	    VendorIDs: []apiv1beta.VendorID{apiv1beta.IFX, apiv1beta.NTC},
 //	})
-func Save(ctx context.Context, cfg SaveConfig) (*SaveResponse, error) {
+func SaveTrustedBundle(ctx context.Context, cfg SaveConfig) (*SaveResponse, error) {
 	if err := cfg.CheckAndSetDefaults(); err != nil {
 		return nil, fmt.Errorf("invalid config: %w", err)
 	}

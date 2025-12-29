@@ -131,7 +131,7 @@ func main() {
 	ctx := context.Background()
 
 	// Get and verify the latest bundle
-	resp, err := apiv1beta.Save(ctx, apiv1beta.SaveConfig{})
+	resp, err := apiv1beta.SaveTrustedBundle(ctx, apiv1beta.SaveConfig{})
 	if err != nil {
 		log.Fatalf("Failed to get bundle: %v", err)
 	}
@@ -176,7 +176,7 @@ func main() {
 	ctx := context.Background()
 
 	// Load bundle in offline mode
-	tb, err := apiv1beta.Load(ctx, apiv1beta.LoadConfig{
+	tb, err := apiv1beta.LoadTrustedBundle(ctx, apiv1beta.LoadConfig{
 		OfflineMode: true,
 		CachePath:   "/path/to/cache",
 	})
@@ -216,7 +216,7 @@ tpmtb bundle verify --cache-dir /path/to/cache --offline
 
 ```go
 // SDK: Save specific date
-tb, err := apiv1beta.Save(ctx, apiv1beta.SaveConfig{
+tb, err := apiv1beta.SaveTrustedBundle(ctx, apiv1beta.SaveConfig{
 	Date: "2025-12-27",
 })
 if err != nil {
@@ -235,7 +235,7 @@ Filter by vendor when saving for offline use:
 
 ```go
 // Save only specific vendors
-tb, err := apiv1beta.Save(ctx, apiv1beta.SaveConfig{
+tb, err := apiv1beta.SaveTrustedBundle(ctx, apiv1beta.SaveConfig{
 	VendorIDs: []apiv1beta.VendorID{
 		apiv1beta.IFX, // Infineon
 		apiv1beta.NTC, // Nuvoton
@@ -252,7 +252,7 @@ if err := tb.Persist("/path/to/cache"); err != nil {
 }
 
 // On offline system, load with vendor filter preserved
-tb, err = apiv1beta.Load(ctx, apiv1beta.LoadConfig{
+tb, err = apiv1beta.LoadTrustedBundle(ctx, apiv1beta.LoadConfig{
 	OfflineMode: true,
 	CachePath:   "/path/to/cache",
 })

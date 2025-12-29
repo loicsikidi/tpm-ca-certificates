@@ -13,7 +13,7 @@ import (
 
 // Client handles HTTPS certificate downloads.
 type Client struct {
-	HTTPClient utils.HttpClient
+	HTTPClient utils.HTTPClient
 }
 
 var defaultClient = &http.Client{
@@ -21,8 +21,8 @@ var defaultClient = &http.Client{
 }
 
 // NewClient creates a new download client with sensible defaults.
-func NewClient(optionalClient ...utils.HttpClient) *Client {
-	client := utils.OptionalArgWithDefault[utils.HttpClient](optionalClient, defaultClient)
+func NewClient(optionalClient ...utils.HTTPClient) *Client {
+	client := utils.OptionalArgWithDefault[utils.HTTPClient](optionalClient, defaultClient)
 	return &Client{
 		HTTPClient: client,
 	}

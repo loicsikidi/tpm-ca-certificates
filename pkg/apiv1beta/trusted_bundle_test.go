@@ -232,7 +232,7 @@ func TestLoadOfflineMode(t *testing.T) {
 		cacheDir := testutil.CreateCacheDir(t, nil)
 
 		// Load in offline mode
-		tb, err := Load(t.Context(), LoadConfig{
+		tb, err := LoadTrustedBundle(t.Context(), LoadConfig{
 			CachePath:   cacheDir,
 			OfflineMode: true,
 		})
@@ -292,7 +292,7 @@ func TestLoadOfflineMode(t *testing.T) {
 		}
 
 		// Try to load in offline mode - should fail
-		_, err = Load(t.Context(), LoadConfig{
+		_, err = LoadTrustedBundle(t.Context(), LoadConfig{
 			CachePath:   tmpDir,
 			OfflineMode: true,
 		})
@@ -304,7 +304,7 @@ func TestLoadOfflineMode(t *testing.T) {
 	t.Run("fails when offline mode requires local cache", func(t *testing.T) {
 		cacheDir := testutil.CreateCacheDir(t, nil)
 
-		_, err := Load(t.Context(), LoadConfig{
+		_, err := LoadTrustedBundle(t.Context(), LoadConfig{
 			CachePath:         cacheDir,
 			OfflineMode:       true,
 			DisableLocalCache: true,
@@ -324,7 +324,7 @@ func TestLoadOfflineMode(t *testing.T) {
 		}`)
 		cacheDir := testutil.CreateCacheDir(t, configData)
 
-		tb, err := Load(t.Context(), LoadConfig{
+		tb, err := LoadTrustedBundle(t.Context(), LoadConfig{
 			CachePath:   cacheDir,
 			OfflineMode: true,
 		})

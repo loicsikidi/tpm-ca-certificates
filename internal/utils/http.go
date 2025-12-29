@@ -31,11 +31,11 @@ var DefaultBackoffConfig = &backoff.ExponentialBackOff{
 	RandomizationFactor: 0.5, // Default randomization factor (±50%)
 }
 
-type HttpClient interface {
+type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
-func HttpGET(ctx context.Context, client HttpClient, url string, optionalMaxLength ...int64) ([]byte, error) {
+func HttpGET(ctx context.Context, client HTTPClient, url string, optionalMaxLength ...int64) ([]byte, error) {
 	maxLength := OptionalArgWithDefault(optionalMaxLength, DefaultMaxFileSize)
 	c := client
 	if c == nil {

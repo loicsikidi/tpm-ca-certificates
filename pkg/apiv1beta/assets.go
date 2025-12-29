@@ -21,7 +21,7 @@ var (
 // assetsConfig configures which assets to download.
 type assetsConfig struct {
 	bundle                    []byte
-	httpClient                utils.HttpClient
+	httpClient                utils.HTTPClient
 	sourceRepo                *github.Repo
 	cachePath                 string
 	disableLocalCache         bool
@@ -36,7 +36,7 @@ func (c *assetsConfig) CheckAndSetDefaults() error {
 		return fmt.Errorf("tag cannot be empty")
 	}
 	if c.httpClient == nil {
-		c.httpClient = HttpClient()
+		c.httpClient = HTTPClient()
 	}
 	if c.cachePath == "" {
 		c.cachePath = cache.CacheDir()
