@@ -29,15 +29,16 @@ go get github.com/loicsikidi/tpm-ca-certificates@latest
 
 ## Quick Start ⚡
 
-### Basic Usage
+### Basic Usage: Verifying TPM Endorsement Keys
 
-The simplest way to get started is to fetch the latest verified bundle:
+The most common use case is verifying TPM Endorsement Key (EK) certificates:
 
 ```go
 package main
 
 import (
 	"context"
+	"crypto/x509"
 	"log"
 
 	"github.com/loicsikidi/tpm-ca-certificates/pkg/apiv1beta"
@@ -53,16 +54,36 @@ func main() {
 	}
 	defer tb.Stop()
 
-	// Get certificate pool with all TPM root certificates
-	certPool := tb.GetRoots()
+	// Load your TPM EK certificate (from TPM or external source)
+	ekCert := loadEKCertificate() // Your implementation
 
-	// Use certPool in your TPM verification logic
-	_ = certPool
+	// Verify the EK certificate against the trusted bundle
+	if err := tb.VerifyCertificate(ekCert); err != nil {
+		log.Fatalf("EK certificate verification failed: %v", err)
+	}
+
+	log.Println("EK certificate verified successfully!")
 }
 ```
 
 > [!NOTE]
-> By default, the bundle is automatically verified using Cosign signatures and GitHub Attestations. See the [verification specification](../../specifications/05-bundle-verification.md) for details.
+> `VerifyCertificate` automatically handles TPM-specific certificate quirks, including non-standard OIDs and key usages.
+
+### Alternative: Using Certificate Pools
+
+If you prefer working with `x509.CertPool` directly:
+
+```go
+// Use certPool in your TPM verification logic
+opts := x509.VerifyOptions{
+	Roots: tb.GetRoots(),
+	Intermediates: tb.GetIntermediates(),
+	// ... other options
+}
+```
+
+> [!TIP]
+> The bundle is automatically verified using Cosign signatures and GitHub Attestations. See the [verification specification](../../specifications/05-bundle-verification.md) for details.
 
 ## Default Behavior 🎯
 
@@ -77,7 +98,7 @@ The SDK is designed with **security and resilience** in mind. By default:
 
 **Why these defaults?**
 
-1. **Security first:** Automatic updates ensure you get the latest root certificates
+1. **Security first:** Automatic updates ensure you get the latest CA certificates
 2. **Restart resilience:** Cached bundles survive application restarts without re-downloading
 
 ### Disabling Auto-Update
@@ -86,7 +107,7 @@ For environments where you want manual control over bundle updates:
 
 ```go
 tb, err := apiv1beta.GetTrustedBundle(ctx, apiv1beta.GetConfig{
-    Date: "XXXX-XX-XX", // Fixed date
+    Date: "YYYY-MM-DD", // Fixed date
 	AutoUpdate: apiv1beta.AutoUpdateConfig{
 		DisableAutoUpdate: true,
 	},
@@ -94,7 +115,6 @@ tb, err := apiv1beta.GetTrustedBundle(ctx, apiv1beta.GetConfig{
 if err != nil {
 	log.Fatal(err)
 }
-defer tb.Stop()
 ```
 
 ### In-Memory Mode (Read-Only Filesystems)
@@ -123,8 +143,73 @@ metadata := tb.GetRootMetadata()
 log.Printf("Bundle date: %s", metadata.Date)
 log.Printf("Bundle commit: %s", metadata.Commit)
 
-// Get raw PEM-encoded bundle
-rawBundle := tb.GetRawRoot()
+metadata = tb.GetIntermediateMetadata()
+log.Printf("Intermediate bundle date: %s", metadata.Date)
+log.Printf("Intermediate bundle commit: %s", metadata.Commit)
+```
+
+## Working with TPM Certificates 🔐
+
+### Verifying EK Certificates
+
+The `VerifyCertificate` method is the recommended way to verify TPM Endorsement Key certificates:
+
+```go
+// Verify an EK certificate
+if err := tb.VerifyCertificate(ekCert); err != nil {
+	log.Fatalf("Verification failed: %v", err)
+}
+```
+
+**Why use `VerifyCertificate`?**
+
+- ✅ Automatically handles TPM-specific OIDs that `x509` doesn't recognize
+- ✅ Clears `UnhandledCriticalExtensions` to work around TPM quirks
+- ✅ Uses appropriate key usages (`ExtKeyUsageAny`) for TPM certificates
+- ✅ Thread-safe and ready for concurrent use
+
+### Advanced Verification with GetVerifyOptions
+
+For custom verification scenarios, use `GetVerifyOptions`:
+
+```go
+// Get pre-configured verify options for TPM certificates
+opts := tb.GetVerifyOptions()
+
+// Customize if needed
+opts.CurrentTime = customTime
+opts.DNSName = "example.com" // Usually not needed for EK certs
+
+// Copy and modify the certificate to handle TPM-specific extensions
+ekCopy := *ekCert
+ekCopy.UnhandledCriticalExtensions = nil
+
+// Verify manually
+chains, err := ekCopy.Verify(opts)
+if err != nil {
+	log.Fatalf("Verification failed: %v", err)
+}
+
+log.Printf("Certificate verified with %d chain(s)", len(chains))
+```
+
+**What `GetVerifyOptions` provides:**
+
+- **Roots**: All root certificates from the bundle (filtered by vendor if configured)
+- **Intermediates**: All intermediate certificates (if available in the bundle)
+- **KeyUsages**: Set to `x509.ExtKeyUsageAny` for TPM compatibility
+
+### Checking Certificate Presence
+
+Check if a certificate is already in the bundle:
+
+```go
+// Check if a certificate is in the root or intermediate catalog
+if tb.Contains(cert) {
+	log.Println("Certificate is a trusted root or intermediate")
+} else {
+	log.Println("Certificate is not in the bundle")
+}
 ```
 
 ## Advanced Usage 🔧
@@ -390,7 +475,7 @@ result, err := apiv1beta.VerifyTrustedBundle(ctx, apiv1beta.VerifyConfig{
 
 ## Complete Example 🎯
 
-Here's a complete example showing best practices:
+Here's a complete example showing best practices for TPM EK verification:
 
 ```go
 package main
@@ -398,7 +483,10 @@ package main
 import (
 	"context"
 	"crypto/x509"
+	"encoding/pem"
+	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/loicsikidi/tpm-ca-certificates/pkg/apiv1beta"
@@ -411,8 +499,8 @@ func main() {
 	config := apiv1beta.GetConfig{
 		// Filter by vendors if known
 		VendorIDs: []apiv1beta.VendorID{
-			apiv1beta.IFX,
-			apiv1beta.NTC,
+			apiv1beta.IFX,  // Infineon
+			apiv1beta.NTC,  // Nuvoton
 		},
 		// Enable auto-update every 12 hours
 		AutoUpdate: apiv1beta.AutoUpdateConfig{
@@ -434,16 +522,19 @@ func main() {
 	vendors := tb.GetVendors()
 	log.Printf("Bundle contains certificates from %d vendor(s)", len(vendors))
 
-	// Get certificate pool
-	certPool := tb.GetRoots()
+	// Load and verify TPM EK certificate
+	ekCert, err := loadEKCertificate("ek-certificate.pem")
+	if err != nil {
+		log.Fatalf("Failed to load EK certificate: %v", err)
+	}
 
-	// Use in your application
-	verifyTPMEndorsementKey(certPool)
-}
+	if err := tb.VerifyCertificate(ekCert); err != nil {
+		log.Fatalf("EK verification failed: %v", err)
+	}
 
-func verifyTPMEndorsementKey(roots *x509.CertPool) {
-	// Your TPM verification logic here
-	_ = roots
+	log.Printf("✅ EK certificate verified successfully!")
+	log.Printf("   Subject: %s", ekCert.Subject)
+	log.Printf("   Issuer: %s", ekCert.Issuer)
 }
 ```
 

@@ -355,3 +355,275 @@ func TestLoadConfigValidation(t *testing.T) {
 		}
 	})
 }
+
+func TestGetVerifyOptions(t *testing.T) {
+	t.Run("returns verify options with roots and intermediates", func(t *testing.T) {
+		bundleData, err := testutil.ReadTestFile(testutil.RootBundleFile)
+		if err != nil {
+			t.Fatalf("Failed to read test bundle: %v", err)
+		}
+
+		tb, err := newTrustedBundle(bundleData)
+		if err != nil {
+			t.Fatalf("Failed to create trusted bundle: %v", err)
+		}
+
+		opts := tb.GetVerifyOptions()
+
+		if opts.Roots == nil {
+			t.Fatal("Expected Roots to be non-nil")
+		}
+
+		if opts.Intermediates == nil {
+			t.Fatal("Expected Intermediates to be non-nil")
+		}
+
+		if len(opts.KeyUsages) != 1 || opts.KeyUsages[0] != x509.ExtKeyUsageAny {
+			t.Fatalf("Expected KeyUsages to contain ExtKeyUsageAny, got %v", opts.KeyUsages)
+		}
+	})
+
+	t.Run("handles missing intermediate bundle", func(t *testing.T) {
+		bundleData, err := testutil.ReadTestFile(testutil.RootBundleFile)
+		if err != nil {
+			t.Fatalf("Failed to read test bundle: %v", err)
+		}
+
+		tb, err := newTrustedBundle(bundleData)
+		if err != nil {
+			t.Fatalf("Failed to create trusted bundle: %v", err)
+		}
+
+		// Clear intermediate catalog to simulate missing intermediates
+		tbImpl := tb.(*trustedBundle)
+		tbImpl.intermediateCatalog = nil
+
+		opts := tb.GetVerifyOptions()
+
+		if opts.Roots == nil {
+			t.Fatal("Expected Roots to be non-nil")
+		}
+
+		// Intermediates should be an empty pool (not nil)
+		if opts.Intermediates == nil {
+			t.Fatal("Expected Intermediates to be non-nil (empty pool)")
+		}
+	})
+}
+
+func TestVerifyCertificate(t *testing.T) {
+	t.Run("verifies valid Nuvoton EK certificate", func(t *testing.T) {
+		// Skip test if TPM_EK_CERT_PATH is not set
+		certPath := os.Getenv("TPM_EK_CERT_PATH")
+		if certPath == "" {
+			t.Skip("Skipping test: TPM_EK_CERT_PATH environment variable not set")
+		}
+
+		// Load bundle with Nuvoton vendor
+		cfg := GetConfig{
+			CachePath:  t.TempDir(),
+			SkipVerify: true,
+			VendorIDs:  []VendorID{NTC},
+			AutoUpdate: AutoUpdateConfig{
+				DisableAutoUpdate: true,
+			},
+		}
+
+		tb, err := GetTrustedBundle(t.Context(), cfg)
+		if err != nil {
+			t.Fatalf("Failed to get trusted bundle: %v", err)
+		}
+		defer tb.Stop()
+
+		// Load test certificate from external file
+		certPEM, err := utils.ReadFile(certPath)
+		if err != nil {
+			t.Fatalf("Failed to read EK certificate from %s: %v", certPath, err)
+		}
+
+		cert, err := testutil.ParseCertificate(certPEM)
+		if err != nil {
+			t.Fatalf("Failed to parse test certificate: %v", err)
+		}
+
+		// Verify the certificate
+		if err := tb.VerifyCertificate(cert); err != nil {
+			t.Fatalf("Failed to verify certificate: %v", err)
+		}
+	})
+
+	t.Run("verifies valid Nuvoton EK certificate without intermediates", func(t *testing.T) {
+		// Skip test if TPM_EK_CERT_PATH is not set
+		certPath := os.Getenv("TPM_EK_CERT_PATH")
+		if certPath == "" {
+			t.Skip("Skipping test: TPM_EK_CERT_PATH environment variable not set")
+		}
+
+		// Load bundle with Nuvoton vendor
+		cfg := GetConfig{
+			Date:       testutil.BundleVersion,
+			CachePath:  t.TempDir(),
+			SkipVerify: true,
+			VendorIDs:  []VendorID{NTC},
+			AutoUpdate: AutoUpdateConfig{
+				DisableAutoUpdate: true,
+			},
+		}
+
+		tb, err := GetTrustedBundle(t.Context(), cfg)
+		if err != nil {
+			t.Fatalf("Failed to get trusted bundle: %v", err)
+		}
+		defer tb.Stop()
+
+		// Load test certificate from external file
+		certPEM, err := utils.ReadFile(certPath)
+		if err != nil {
+			t.Fatalf("Failed to read EK certificate from %s: %v", certPath, err)
+		}
+
+		cert, err := testutil.ParseCertificate(certPEM)
+		if err != nil {
+			t.Fatalf("Failed to parse test certificate: %v", err)
+		}
+
+		// Verify the certificate
+		if err := tb.VerifyCertificate(cert); err != nil {
+			t.Fatalf("Failed to verify certificate: %v", err)
+		}
+	})
+
+	t.Run("fails to verify certificate from untrusted vendor", func(t *testing.T) {
+		// Skip test if TPM_EK_CERT_PATH is not set
+		certPath := os.Getenv("TPM_EK_CERT_PATH")
+		if certPath == "" {
+			t.Skip("Skipping test: TPM_EK_CERT_PATH environment variable not set")
+		}
+
+		// Load bundle without Nuvoton vendor
+		cfg := GetConfig{
+			SkipVerify: true,
+			VendorIDs:  []VendorID{IFX}, // Only Infineon
+			AutoUpdate: AutoUpdateConfig{
+				DisableAutoUpdate: true,
+			},
+			CachePath: t.TempDir(),
+		}
+
+		tb, err := GetTrustedBundle(t.Context(), cfg)
+		if err != nil {
+			t.Fatalf("Failed to get trusted bundle: %v", err)
+		}
+		defer tb.Stop()
+
+		// Load Nuvoton test certificate from external file
+		certPEM, err := utils.ReadFile(certPath)
+		if err != nil {
+			t.Fatalf("Failed to read EK certificate from %s: %v", certPath, err)
+		}
+
+		cert, err := testutil.ParseCertificate(certPEM)
+		if err != nil {
+			t.Fatalf("Failed to parse test certificate: %v", err)
+		}
+
+		// Verification should fail
+		if err := tb.VerifyCertificate(cert); err == nil {
+			t.Fatal("Expected verification to fail for certificate from untrusted vendor")
+		}
+	})
+}
+
+func TestContains(t *testing.T) {
+	t.Run("returns true for certificate in root catalog", func(t *testing.T) {
+		bundleData, err := testutil.ReadTestFile(testutil.RootBundleFile)
+		if err != nil {
+			t.Fatalf("Failed to read test bundle: %v", err)
+		}
+
+		tb, err := newTrustedBundle(bundleData)
+		if err != nil {
+			t.Fatalf("Failed to create trusted bundle: %v", err)
+		}
+
+		tbImpl := tb.(*trustedBundle)
+
+		// Get a certificate from the root catalog
+		var testCert *x509.Certificate
+		for _, certs := range tbImpl.rootCatalog {
+			if len(certs) > 0 {
+				testCert = certs[0]
+				break
+			}
+		}
+
+		if testCert == nil {
+			t.Fatal("No certificates found in root catalog")
+		}
+
+		if !tb.Contains(testCert) {
+			t.Fatal("Expected Contains to return true for certificate in root catalog")
+		}
+	})
+
+	t.Run("returns false for certificate not in bundle", func(t *testing.T) {
+		// Skip test if TPM_EK_CERT_PATH is not set
+		certPath := os.Getenv("TPM_EK_CERT_PATH")
+		if certPath == "" {
+			t.Skip("Skipping test: TPM_EK_CERT_PATH environment variable not set")
+		}
+
+		bundleData, err := testutil.ReadTestFile(testutil.RootBundleFile)
+		if err != nil {
+			t.Fatalf("Failed to read test bundle: %v", err)
+		}
+
+		tb, err := newTrustedBundle(bundleData)
+		if err != nil {
+			t.Fatalf("Failed to create trusted bundle: %v", err)
+		}
+
+		// Load a certificate that's not in the bundle
+		certPEM, err := utils.ReadFile(certPath)
+		if err != nil {
+			t.Fatalf("Failed to read EK certificate from %s: %v", certPath, err)
+		}
+
+		cert, err := testutil.ParseCertificate(certPEM)
+		if err != nil {
+			t.Fatalf("Failed to parse test certificate: %v", err)
+		}
+
+		// This EK certificate should not be in the bundle (it's a leaf cert, not a root)
+		if tb.Contains(cert) {
+			t.Fatal("Expected Contains to return false for certificate not in bundle")
+		}
+	})
+
+	t.Run("returns false for empty bundle", func(t *testing.T) {
+		// Skip test if TPM_EK_CERT_PATH is not set
+		certPath := os.Getenv("TPM_EK_CERT_PATH")
+		if certPath == "" {
+			t.Skip("Skipping test: TPM_EK_CERT_PATH environment variable not set")
+		}
+
+		tb := &trustedBundle{
+			rootCatalog:         make(map[VendorID][]*x509.Certificate),
+			intermediateCatalog: make(map[VendorID][]*x509.Certificate),
+		}
+
+		certPEM, err := utils.ReadFile(certPath)
+		if err != nil {
+			t.Fatalf("Failed to read EK certificate from %s: %v", certPath, err)
+		}
+
+		cert, err := testutil.ParseCertificate(certPEM)
+		if err != nil {
+			t.Fatalf("Failed to parse test certificate: %v", err)
+		}
+
+		if tb.Contains(cert) {
+			t.Fatal("Expected Contains to return false for empty bundle")
+		}
+	})
+}

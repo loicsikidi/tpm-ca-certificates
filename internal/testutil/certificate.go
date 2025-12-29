@@ -8,6 +8,8 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/hex"
+	"encoding/pem"
+	"fmt"
 	"math/big"
 	"testing"
 	"time"
@@ -71,4 +73,19 @@ func generateTestCertWithExpiry(t *testing.T, notAfter time.Time) ([]byte, strin
 	fingerprint := hex.EncodeToString(h[:])
 
 	return certDER, fingerprint
+}
+
+// ParseCertificate parses a PEM-encoded certificate and returns an [x509.Certificate].
+func ParseCertificate(certPEM []byte) (*x509.Certificate, error) {
+	block, _ := pem.Decode(certPEM)
+	if block == nil {
+		return nil, fmt.Errorf("failed to decode PEM block")
+	}
+
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse certificate: %w", err)
+	}
+
+	return cert, nil
 }

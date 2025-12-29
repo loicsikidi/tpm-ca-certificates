@@ -114,9 +114,9 @@ Go to [documentation index](docs/README.md) to explore concepts, guides, and spe
   - ***We are actively looking to expand the number of root certificates included in the bundle. Contributions are welcome!*** Please refer to the [Contributing Guide](docs/guides/getting-started/06-contributing.md) for details on how you could help.
 - [ ] Gather feedback from early adopters to improve usability and address real-world needs
    - Please open [discussions](https://github.com/loicsikidi/tpm-ca-certificates/discussions) or [issues](https://github.com/loicsikidi/tpm-ca-certificates/issues) on GitHub to share your thoughts!
-- [ ] Support offline verification mode for air-gapped or restricted environments
-  - [ ] Step 1: verify bundle integrity + provenance offline (only with root certificates)
-  - [ ] Step 2: provide Intermediates certificates for full chain validation offline
+- [x] Support offline verification mode for air-gapped or restricted environments
+  - [x] Step 1: verify bundle integrity + provenance offline (only with root certificates)
+  - [x] Step 2: provide Intermediates certificates for full chain validation offline
     - note: this will require way more effort to gather and maintain the intermediates certificates and is a lower priority for now
 - [ ] Add `tpmtb` in nixpkgs for easy installation via Nix
 - [x] Enhance CI/CD pipeline
