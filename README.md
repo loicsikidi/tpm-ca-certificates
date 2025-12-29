@@ -1,5 +1,9 @@
 # TPM CA Certificates
 
+![go version](https://img.shields.io/github/go-mod/go-version/loicsikidi/tpm-ca-certificates)
+[![godoc](https://pkg.go.dev/badge/github.com/loicsikidi/tpm-ca-certificates/v1.svg)](https://pkg.go.dev/github.com/loicsikidi/tpm-ca-certificates/pkg/apiv1beta)
+[![license](https://img.shields.io/badge/license-BSD--3--Clause-blue?style=flat-square)](https://raw.githubusercontent.com/loicsikidi/tpm-ca-certificates/main/LICENSE)
+
 ## Motivation
 
 This project is the TPM equivalent of [ca-certificates](https://salsa.debian.org/debian/ca-certificates), centralizing and standardizing the management of root certificates used by Trusted Platform Modules (TPMs) to facilitate their integration across systems and applications.

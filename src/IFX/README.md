@@ -14,7 +14,7 @@ This turned out to be a real treasure hunt!
 ## Certificate Inventory
 
 | Certificate Name | Type | Source | Does the source reference a fingerprint? |
-|-----------------|------|--------|------------------------------------------|
+|------------------|------|--------|:----------------------------------------:|
 | Infineon OPTIGA(TM) ECC Root CA | Root | Official documentation | No |
 | Infineon OPTIGA(TM) RSA Root CA | Root | PKI endpoint discovery | No |
 | Infineon OPTIGA(TM) ECC Root CA 2 | Root | GitHub repository + PKI endpoint | No |
@@ -76,10 +76,6 @@ Since the domain **pki.infineon.com** is owned by Infineon Technologies AG, we c
 
 Since the domain `pki.infineon.com` is owned by Infineon Technologies AG, we can reasonably assume these certificates are legitimate.
 
-**URLs**:
-- ECC Root CA 3: https://pki.infineon.com/OptigaEccRootCA3/OptigaEccRootCA3.crt
-- RSA Root CA 3: https://pki.infineon.com/OptigaRsaRootCA3/OptigaRsaRootCA3.crt
-
 ### Intermediate Certificates
 
 [Endorsement key certificate – validity expiration and verification](https://community.infineon.com/t5/Knowledge-Base-Articles/Endorsement-key-certificate-validity-expiration-and-verification/ta-p/796521) article references the URLs from the PKI in order to download the intermediate certificates.
@@ -92,8 +88,3 @@ Since the domain `pki.infineon.com` is owned by Infineon Technologies AG, we can
 > `xxx` is the MFG CA number
 
 - **Screenshot Reference**: ![](infineon_article_ek_intermediate.png)
-
----
-
-https://community.infineon.com/t5/Knowledge-Base-Articles/Endorsement-key-certificate-validity-expiration-and-verification/ta-p/796521
-https://community.infineon.com/t5/OPTIGA-TPM/intermediate-CA-of-SLB9670XQ20FW786XTMA1/td-p/1121360
