@@ -54,7 +54,8 @@ Multiple URLs can be provided by separating them with commas. When multiple URLs
   - Individual failures don't prevent other certificates from being added
 
 If no fingerprint is provided, it will be calculated automatically using the specified
-hash algorithm (default: SHA256). Use -a to specify a different algorithm (sha1, sha256, sha384, sha512).`,
+hash algorithm (default: SHA256). Use -a to specify a different algorithm (sha1, sha256, sha384, sha512).
+When a fingerprint is provided, the hash algorithm is automatically inferred from it.`,
 		Example: `  # Add a single certificate with automatic SHA256 fingerprint
   tpmtb config certificates add -i STM -u "https://example.com/cert.crt" -n "My Certificate"
 
@@ -63,6 +64,9 @@ hash algorithm (default: SHA256). Use -a to specify a different algorithm (sha1,
 
   # Add a certificate with a specific SHA256 fingerprint
   tpmtb config certificates add -i STM -u "https://example.com/cert.crt" -n "My Certificate" -f "SHA256:AB:CD:EF:..."
+
+  # Add a certificate with a specific SHA512 fingerprint
+  tpmtb config certificates add -i STM -u "https://example.com/cert.crt" -n "My Certificate" -f "SHA512:AB:CD:EF:..."
 
   # Add multiple certificates (names deduced from CN) with SHA384
   tpmtb config certificates add -i STM -u "https://example.com/cert1.crt,https://example.com/cert2.crt" -a sha384
@@ -133,6 +137,84 @@ func Run(ctx context.Context, opts *AddOptions) error {
 	return displayResults(successfulCerts, failures, len(urls), opts.VendorID)
 }
 
+// parseAndValidateFingerprints parses fingerprints and infers the hash algorithm.
+// Returns the list of parsed fingerprints and the inferred algorithm (empty if no fingerprints provided).
+func parseAndValidateFingerprints(fingerprintInput string) (fingerprints []string, inferredAlgo string, err error) {
+	if fingerprintInput == "" {
+		return nil, "", nil
+	}
+
+	fpRaw := strings.SplitSeq(fingerprintInput, ",")
+	for fp := range fpRaw {
+		trimmed := strings.TrimSpace(fp)
+		if trimmed == "" {
+			continue
+		}
+		alg, _, err := ParseFingerprint(trimmed)
+		if err != nil {
+			return nil, "", fmt.Errorf("invalid fingerprint format: %w", err)
+		}
+
+		// First fingerprint sets the expected algorithm
+		if inferredAlgo == "" {
+			inferredAlgo = strings.ToLower(alg)
+		} else if strings.ToLower(alg) != inferredAlgo {
+			// All fingerprints must use the same algorithm
+			return nil, "", fmt.Errorf("all fingerprints must use the same hash algorithm, found '%s' and '%s'", inferredAlgo, alg)
+		}
+		fingerprints = append(fingerprints, trimmed)
+	}
+
+	return fingerprints, inferredAlgo, nil
+}
+
+// determineHashAlgorithm determines the final hash algorithm to use.
+// If fingerprints are provided, their algorithm takes precedence over the flag value.
+func determineHashAlgorithm(inferredAlgo, flagAlgo string) (string, error) {
+	if inferredAlgo != "" {
+		// Check if user explicitly set a different algorithm via flag
+		if flagAlgo != sha256 && strings.ToLower(flagAlgo) != inferredAlgo {
+			cli.DisplayWarning("⚠️  Ignoring --hash-algorithm flag, using '%s' from provided fingerprint(s)", inferredAlgo)
+		}
+		return inferredAlgo, nil
+	}
+
+	hashAlgo := strings.ToLower(flagAlgo)
+	validAlgos := []string{sha1, sha256, sha384, sha512}
+	if !slices.Contains(validAlgos, hashAlgo) {
+		return "", fmt.Errorf("invalid hash algorithm '%s', must be one of: %s", flagAlgo, strings.Join(validAlgos, ", "))
+	}
+	return hashAlgo, nil
+}
+
+// parseAndValidateURLs parses and validates URLs from the input string.
+func parseAndValidateURLs(urlInput string) ([]string, error) {
+	var urls []string
+	urlsRaw := strings.SplitSeq(urlInput, ",")
+	for u := range urlsRaw {
+		trimmed := strings.TrimSpace(u)
+		if trimmed != "" {
+			urls = append(urls, trimmed)
+		}
+	}
+
+	if len(urls) == 0 {
+		return nil, fmt.Errorf("no valid URLs provided")
+	}
+
+	// Validate that all URLs use HTTPS
+	for _, url := range urls {
+		if strings.HasPrefix(strings.ToLower(url), "http://") {
+			return nil, fmt.Errorf("insecure HTTP URL not allowed: %s (use HTTPS instead)", url)
+		}
+		if !strings.HasPrefix(strings.ToLower(url), "https://") {
+			return nil, fmt.Errorf("invalid URL scheme: %s (must use HTTPS)", url)
+		}
+	}
+
+	return urls, nil
+}
+
 // validateAndPrepareInputs validates options and prepares URLs and fingerprints.
 func validateAndPrepareInputs(opts *AddOptions) (hashAlgo string, urls, fingerprints []string, err error) {
 	if err := vendors.ValidateVendorID(opts.VendorID); err != nil {
@@ -143,52 +225,22 @@ func validateAndPrepareInputs(opts *AddOptions) (hashAlgo string, urls, fingerpr
 		return "", nil, nil, fmt.Errorf("concurrency value %d exceeds maximum allowed (%d)", opts.Concurrency, concurrency.MaxWorkers)
 	}
 
-	hashAlgo = strings.ToLower(opts.HashAlgorithm)
-	validAlgos := []string{sha1, sha256, sha384, sha512}
-	if !slices.Contains(validAlgos, hashAlgo) {
-		return "", nil, nil, fmt.Errorf("invalid hash algorithm '%s', must be one of: %s", opts.HashAlgorithm, strings.Join(validAlgos, ", "))
+	// Parse and validate fingerprints
+	fingerprints, inferredAlgo, err := parseAndValidateFingerprints(opts.Fingerprint)
+	if err != nil {
+		return "", nil, nil, err
 	}
 
-	// Parse and validate fingerprints if provided
-	if opts.Fingerprint != "" {
-		fpRaw := strings.SplitSeq(opts.Fingerprint, ",")
-		for fp := range fpRaw {
-			trimmed := strings.TrimSpace(fp)
-			if trimmed == "" {
-				continue
-			}
-			alg, _, err := ParseFingerprint(trimmed)
-			if err != nil {
-				return "", nil, nil, fmt.Errorf("invalid fingerprint format: %w", err)
-			}
-			if strings.ToLower(alg) != hashAlgo {
-				return "", nil, nil, fmt.Errorf("fingerprint algorithm '%s' does not match specified hash algorithm '%s'", alg, hashAlgo)
-			}
-			fingerprints = append(fingerprints, trimmed)
-		}
+	// Determine hash algorithm
+	hashAlgo, err = determineHashAlgorithm(inferredAlgo, opts.HashAlgorithm)
+	if err != nil {
+		return "", nil, nil, err
 	}
 
-	// Parse URLs
-	urlsRaw := strings.SplitSeq(opts.URL, ",")
-	for u := range urlsRaw {
-		trimmed := strings.TrimSpace(u)
-		if trimmed != "" {
-			urls = append(urls, trimmed)
-		}
-	}
-
-	if len(urls) == 0 {
-		return "", nil, nil, fmt.Errorf("no valid URLs provided")
-	}
-
-	// Validate that all URLs use HTTPS
-	for _, url := range urls {
-		if strings.HasPrefix(strings.ToLower(url), "http://") {
-			return "", nil, nil, fmt.Errorf("insecure HTTP URL not allowed: %s (use HTTPS instead)", url)
-		}
-		if !strings.HasPrefix(strings.ToLower(url), "https://") {
-			return "", nil, nil, fmt.Errorf("invalid URL scheme: %s (must use HTTPS)", url)
-		}
+	// Parse and validate URLs
+	urls, err = parseAndValidateURLs(opts.URL)
+	if err != nil {
+		return "", nil, nil, err
 	}
 
 	if len(fingerprints) > 0 && len(fingerprints) != len(urls) {

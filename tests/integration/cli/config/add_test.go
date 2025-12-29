@@ -260,16 +260,21 @@ func TestHashAlgorithmValidation(t *testing.T) {
 			errorMessage: "invalid hash algorithm",
 		},
 		{
-			name:         "fingerprint algo mismatch",
-			hashAlgo:     "sha256",
-			fingerprint:  "SHA1:AB:CD:EF",
-			expectError:  true,
-			errorMessage: "does not match specified hash algorithm",
+			name:        "fingerprint algo inferred from SHA1",
+			hashAlgo:    "sha256", // default value, will be overridden by fingerprint
+			fingerprint: "SHA1:AB:CD:EF",
+			expectError: false, // should succeed with inferred algorithm
 		},
 		{
-			name:        "matching fingerprint and algo",
+			name:        "fingerprint algo inferred from SHA256",
 			hashAlgo:    "sha256",
 			fingerprint: "SHA256:AB:CD:EF",
+			expectError: false,
+		},
+		{
+			name:        "fingerprint algo inferred from SHA512",
+			hashAlgo:    "sha256", // default value, will be overridden by fingerprint
+			fingerprint: "SHA512:AB:CD:EF:01:23:45:67:89:AB:CD:EF:01:23:45:67:89:AB:CD:EF:01:23:45:67:89:AB:CD:EF:01:23:45:67:89:AB:CD:EF:01:23:45:67:89:AB:CD:EF:01:23:45:67:89:AB:CD:EF:01:23:45:67:89:AB:CD:EF:01",
 			expectError: false,
 		},
 	}
