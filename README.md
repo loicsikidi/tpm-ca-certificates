@@ -144,9 +144,9 @@ Here's a comparative overview:
 | Feature | Microsoft TPM Root Certificates | tpm-ca-certificates |
 |---------|--------------------------------|---------------------|
 | **Completeness** | Mature for supported vendors | Growing<br/><br/> *Note: contributions are welcome!* |
-| **Intermediate Certificates Support** | Yes | In development (see [#52](https://github.com/loicsikidi/tpm-ca-certificates/issues/52)) |
+| **Intermediate Certificates Support** | Yes | Yes |
 | **Open Source** | No | Yes<br>• Auditable code and build process<br>• Community can contribute |
-| **Provenance[^1]** | No | Yes ([`.tpm-roots.yaml`](.tpm-roots.yaml)) |
+| **Provenance[^1]** | No | Yes ([`.tpm-roots.yaml`](.tpm-roots.yaml) and [`.tpm-intermediates.yaml`](.tpm-intermediates.yaml)) |
 | **Directly Usable Deliverable** | Yes, under certain conditions<br>• Limited to Windows systems integration (via a PowerShell bootstrap script) | Yes (PEM file + Golang SDK)<br>• Cross-platform compatible |
 | **Signed Deliverable** | Yes<br>• Digitally signed with Microsoft x509 certificate | Yes<br>• Keyless signing via Sigstore |
 | **Publicly Verifiable Signature in Transparency Log (`tlog`)** | No (not documented) | Yes |
