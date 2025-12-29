@@ -50,7 +50,7 @@ jobs:
           - bundle-type: root
             bundle-file: tpm-ca-certificates.pem
           - bundle-type: intermediate
-            bundle-file: tpm-intermediate-certificates.pem
+            bundle-file: tpm-intermediate-ca-certificates.pem
     steps:
       - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
