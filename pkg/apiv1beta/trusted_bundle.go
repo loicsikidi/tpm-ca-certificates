@@ -61,10 +61,10 @@ type TrustedBundle interface {
 	// Persist marshals bundle and its verification assets to disk at the specified cache path.
 	//
 	// Notes:
-	//  * variadic cachePath argument is optional. If not provided, the default cache path is used.
+	//  * variadic optionalCachePath argument is optional. If not provided, the default cache path is used.
 	//  * if the files already exist, they will be overwritten.
 	//  * use [Load] to reconstruct [TrustedBundle] from persisted files.
-	Persist(cachePath ...string) error
+	Persist(optionalCachePath ...string) error
 
 	// Stop stops the auto-update watcher if enabled.
 	//
@@ -230,18 +230,6 @@ func (tb *trustedBundle) Persist(optionalCachePath ...string) error {
 		}
 	}
 
-	// Write core bundle assets
-	if err := writeBundleAssets(cachePath, tb.assets.rootBundleData, tb.assets.checksum, tb.assets.checksumSignature, tb.assets.provenance); err != nil {
-		return err
-	}
-
-	// Write intermediate bundle if present
-	if len(tb.assets.intermediateBundleData) > 0 {
-		if err := cache.SaveFile(cache.IntermediateBundleFilename, tb.assets.intermediateBundleData, cachePath); err != nil {
-			return err
-		}
-	}
-
 	skipVerify := (len(tb.assets.checksum) == 0 &&
 		len(tb.assets.checksumSignature) == 0 &&
 		len(tb.assets.provenance) == 0)
@@ -259,11 +247,16 @@ func (tb *trustedBundle) Persist(optionalCachePath ...string) error {
 		return fmt.Errorf("failed to marshal config: %w", err)
 	}
 
-	if err := cache.SaveFile(cache.ConfigFilename, configData, cachePath); err != nil {
-		return err
-	}
-
-	return nil
+	return persistAllBundleAssets(
+		cachePath,
+		tb.assets.rootBundleData,
+		tb.assets.intermediateBundleData,
+		tb.assets.checksum,
+		tb.assets.checksumSignature,
+		tb.assets.provenance,
+		/* trustedBundle */ nil,
+		configData,
+	)
 }
 
 // Stop stops the auto-update watcher.
@@ -388,18 +381,18 @@ func Load(ctx context.Context, cfg LoadConfig) (TrustedBundle, error) {
 		return nil, err
 	}
 
-	rootBundleData, err := cache.LoadFile(cache.RootBundleFilename, cfg.CachePath)
+	rootBundleData, err := cache.LoadFile(cfg.CachePath, cache.RootBundleFilename)
 	if err != nil {
 		return nil, err
 	}
 	// first releases did not have intermediate bundle
-	// so we ignore os.ErrNotExist here
-	intermediateBundleData, err := cache.LoadFile(cache.IntermediateBundleFilename, cfg.CachePath)
+	// so we ignore [os.ErrNotExist] here
+	intermediateBundleData, err := cache.LoadFile(cfg.CachePath, cache.IntermediateBundleFilename)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return nil, err
 	}
 
-	configData, err := cache.LoadFile(cache.ConfigFilename, cfg.CachePath)
+	configData, err := cache.LoadFile(cfg.CachePath, cache.ConfigFilename)
 	if err != nil {
 		return nil, err
 	}
@@ -426,24 +419,24 @@ func Load(ctx context.Context, cfg LoadConfig) (TrustedBundle, error) {
 	var checksumData, checksumSigData, provenanceData, trustedRootData []byte
 	if !skipVerify {
 		var err error
-		checksumData, err = cache.LoadFile(cache.ChecksumsFilename, cfg.CachePath)
+		checksumData, err = cache.LoadFile(cfg.CachePath, cache.ChecksumsFilename)
 		if err != nil {
 			return nil, err
 		}
 
-		checksumSigData, err = cache.LoadFile(cache.ChecksumsSigFilename, cfg.CachePath)
+		checksumSigData, err = cache.LoadFile(cfg.CachePath, cache.ChecksumsSigFilename)
 		if err != nil {
 			return nil, err
 		}
 
-		provenanceData, err = cache.LoadFile(cache.ProvenanceFilename, cfg.CachePath)
+		provenanceData, err = cache.LoadFile(cfg.CachePath, cache.ProvenanceFilename)
 		if err != nil {
 			return nil, err
 		}
 
 		// In offline mode, load trusted-root.json from cache
 		if cfg.OfflineMode {
-			trustedRootData, err = cache.LoadFile(cache.TrustedRootFilename, cfg.CachePath)
+			trustedRootData, err = cache.LoadFile(cfg.CachePath, cache.TrustedRootFilename)
 			if err != nil {
 				return nil, err
 			}

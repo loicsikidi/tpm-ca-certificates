@@ -112,12 +112,11 @@ func TestValidateCacheFiles(t *testing.T) {
 
 func TestLoadFile(t *testing.T) {
 	tests := []struct {
-		name            string
-		filename        string
-		setupContent    string
-		provideCacheDir bool
-		wantErr         bool
-		wantContent     string
+		name         string
+		filename     string
+		setupContent string
+		wantErr      bool
+		wantContent  string
 	}{
 		{
 			name:         "successfully load existing file",
@@ -127,12 +126,11 @@ func TestLoadFile(t *testing.T) {
 			wantContent:  "test certificate content",
 		},
 		{
-			name:            "successfully load file with custom cache dir",
-			filename:        ConfigFilename,
-			setupContent:    `{"version": "1.0"}`,
-			provideCacheDir: true,
-			wantErr:         false,
-			wantContent:     `{"version": "1.0"}`,
+			name:         "successfully load file with custom cache dir",
+			filename:     ConfigFilename,
+			setupContent: `{"version": "1.0"}`,
+			wantErr:      false,
+			wantContent:  `{"version": "1.0"}`,
 		},
 		{
 			name:     "file does not exist",
@@ -160,14 +158,7 @@ func TestLoadFile(t *testing.T) {
 				}
 			}
 
-			var got []byte
-			var err error
-
-			if tt.provideCacheDir {
-				got, err = LoadFile(tt.filename, tmpDir)
-			} else {
-				got, err = LoadFile(tt.filename, tmpDir)
-			}
+			got, err := LoadFile(tmpDir, tt.filename)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("LoadFile() error = %v, wantErr %v", err, tt.wantErr)

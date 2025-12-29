@@ -15,7 +15,6 @@ import (
 	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle/verifier"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/cache"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/github"
-	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/digest"
 	verifierutils "github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/verifier"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
 )
@@ -446,8 +445,14 @@ func VerifyTrustedBundle(ctx context.Context, cfg VerifyConfig) (*VerifyResult, 
 		return nil, fmt.Errorf("failed to create verifier: %w", err)
 	}
 
-	bundleDigest := digest.ComputeSHA256(cfg.Bundle)
-	result, err := v.Verify(ctx, cfg.Bundle, cfg.Checksum, cfg.ChecksumSignature, cfg.Provenance, bundleDigest)
+	verifyCfg := verifier.VerifyConfig{
+		BundleData:       cfg.Bundle,
+		ChecksumsData:    cfg.Checksum,
+		ChecksumsSigData: cfg.ChecksumSignature,
+		ProvenanceData:   cfg.Provenance,
+	}
+
+	result, err := v.Verify(ctx, verifyCfg)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrBundleVerificationFailed, err)
 	}
@@ -539,24 +544,16 @@ func (sr *SaveResponse) Persist(outputDir string) error {
 		}
 	}
 
-	if err := writeBundleAssets(outputDir, sr.RootBundle, sr.Checksum, sr.ChecksumSignature, sr.Provenance); err != nil {
-		return err
-	}
-
-	// Save intermediate bundle if present
-	if len(sr.IntermediateBundle) > 0 {
-		if err := cache.SaveFile(cache.IntermediateBundleFilename, sr.IntermediateBundle, outputDir); err != nil {
-			return err
-		}
-	}
-
-	if err := cache.SaveFile(cache.TrustedRootFilename, sr.TrustedRoot, outputDir); err != nil {
-		return err
-	}
-	if err := cache.SaveFile(cache.ConfigFilename, sr.CacheConfig, outputDir); err != nil {
-		return err
-	}
-	return nil
+	return persistAllBundleAssets(
+		outputDir,
+		sr.RootBundle,
+		sr.IntermediateBundle,
+		sr.Checksum,
+		sr.ChecksumSignature,
+		sr.Provenance,
+		sr.TrustedRoot,
+		sr.CacheConfig,
+	)
 }
 
 // Save retrieves a TPM trust bundle and all verification assets required for offline verification.
@@ -576,7 +573,7 @@ func (sr *SaveResponse) Persist(outputDir string) error {
 //	}
 //
 //	// Persist to default cache directory ($HOME/.tpmtb)
-//	if err := resp.Persist(""); err != nil {
+//	if err := resp.Persist(); err != nil {
 //	    log.Fatal(err)
 //	}
 //

@@ -180,25 +180,25 @@ func enrichConfig(cfg *apiv1beta.VerifyConfig, o Opts, bundleDir string) error {
 			return fmt.Errorf("offline mode requires all cache files to be present: %w", err)
 		}
 
-		trustedRootData, err := cache.LoadFile(cache.TrustedRootFilename, cacheDir)
+		trustedRootData, err := cache.LoadFile(cacheDir, cache.TrustedRootFilename)
 		if err != nil {
 			return err
 		}
 		cfg.TrustedRoot = trustedRootData
 
-		checksumData, err := cache.LoadFile(cache.ChecksumsFilename, cacheDir)
+		checksumData, err := cache.LoadFile(cacheDir, cache.ChecksumsFilename)
 		if err != nil {
 			return err
 		}
 		cfg.Checksum = checksumData
 
-		checksumSigData, err := cache.LoadFile(cache.ChecksumsSigFilename, cacheDir)
+		checksumSigData, err := cache.LoadFile(cacheDir, cache.ChecksumsSigFilename)
 		if err != nil {
 			return err
 		}
 		cfg.ChecksumSignature = checksumSigData
 
-		provenanceData, err := cache.LoadFile(cache.ProvenanceFilename, cacheDir)
+		provenanceData, err := cache.LoadFile(cacheDir, cache.ProvenanceFilename)
 		if err != nil {
 			return err
 		}

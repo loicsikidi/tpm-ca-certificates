@@ -106,7 +106,7 @@ func CreateCacheDir(t *testing.T, configData []byte) string {
 	if err != nil {
 		t.Fatalf("Failed to read test bundle: %v", err)
 	}
-	if err := cache.SaveFile(cache.RootBundleFilename, rootBundleData, tmpDir); err != nil {
+	if err := cache.SaveFile(tmpDir, cache.RootBundleFilename, rootBundleData); err != nil {
 		t.Fatalf("Failed to write bundle: %v", err)
 	}
 
@@ -114,7 +114,7 @@ func CreateCacheDir(t *testing.T, configData []byte) string {
 	if err != nil {
 		t.Fatalf("Failed to read test checksums: %v", err)
 	}
-	if err := cache.SaveFile(cache.ChecksumsFilename, checksumData, tmpDir); err != nil {
+	if err := cache.SaveFile(tmpDir, cache.ChecksumsFilename, checksumData); err != nil {
 		t.Fatalf("Failed to write checksums: %v", err)
 	}
 
@@ -122,7 +122,7 @@ func CreateCacheDir(t *testing.T, configData []byte) string {
 	if err != nil {
 		t.Fatalf("Failed to read test checksum signature: %v", err)
 	}
-	if err := cache.SaveFile(cache.ChecksumsSigFilename, checksumSigData, tmpDir); err != nil {
+	if err := cache.SaveFile(tmpDir, cache.ChecksumsSigFilename, checksumSigData); err != nil {
 		t.Fatalf("Failed to write checksum signature: %v", err)
 	}
 
@@ -130,7 +130,7 @@ func CreateCacheDir(t *testing.T, configData []byte) string {
 	if err != nil {
 		t.Fatalf("Failed to read test provenance: %v", err)
 	}
-	if err := cache.SaveFile(cache.ProvenanceFilename, provenanceData, tmpDir); err != nil {
+	if err := cache.SaveFile(tmpDir, cache.ProvenanceFilename, provenanceData); err != nil {
 		t.Fatalf("Failed to write provenance: %v", err)
 	}
 
@@ -138,7 +138,7 @@ func CreateCacheDir(t *testing.T, configData []byte) string {
 	if err != nil {
 		t.Fatalf("Failed to read test trusted root: %v", err)
 	}
-	if err := cache.SaveFile(cache.TrustedRootFilename, trustedRootData, tmpDir); err != nil {
+	if err := cache.SaveFile(tmpDir, cache.TrustedRootFilename, trustedRootData); err != nil {
 		t.Fatalf("Failed to write trusted root: %v", err)
 	}
 
@@ -158,7 +158,7 @@ func CreateCacheDir(t *testing.T, configData []byte) string {
 		t.Fatalf("Invalid config JSON: %v", err)
 	}
 
-	if err := cache.SaveFile(cache.ConfigFilename, configData, tmpDir); err != nil {
+	if err := cache.SaveFile(tmpDir, cache.ConfigFilename, configData); err != nil {
 		t.Fatalf("Failed to write config: %v", err)
 	}
 

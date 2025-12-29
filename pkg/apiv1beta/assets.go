@@ -95,11 +95,11 @@ func getAssets(ctx context.Context, cfg assetsConfig) (*assets, error) {
 
 // getAssetsFromCache retrieves a TPM trust bundle and its verification assets from local cache.
 func getAssetsFromCache(cfg assetsConfig) (*assets, error) {
-	rootBundleData, err := cache.LoadFile(cache.RootBundleFilename, cfg.cachePath)
+	rootBundleData, err := cache.LoadFile(cfg.cachePath, cache.RootBundleFilename)
 	if err != nil {
 		return nil, err
 	}
-	intermediateBundleData, err := cache.LoadFile(cache.IntermediateBundleFilename, cfg.cachePath)
+	intermediateBundleData, err := cache.LoadFile(cfg.cachePath, cache.IntermediateBundleFilename)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return nil, err
 	}
@@ -113,17 +113,17 @@ func getAssetsFromCache(cfg assetsConfig) (*assets, error) {
 		return result, nil
 	}
 
-	checksum, err := cache.LoadFile(cache.ChecksumsFilename, cfg.cachePath)
+	checksum, err := cache.LoadFile(cfg.cachePath, cache.ChecksumsFilename)
 	if err != nil {
 		return nil, err
 	}
 
-	checksumSig, err := cache.LoadFile(cache.ChecksumsSigFilename, cfg.cachePath)
+	checksumSig, err := cache.LoadFile(cfg.cachePath, cache.ChecksumsSigFilename)
 	if err != nil {
 		return nil, err
 	}
 
-	provenance, err := cache.LoadFile(cache.ProvenanceFilename, cfg.cachePath)
+	provenance, err := cache.LoadFile(cfg.cachePath, cache.ProvenanceFilename)
 	if err != nil {
 		return nil, err
 	}

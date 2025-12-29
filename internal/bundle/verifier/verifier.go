@@ -11,6 +11,7 @@ import (
 	"github.com/loicsikidi/tpm-ca-certificates/internal/github"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/cosign"
 	transparencyGithub "github.com/loicsikidi/tpm-ca-certificates/internal/transparency/github"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/digest"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/policy"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/verifier"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
@@ -95,6 +96,46 @@ func New(cfg Config) (*Verifier, error) {
 	return &Verifier{config: cfg}, nil
 }
 
+// VerifyConfig contains configuration for bundle verification.
+type VerifyConfig struct {
+	// BundleData is the bundle file content
+	//
+	// Required.
+	BundleData []byte
+
+	// ChecksumsData is the checksums.txt file content
+	//
+	// Required.
+	ChecksumsData []byte
+
+	// ChecksumsSigData is the checksums.txt.sigstore.json file content
+	//
+	// Required.
+	ChecksumsSigData []byte
+
+	// ProvenanceData is the provenance attestation bundle
+	//
+	// Required.
+	ProvenanceData []byte
+}
+
+// CheckAndSetDefaults validates the configuration.
+func (c *VerifyConfig) CheckAndSetDefaults() error {
+	if len(c.BundleData) == 0 {
+		return fmt.Errorf("bundle data cannot be empty")
+	}
+	if len(c.ChecksumsData) == 0 {
+		return fmt.Errorf("checksums data cannot be empty")
+	}
+	if len(c.ChecksumsSigData) == 0 {
+		return fmt.Errorf("checksums signature data cannot be empty")
+	}
+	if len(c.ProvenanceData) == 0 {
+		return fmt.Errorf("provenance data cannot be empty")
+	}
+	return nil
+}
+
 // VerifyResult contains the results of bundle verification.
 type VerifyResult struct {
 	// Policy is the policy used for verification
@@ -108,18 +149,23 @@ type VerifyResult struct {
 }
 
 // Verify performs full bundle verification (Cosign + GitHub Attestations).
-func (v *Verifier) Verify(ctx context.Context, bundleData, checksumsData, checksumsSigData, provenanceData []byte, digest string) (*VerifyResult, error) {
+func (v *Verifier) Verify(ctx context.Context, cfg VerifyConfig) (*VerifyResult, error) {
+	if err := cfg.CheckAndSetDefaults(); err != nil {
+		return nil, fmt.Errorf("invalid verify config: %w", err)
+	}
+
 	result := &VerifyResult{Policy: v.GetPolicyConfig()}
 
 	// Phase 1: Cosign verification
-	cosignResult, err := v.verifyCosign(ctx, bundleData, checksumsData, checksumsSigData)
+	cosignResult, err := v.verifyCosign(ctx, cfg.BundleData, cfg.ChecksumsData, cfg.ChecksumsSigData)
 	if err != nil {
 		return nil, fmt.Errorf("cosign verification failed: %w", err)
 	}
 	result.CosignResult = cosignResult
 
 	// Phase 2: GitHub Attestation verification
-	attestationResults, err := v.verifyGitHubAttestations(ctx, provenanceData, digest)
+	bundleDigest := digest.ComputeSHA256(cfg.BundleData)
+	attestationResults, err := v.verifyGitHubAttestations(ctx, cfg.ProvenanceData, bundleDigest)
 	if err != nil {
 		return nil, fmt.Errorf("github attestation verification failed: %w", err)
 	}
