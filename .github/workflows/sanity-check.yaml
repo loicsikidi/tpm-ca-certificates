@@ -10,10 +10,19 @@ permissions: {}
 
 jobs:
   config-sanity:
-    name: Verify TPM Roots Configuration
+    name: Verify TPM ${{ matrix.bundle-type }} Configuration
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        bundle-type: [roots, intermediates]
+        include:
+          - bundle-type: roots
+            config-file: .tpm-roots.yaml
+          - bundle-type: intermediates
+            config-file: .tpm-intermediates.yaml
     steps:
       - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
@@ -25,14 +34,23 @@ jobs:
       - uses: geomys/sandboxed-step@7d75eb49d17fdeeb3656b3a57d35932d205bcfb9 # v1.2.1
         with:
           run: |
-            echo "Running sanity check on .tpm-roots.yaml..."
-            go run ./ config sanity --config .tpm-roots.yaml
+            echo "Running sanity check on ${{ matrix.config-file }}..."
+            go run ./ config sanity --config ${{ matrix.config-file }}
             echo "✅ All certificates are valid and not expiring soon"
   bundle-download:
-    name: Verify Trust Bundle Validation
+    name: Verify ${{ matrix.bundle-type }} Bundle Validation
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        bundle-type: [root, intermediate]
+        include:
+          - bundle-type: root
+            bundle-file: tpm-ca-certificates.pem
+          - bundle-type: intermediate
+            bundle-file: tpm-intermediate-ca-certificates.pem
     steps:
       - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
@@ -48,13 +66,35 @@ jobs:
             go build -o tpmtb
             echo "printing version..."
             ./tpmtb version
-            echo "Run sanity checks on trust bundle..."
+            echo "Run sanity checks on ${{ matrix.bundle-type }} bundle..."
             ./tpmtb bundle list
-            ./tpmtb bundle download
-            ./tpmtb bundle verify ./tpm-ca-certificates.pem
-            ./tpmtb bundle validate ./tpm-ca-certificates.pem
+            ./tpmtb bundle download --type ${{ matrix.bundle-type }}
+            ./tpmtb bundle verify ./${{ matrix.bundle-file }}
+            ./tpmtb bundle validate ./${{ matrix.bundle-file }}
+  infineon-coverage:
+    name: Verify Infineon Certificates Coverage
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+        with:
+          persist-credentials: false
+      - uses: cachix/install-nix-action@0b0e072294b088b73964f1d72dfdac0951439dbd # v31.8.4
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: run infineon coverage check
+        run: |
+          echo "Renaming Go scripts..."
+          mv scripts/scan-infineon-pki.gos scripts/scan-infineon-pki.go
+          mv scripts/verify-infineon-coverage.gos scripts/verify-infineon-coverage.go
+          echo "Scanning Infineon PKI for available certificates..."
+          nix-shell --run 'scripts/scan-infineon-pki.go --out /tmp/infineon-available.txt'
+          echo "Verifying all available certificates are in config..."
+          nix-shell --run 'scripts/verify-infineon-coverage.go --urls /tmp/infineon-available.txt --config .tpm-intermediates.yaml --vendor-id IFX'
   integration-tests:
-    name: Run Integration Tests 
+    name: Run Integration Tests
     runs-on: ubuntu-latest
     permissions:
       contents: read

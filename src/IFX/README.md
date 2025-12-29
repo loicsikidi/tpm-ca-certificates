@@ -21,6 +21,10 @@ This turned out to be a real treasure hunt!
 | Infineon OPTIGA(TM) RSA Root CA 2 | Root | GitHub repository + PKI endpoint | No |
 | Infineon OPTIGA(TM) ECC Root CA 3 | Root | PKI endpoint discovery | No |
 | Infineon OPTIGA(TM) RSA Root CA 3 | Root | PKI endpoint discovery | No |
+| Infineon OPTIGA(TM) ECC Manufacturing CA 000 to 036 | Intermediate | Official documentation | No |
+| Infineon OPTIGA(TM) RSA Manufacturing CA 000 to 036 | Intermediate | Official documentation | No |
+| Infineon OPTIGA(TM) TPM 2.0 ECC CA 037 to 078 | Intermediate | Official documentation | No |
+| Infineon OPTIGA(TM) TPM 2.0 RSA CA 037 to 078 | Intermediate | Official documentation | No |
 
 ## Discovery Process
 
@@ -75,6 +79,19 @@ Since the domain `pki.infineon.com` is owned by Infineon Technologies AG, we can
 **URLs**:
 - ECC Root CA 3: https://pki.infineon.com/OptigaEccRootCA3/OptigaEccRootCA3.crt
 - RSA Root CA 3: https://pki.infineon.com/OptigaRsaRootCA3/OptigaRsaRootCA3.crt
+
+### Intermediate Certificates
+
+[Endorsement key certificate – validity expiration and verification](https://community.infineon.com/t5/Knowledge-Base-Articles/Endorsement-key-certificate-validity-expiration-and-verification/ta-p/796521) article references the URLs from the PKI in order to download the intermediate certificates.
+
+**URLs**:
+- For RSA: `https://pki.infineon.com/OptigaRsaMfrCAxxx/OptigaRsaMfrCAxxx.crt`
+- For ECC: `https://pki.infineon.com/OptigaEccMfrCAxxx/OptigaEccMfrCAxxx.crt`
+
+> [!NOTE]
+> `xxx` is the MFG CA number
+
+- **Screenshot Reference**: ![](infineon_article_ek_intermediate.png)
 
 ---
 

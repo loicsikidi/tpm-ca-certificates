@@ -13,6 +13,7 @@
       gotest.settings.flags = "-short -race";
     };
   };
+  gos = pkgs.callPackage ./nix/gos.nix {};
 in
   pkgs.mkShell {
     buildInputs = with pkgs;
@@ -22,6 +23,7 @@ in
         cosign
         syft
         gcc
+        gos
       ]
       ++ helpers.packages;
 
