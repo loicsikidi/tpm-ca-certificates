@@ -23,7 +23,7 @@ This repository aims to correct this situation through a collective community ef
 
 ### 📖 Human-readable Configuration
 
-The bundle is generated from [`.tpm-roots.yaml`](.tpm-roots.yaml), a human-readable configuration file. Anyone can see and understand how the bundle is built. Additionally, git provides a history of changes.
+Both bundles are generated from a dedicated human-readable configuration file ([`.tpm-roots.yaml`](.tpm-roots.yaml) for roots and [`.tpm-intermediates.yaml`](.tpm-intermediates.yaml) for intermediates). Anyone can see and understand how the bundle is built. Additionally, git provides a history of changes.
 
 > [!IMPORTANT]
 > The configuration file only points to public resources (URLs) and does not include any certificates directly. This ensures that the certificates used in the bundle are accessible to everyone and can be independently verified.
