@@ -647,3 +647,111 @@ vendors:
           validation:
             fingerprint:
                 sha1: "E2:12:26:B8:26:A3:81:01:25:4D:E7:90:01:A7:63:33:4D:B5:97:71"
+    - id: "STM"
+      name: "STMicroelectronics"
+      certificates:
+        - name: "STM TPM ECC Intermediate CA 01"
+          url: "https://secure.globalsign.com/cacert/stmtpmeccint01.crt"
+          validation:
+            fingerprint:
+                sha256: "01:5B:CF:C3:94:35:40:D1:86:91:BF:95:C9:39:B0:E5:60:B2:93:A8:35:B1:C3:2F:F1:DC:ED:97:53:76:AC:42"
+        - name: "STM TPM ECC Intermediate CA 02"
+          url: "https://secure.globalsign.com/cacert/stmtpmeccint02.crt"
+          validation:
+            fingerprint:
+                sha256: "69:5A:D0:F0:23:6F:04:7C:2C:CC:9A:BA:CA:F4:D0:7A:3E:91:25:19:12:CF:4A:C6:5A:A4:9C:8F:FF:35:2B:C5"
+        - name: "STM TPM ECC Intermediate CA 03"
+          url: "https://secure.globalsign.com/cacert/stmtpmeccint03.crt"
+          validation:
+            fingerprint:
+                sha256: "A4:B4:89:59:91:22:3E:A2:B9:57:15:2E:0F:F0:B1:26:E8:BA:8E:E1:A5:63:D9:3B:C6:00:DC:86:DF:F4:10:95"
+        - name: "STM TPM ECC384 Intermediate CA 01"
+          url: "https://secure.globalsign.com/cacert/stmtpmecc384int01.crt"
+          validation:
+            fingerprint:
+                sha256: "4A:13:DD:43:6B:11:D7:05:EC:FB:EA:7D:70:27:B7:A4:5D:EE:1A:FC:B5:3A:0E:D8:64:0E:13:57:8C:64:BC:69"
+        - name: "STM TPM ECC384 Intermediate CA 02"
+          url: "https://secure.globalsign.com/cacert/stmtpmecc384int02.crt"
+          validation:
+            fingerprint:
+                sha256: "97:A1:3B:81:A1:11:AD:41:65:86:64:26:3B:C1:CA:45:0A:92:45:CB:0B:FB:15:71:7F:23:0E:AC:AD:02:C0:BD"
+        - name: "STM TPM ECC384 Intermediate CA 03 for CISCO"
+          url: "https://secure.globalsign.com/cacert/stmtpmecc384int03.crt"
+          validation:
+            fingerprint:
+                sha256: "31:41:EA:3B:55:A1:1F:63:2E:61:DF:02:7C:EE:4B:4C:8A:9F:EB:E3:12:61:5F:88:98:D2:08:44:A1:82:F1:AE"
+        - name: "STM TPM EK Intermediate CA 01"
+          url: "https://secure.globalsign.com/cacert/stmtpmekint01.crt"
+          validation:
+            fingerprint:
+                sha256: "6C:3B:A9:F3:CE:8F:09:51:79:E4:2B:01:5F:A1:E8:1C:F6:E2:60:E1:40:FC:5F:FC:B0:DD:41:8D:A5:AC:AF:D7"
+        - name: "STM TPM EK Intermediate CA 02"
+          url: "https://secure.globalsign.com/cacert/stmtpmekint02.crt"
+          validation:
+            fingerprint:
+                sha256: "DC:62:A3:B9:96:41:45:73:DF:20:BC:AF:01:3F:0A:AE:47:B1:02:E5:99:F6:3B:23:C9:BF:0B:64:48:A6:0B:53"
+        - name: "STM TPM EK Intermediate CA 03"
+          url: "https://secure.globalsign.com/cacert/stmtpmekint03.crt"
+          validation:
+            fingerprint:
+                sha256: "6B:26:C2:01:62:A9:DE:2D:0F:69:DB:C8:C0:4B:95:C1:27:F5:CA:5B:15:3D:7A:01:A7:A6:CF:9A:B8:8A:D8:34"
+        - name: "STM TPM EK Intermediate CA 04"
+          url: "https://secure.globalsign.com/cacert/stmtpmekint04.crt"
+          validation:
+            fingerprint:
+                sha256: "25:E8:7E:5F:9D:82:15:E7:8B:1A:91:6D:5D:52:9B:5A:D9:B3:BF:B5:2D:BB:F2:D8:C3:AB:21:1F:61:24:CA:CA"
+        - name: "STM TPM EK Intermediate CA 05"
+          url: "https://secure.globalsign.com/cacert/stmtpmekint05.crt"
+          validation:
+            fingerprint:
+                sha256: "87:0F:C1:81:41:1D:24:C8:1E:84:EC:45:CD:9B:CC:87:B4:12:53:34:2E:D6:88:EE:E6:D9:13:9B:31:B4:40:02"
+        - name: "STM TPM EK Intermediate CA 06"
+          url: "https://secure.globalsign.com/cacert/stmtpmekint06.crt"
+          validation:
+            fingerprint:
+                sha256: "93:43:D2:D7:F3:C8:70:85:26:E6:F2:24:56:3B:EB:DA:23:F5:34:C5:18:F2:A1:A4:21:EB:CC:E0:15:57:24:7C"
+        - name: "STM TPM EK Intermediate CA 07"
+          url: "https://secure.globalsign.com/cacert/stmtpmekint07.crt"
+          validation:
+            fingerprint:
+                sha256: "19:BB:CE:F9:3F:C0:87:7A:E6:6E:BA:97:AD:E4:E1:5C:3D:77:05:4F:39:CD:11:83:48:6F:12:B8:FA:5C:42:B2"
+        - name: "STSAFE TPM ECC Intermediate CA 10"
+          url: "https://sw-center.st.com/STSAFE/stsafetpmeccint10.crt"
+          validation:
+            fingerprint:
+                sha256: "AF:64:4C:E3:0A:37:2F:C5:9D:01:85:BC:C5:15:77:9F:EA:77:E7:D6:62:28:1B:39:B3:6C:32:BB:36:B2:F3:A9"
+        - name: "STSAFE TPM ECC Intermediate CA 11"
+          url: "https://sw-center.st.com/STSAFE/stsafetpmeccint11.crt"
+          validation:
+            fingerprint:
+                sha256: "79:54:A8:0C:48:F5:9D:1B:BC:BC:5D:E3:9D:A4:2D:E9:63:BF:9D:6F:CE:2E:7B:06:14:FE:C0:AB:ED:7D:0C:61"
+        - name: "STSAFE TPM ECC Intermediate CA 20"
+          url: "https://sw-center.st.com/STSAFE/stsafetpmeccint20.crt"
+          validation:
+            fingerprint:
+                sha256: "AD:03:2D:3A:14:2C:4A:AF:35:B3:9A:DE:2D:31:1E:94:39:86:F4:F5:22:EB:CD:65:CD:94:C5:ED:C1:41:68:36"
+        - name: "STSAFE TPM ECC Intermediate CA 21"
+          url: "https://sw-center.st.com/STSAFE/stsafetpmeccint21.crt"
+          validation:
+            fingerprint:
+                sha256: "6A:4A:8E:2A:9C:2E:58:54:0D:4D:D2:E5:1A:D5:57:EC:4D:AB:70:61:73:36:8F:35:46:08:25:68:E0:53:2C:5B"
+        - name: "STSAFE TPM RSA Intermediate CA 10"
+          url: "https://sw-center.st.com/STSAFE/stsafetpmrsaint10.crt"
+          validation:
+            fingerprint:
+                sha256: "60:F5:D4:CB:09:74:20:2E:78:A9:D3:D2:A6:E0:B1:3D:13:90:D9:44:A2:3D:B5:AA:F8:67:FF:8F:8A:71:0B:74"
+        - name: "STSAFE TPM RSA Intermediate CA 11"
+          url: "https://sw-center.st.com/STSAFE/stsafetpmrsaint11.crt"
+          validation:
+            fingerprint:
+                sha256: "77:A1:74:E9:E1:C4:7C:B7:88:E3:1A:C8:F3:9A:65:D0:7C:0C:D3:5F:85:0D:A8:AD:DF:42:7C:14:81:0A:F8:8B"
+        - name: "STSAFE TPM RSA Intermediate CA 20"
+          url: "https://sw-center.st.com/STSAFE/stsafetpmrsaint20.crt"
+          validation:
+            fingerprint:
+                sha256: "01:16:92:35:EF:D7:78:42:B4:0B:D9:03:01:75:E4:68:94:DA:6C:0A:2C:D8:38:12:5E:E4:26:A8:C4:1A:53:74"
+        - name: "STSAFE TPM RSA Intermediate CA 21"
+          url: "https://sw-center.st.com/STSAFE/stsafetpmrsaint21.crt"
+          validation:
+            fingerprint:
+                sha256: "25:1F:0C:61:99:A1:41:90:F9:78:DF:D3:9A:94:FC:D2:36:74:F9:9E:FB:88:0B:A2:A1:65:4D:49:AF:2B:06:A7"
