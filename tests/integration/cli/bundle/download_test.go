@@ -15,6 +15,8 @@ import (
 	"github.com/loicsikidi/tpm-ca-certificates/pkg/apiv1beta"
 )
 
+const versionSupportingIntermediates = "2025-12-27"
+
 func TestDownloadCommand(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test that downloads from GitHub")
@@ -99,7 +101,7 @@ func TestDownloadCommand(t *testing.T) {
 	}
 }
 
-func TestDownloadCommand_BothBundles_2025_12_27(t *testing.T) {
+func TestDownloadCommand_BothBundles(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test that downloads from GitHub")
 	}
@@ -108,7 +110,7 @@ func TestDownloadCommand_BothBundles_2025_12_27(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	opts := &download.Opts{
-		Date:       "2025-12-27",
+		Date:       versionSupportingIntermediates,
 		OutputDir:  tmpDir,
 		Type:       "", // Download both bundles
 		SkipVerify: false,
@@ -155,7 +157,7 @@ func TestDownloadCommand_BothBundles_2025_12_27(t *testing.T) {
 	t.Logf("✓ Intermediate bundle size: %d bytes", len(intermediateData))
 }
 
-func TestDownloadCommand_RootOnly_2025_12_05(t *testing.T) {
+func TestDownloadCommand_RootOnly(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test that downloads from GitHub")
 	}
@@ -202,7 +204,7 @@ func TestDownloadCommand_RootOnly_2025_12_05(t *testing.T) {
 	t.Logf("✓ Intermediate bundle correctly not downloaded (not available)")
 }
 
-func TestDownloadCommand_IntermediateNotAvailable_2025_12_05(t *testing.T) {
+func TestDownloadCommand_IntermediateNotAvailable(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test that downloads from GitHub")
 	}
@@ -232,7 +234,7 @@ func TestDownloadCommand_IntermediateNotAvailable_2025_12_05(t *testing.T) {
 	t.Logf("✓ Correctly returned error when requesting unavailable intermediate bundle")
 }
 
-func TestDownloadCommand_TypeRoot_2025_12_27(t *testing.T) {
+func TestDownloadCommand_TypeRoot(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test that downloads from GitHub")
 	}
@@ -241,7 +243,7 @@ func TestDownloadCommand_TypeRoot_2025_12_27(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	opts := &download.Opts{
-		Date:       "2025-12-27",
+		Date:       versionSupportingIntermediates,
 		OutputDir:  tmpDir,
 		Type:       "root", // Only root bundle
 		SkipVerify: false,
@@ -268,7 +270,7 @@ func TestDownloadCommand_TypeRoot_2025_12_27(t *testing.T) {
 	t.Logf("✓ Successfully downloaded only root bundle when --type root")
 }
 
-func TestDownloadCommand_TypeIntermediate_2025_12_27(t *testing.T) {
+func TestDownloadCommand_TypeIntermediate(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test that downloads from GitHub")
 	}
@@ -277,7 +279,7 @@ func TestDownloadCommand_TypeIntermediate_2025_12_27(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	opts := &download.Opts{
-		Date:       "2025-12-27",
+		Date:       versionSupportingIntermediates,
 		OutputDir:  tmpDir,
 		Type:       "intermediate", // Only intermediate bundle
 		SkipVerify: false,
@@ -310,7 +312,7 @@ func TestDownloadCommand_StdoutWithoutType(t *testing.T) {
 	}
 
 	opts := &download.Opts{
-		Date:       "2025-12-27",
+		Date:       versionSupportingIntermediates,
 		OutputDir:  "-",
 		Type:       "", // No type specified
 		SkipVerify: false,

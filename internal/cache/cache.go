@@ -90,8 +90,7 @@ func ValidateCacheFiles(cacheDir string) error {
 }
 
 // LoadFile reads a specified file from the cache directory.
-func LoadFile(filename string, optionalCacheDir ...string) ([]byte, error) {
-	cacheDir := utils.OptionalArgWithDefault(optionalCacheDir, CacheDir())
+func LoadFile(cacheDir string, filename string) ([]byte, error) {
 	filePath := filepath.Join(cacheDir, filename)
 	data, err := utils.ReadFile(filePath)
 	if err != nil {
@@ -101,8 +100,7 @@ func LoadFile(filename string, optionalCacheDir ...string) ([]byte, error) {
 }
 
 // SaveFile writes data to a specified file in the cache directory.
-func SaveFile(filename string, data []byte, optionalCacheDir ...string) error {
-	cacheDir := utils.OptionalArgWithDefault(optionalCacheDir, CacheDir())
+func SaveFile(cacheDir, filename string, data []byte) error {
 	filePath := filepath.Join(cacheDir, filename)
 	perm := os.FileMode(0644)
 	if filename == TrustedRootFilename {

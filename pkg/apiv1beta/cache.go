@@ -63,7 +63,7 @@ func (c *CacheConfig) CheckAndSetDefaults() error {
 
 // checkCacheExists verifies if a cache exists for the specified version.
 func checkCacheExists(cachePath string, version string) bool {
-	configData, err := cache.LoadFile(cache.ConfigFilename, cachePath)
+	configData, err := cache.LoadFile(cachePath, cache.ConfigFilename)
 	if err != nil {
 		return false
 	}
@@ -92,19 +92,50 @@ func checkCacheExists(cachePath string, version string) bool {
 	return true
 }
 
-// writeBundleAssets writes the core bundle assets (bundle, checksums, signature, provenance) to the specified directory.
-func writeBundleAssets(dir string, bundle, checksum, checksumSignature, provenance []byte) error {
-	if err := cache.SaveFile(cache.RootBundleFilename, bundle, dir); err != nil {
+// persistAllBundleAssets writes all bundle assets including intermediate bundle, trusted root, and cache config
+// to the specified output directory.
+//
+// This is a shared helper used by both [SaveResponse.Persist] and [trustedBundle.Persist] to avoid code duplication.
+func persistAllBundleAssets(
+	outputDir string,
+	rootBundle []byte,
+	intermediateBundle []byte,
+	checksum []byte,
+	checksumSignature []byte,
+	provenance []byte,
+	trustedRoot []byte,
+	cacheConfig []byte,
+) error {
+	// Save core bundle assets
+	if err := cache.SaveFile(outputDir, cache.RootBundleFilename, rootBundle); err != nil {
 		return err
 	}
-	if err := cache.SaveFile(cache.ChecksumsFilename, checksum, dir); err != nil {
+	if err := cache.SaveFile(outputDir, cache.ChecksumsFilename, checksum); err != nil {
 		return err
 	}
-	if err := cache.SaveFile(cache.ChecksumsSigFilename, checksumSignature, dir); err != nil {
+	if err := cache.SaveFile(outputDir, cache.ChecksumsSigFilename, checksumSignature); err != nil {
 		return err
 	}
-	if err := cache.SaveFile(cache.ProvenanceFilename, provenance, dir); err != nil {
+	if err := cache.SaveFile(outputDir, cache.ProvenanceFilename, provenance); err != nil {
 		return err
 	}
+	if err := cache.SaveFile(outputDir, cache.ConfigFilename, cacheConfig); err != nil {
+		return err
+	}
+
+	// Save intermediate bundle if present
+	if len(intermediateBundle) > 0 {
+		if err := cache.SaveFile(outputDir, cache.IntermediateBundleFilename, intermediateBundle); err != nil {
+			return err
+		}
+	}
+
+	// Save trusted root if present
+	if len(trustedRoot) > 0 {
+		if err := cache.SaveFile(outputDir, cache.TrustedRootFilename, trustedRoot); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }

@@ -44,6 +44,7 @@ vendors
 
 # IA assistants
 .claude/
+CLAUDE.md
 GOAL.md
 
 # nix

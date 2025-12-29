@@ -80,7 +80,13 @@ func TestVerifyIntegration(t *testing.T) {
 
 	// Step 3: Verify bundle
 	t.Log("Step 3: Verifying bundle...")
-	result, err := v.Verify(t.Context(), bundleData, checksumData, checksumSigData, provenanceData, bundleDigest)
+	verifyCfg := verifier.VerifyConfig{
+		BundleData:       bundleData,
+		ChecksumsData:    checksumData,
+		ChecksumsSigData: checksumSigData,
+		ProvenanceData:   provenanceData,
+	}
+	result, err := v.Verify(t.Context(), verifyCfg)
 	if err != nil {
 		t.Fatalf("Verification failed: %v", err)
 	}
@@ -117,8 +123,6 @@ func TestVerifyWithInvalidCommit(t *testing.T) {
 		t.Fatalf("Failed to read checksum signature: %v", err)
 	}
 
-	bundleDigest := digest.ComputeSHA256(bundleData)
-
 	// Use a wrong commit
 	wrongCommit := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
@@ -140,7 +144,13 @@ func TestVerifyWithInvalidCommit(t *testing.T) {
 	}
 
 	// Verification should fail due to commit mismatch
-	_, err = v.Verify(t.Context(), bundleData, checksumData, checksumSigData, provenanceData, bundleDigest)
+	verifyCfg := verifier.VerifyConfig{
+		BundleData:       bundleData,
+		ChecksumsData:    checksumData,
+		ChecksumsSigData: checksumSigData,
+		ProvenanceData:   provenanceData,
+	}
+	_, err = v.Verify(t.Context(), verifyCfg)
 	if err == nil {
 		t.Error("Expected verification to fail with wrong commit, but it succeeded")
 	} else {
@@ -167,8 +177,6 @@ func TestVerifyWithInvalidDate(t *testing.T) {
 		t.Fatalf("Failed to read checksum signature: %v", err)
 	}
 
-	bundleDigest := digest.ComputeSHA256(bundleData)
-
 	// Use a wrong date
 	wrongDate := "2024-01-01"
 
@@ -190,7 +198,13 @@ func TestVerifyWithInvalidDate(t *testing.T) {
 	}
 
 	// Verification should fail due to date mismatch
-	_, err = v.Verify(t.Context(), bundleData, checksumData, checksumSigData, provenanceData, bundleDigest)
+	verifyCfg := verifier.VerifyConfig{
+		BundleData:       bundleData,
+		ChecksumsData:    checksumData,
+		ChecksumsSigData: checksumSigData,
+		ProvenanceData:   provenanceData,
+	}
+	_, err = v.Verify(t.Context(), verifyCfg)
 	if err == nil {
 		t.Error("Expected verification to fail with wrong date, but it succeeded")
 	} else {
