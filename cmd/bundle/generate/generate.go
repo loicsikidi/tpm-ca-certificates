@@ -59,7 +59,7 @@ By default, output is written to stdout. Use --output to write to a file instead
 		"Output file path (default: stdout)")
 	cmd.Flags().IntVarP(&o.Workers, "workers", "j", 0,
 		fmt.Sprintf("Number of workers to use (0=auto-detect, max=%d)", concurrency.MaxWorkers))
-	cmd.Flags().StringVar(&o.Date, "date", "",
+	cmd.Flags().StringVarP(&o.Date, "date", "d", "",
 		"Bundle generation date in YYYY-MM-DD format (default: auto-detect from git)")
 	cmd.Flags().StringVar(&o.Commit, "commit", "",
 		"Git commit hash (default: auto-detect from git)")

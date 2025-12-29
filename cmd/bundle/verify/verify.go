@@ -74,9 +74,9 @@ Both verifications must succeed for the bundle to be considered valid.`,
 		"Path to checksums.txt file (optional, default: auto-detect or download)")
 	cmd.Flags().StringVar(&o.ChecksumsSignature, "checksums-signature", "",
 		"Path to checksums.txt.sigstore.json file (optional, default: auto-detect or download)")
-	cmd.Flags().StringVarP(&o.CacheDir, "cache-dir", "c", "",
+	cmd.Flags().StringVar(&o.CacheDir, "cache-dir", "",
 		"Cache directory path (optional, default: $HOME/.tpmtb)")
-	cmd.Flags().BoolVarP(&o.Offline, "offline", "o", false,
+	cmd.Flags().BoolVar(&o.Offline, "offline", false,
 		"Enable offline verification mode using cached assets")
 	return cmd
 }
