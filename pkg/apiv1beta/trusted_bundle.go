@@ -201,29 +201,40 @@ func (tb *trustedBundle) GetIntermediates() *x509.CertPool {
 	return tb.buildCertPool(tb.intermediateCatalog)
 }
 
-// buildCertPool creates an x509.CertPool from the given catalog, applying vendor filters if configured.
-func (tb *trustedBundle) buildCertPool(catalog map[vendors.ID][]*x509.Certificate) *x509.CertPool {
-	pool := x509.NewCertPool()
-
-	// If no vendor filter, add all certificates
+// forEachCert iterates over certificates in the catalog, applying vendor filters if configured.
+// The callback function is called for each certificate. If the callback returns false, iteration stops.
+func (tb *trustedBundle) forEachCert(catalog map[vendors.ID][]*x509.Certificate, fn func(*x509.Certificate) bool) {
+	// If no vendor filter, iterate all certificates
 	if len(tb.vendorFilter) == 0 {
 		for _, certs := range catalog {
 			for _, cert := range certs {
-				pool.AddCert(cert)
+				if !fn(cert) {
+					return
+				}
 			}
 		}
-		return pool
+		return
 	}
 
-	// Add only certificates from specified vendors
+	// Iterate only certificates from specified vendors
 	for _, vendorID := range tb.vendorFilter {
 		if certs, ok := catalog[vendorID]; ok {
 			for _, cert := range certs {
-				pool.AddCert(cert)
+				if !fn(cert) {
+					return
+				}
 			}
 		}
 	}
+}
 
+// buildCertPool creates an x509.CertPool from the given catalog, applying vendor filters if configured.
+func (tb *trustedBundle) buildCertPool(catalog map[vendors.ID][]*x509.Certificate) *x509.CertPool {
+	pool := x509.NewCertPool()
+	tb.forEachCert(catalog, func(cert *x509.Certificate) bool {
+		pool.AddCert(cert)
+		return true
+	})
 	return pool
 }
 
@@ -253,27 +264,27 @@ func (tb *trustedBundle) VerifyCertificate(cert *x509.Certificate) error {
 }
 
 // Contains checks if a certificate is stored in the bundle.
+//
+// If the bundle was created with VendorIDs filter, only certificates from those vendors are checked.
+// Otherwise, all certificates from the bundle are checked.
 func (tb *trustedBundle) Contains(cert *x509.Certificate) bool {
 	tb.mu.RLock()
 	defer tb.mu.RUnlock()
 
-	for _, certs := range tb.rootCatalog {
-		for _, c := range certs {
-			if c.Equal(cert) {
-				return true
-			}
-		}
-	}
+	return tb.containsInCatalog(cert, tb.rootCatalog) || tb.containsInCatalog(cert, tb.intermediateCatalog)
+}
 
-	for _, certs := range tb.intermediateCatalog {
-		for _, c := range certs {
-			if c.Equal(cert) {
-				return true
-			}
+// containsInCatalog checks if a certificate is in the given catalog, applying vendor filters if configured.
+func (tb *trustedBundle) containsInCatalog(cert *x509.Certificate, catalog map[vendors.ID][]*x509.Certificate) bool {
+	found := false
+	tb.forEachCert(catalog, func(c *x509.Certificate) bool {
+		if c.Equal(cert) {
+			found = true
+			return false // Stop iteration
 		}
-	}
-
-	return false
+		return true // Continue iteration
+	})
+	return found
 }
 
 // Persist writes the bundle and its configuration to disk.

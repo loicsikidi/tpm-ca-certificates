@@ -626,4 +626,114 @@ func TestContains(t *testing.T) {
 			t.Fatal("Expected Contains to return false for empty bundle")
 		}
 	})
+
+	t.Run("respects vendor filter - returns true for filtered vendor", func(t *testing.T) {
+		bundleData, err := testutil.ReadTestFile(testutil.RootBundleFile)
+		if err != nil {
+			t.Fatalf("Failed to read test bundle: %v", err)
+		}
+
+		tb, err := newTrustedBundle(bundleData)
+		if err != nil {
+			t.Fatalf("Failed to create trusted bundle: %v", err)
+		}
+
+		tbImpl := tb.(*trustedBundle)
+
+		// Get a certificate from IFX vendor
+		var ifxCert *x509.Certificate
+		if certs, ok := tbImpl.rootCatalog[IFX]; ok && len(certs) > 0 {
+			ifxCert = certs[0]
+		}
+
+		if ifxCert == nil {
+			t.Skip("No IFX certificates found in bundle")
+		}
+
+		// Set vendor filter to IFX only
+		tbImpl.vendorFilter = []VendorID{IFX}
+
+		// Should return true for IFX certificate
+		if !tb.Contains(ifxCert) {
+			t.Fatal("Expected Contains to return true for certificate from filtered vendor")
+		}
+	})
+
+	t.Run("respects vendor filter - returns false for non-filtered vendor", func(t *testing.T) {
+		bundleData, err := testutil.ReadTestFile(testutil.RootBundleFile)
+		if err != nil {
+			t.Fatalf("Failed to read test bundle: %v", err)
+		}
+
+		tb, err := newTrustedBundle(bundleData)
+		if err != nil {
+			t.Fatalf("Failed to create trusted bundle: %v", err)
+		}
+
+		tbImpl := tb.(*trustedBundle)
+
+		// Get a certificate from IFX vendor
+		var ifxCert *x509.Certificate
+		if certs, ok := tbImpl.rootCatalog[IFX]; ok && len(certs) > 0 {
+			ifxCert = certs[0]
+		}
+
+		if ifxCert == nil {
+			t.Skip("No IFX certificates found in bundle")
+		}
+
+		// Set vendor filter to exclude IFX (use a different vendor)
+		var otherVendor VendorID
+		for vendorID := range tbImpl.rootCatalog {
+			if vendorID != IFX {
+				otherVendor = vendorID
+				break
+			}
+		}
+
+		if otherVendor == "" {
+			t.Skip("Need at least two different vendors in bundle")
+		}
+
+		tbImpl.vendorFilter = []VendorID{otherVendor}
+
+		// Should return false for IFX certificate when filter excludes it
+		if tb.Contains(ifxCert) {
+			t.Fatal("Expected Contains to return false for certificate from non-filtered vendor")
+		}
+	})
+
+	t.Run("respects vendor filter - empty filter checks all vendors", func(t *testing.T) {
+		bundleData, err := testutil.ReadTestFile(testutil.RootBundleFile)
+		if err != nil {
+			t.Fatalf("Failed to read test bundle: %v", err)
+		}
+
+		tb, err := newTrustedBundle(bundleData)
+		if err != nil {
+			t.Fatalf("Failed to create trusted bundle: %v", err)
+		}
+
+		tbImpl := tb.(*trustedBundle)
+
+		// Get a certificate from any vendor
+		var testCert *x509.Certificate
+		for _, certs := range tbImpl.rootCatalog {
+			if len(certs) > 0 {
+				testCert = certs[0]
+				break
+			}
+		}
+
+		if testCert == nil {
+			t.Skip("No certificates found in bundle")
+		}
+
+		// With no vendor filter, should find the certificate
+		tbImpl.vendorFilter = nil
+
+		if !tb.Contains(testCert) {
+			t.Fatal("Expected Contains to return true when no vendor filter is set")
+		}
+	})
 }
