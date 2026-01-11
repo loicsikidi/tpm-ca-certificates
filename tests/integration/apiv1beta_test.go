@@ -231,6 +231,58 @@ func TestGetTrustedBundle(t *testing.T) {
 		}
 	})
 
+	t.Run("fetch bundle with SkipVerify downloads both root and intermediate bundles", func(t *testing.T) {
+		cfg := apiv1beta.GetConfig{
+			SkipVerify: true,
+			AutoUpdate: apiv1beta.AutoUpdateConfig{
+				DisableAutoUpdate: true,
+			},
+			CachePath: t.TempDir(),
+		}
+
+		tb, err := apiv1beta.GetTrustedBundle(t.Context(), cfg)
+		if err != nil {
+			t.Fatalf("GetTrustedBundle() error = %v", err)
+		}
+		defer tb.Stop()
+
+		// Verify root bundle is present
+		rootMetadata := tb.GetRootMetadata()
+		if rootMetadata == nil {
+			t.Fatal("Expected root metadata, got nil")
+		}
+		if rootMetadata.Date == "" {
+			t.Error("Expected date in root metadata")
+		}
+		if rootMetadata.Commit == "" {
+			t.Error("Expected commit in root metadata")
+		}
+
+		rawRoot := tb.GetRawRoot()
+		if len(rawRoot) == 0 {
+			t.Error("Expected raw root bundle, got empty")
+		}
+
+		// Verify intermediate bundle is also present
+		intermediateMetadata := tb.GetIntermediateMetadata()
+		if intermediateMetadata == nil {
+			t.Fatal("Expected intermediate metadata to be present when SkipVerify is true")
+		}
+
+		rawIntermediate := tb.GetRawIntermediate()
+		if len(rawIntermediate) == 0 {
+			t.Error("Expected raw intermediate bundle to be present when SkipVerify is true, got empty")
+		}
+
+		// Verify intermediate metadata is valid
+		if intermediateMetadata.Date == "" {
+			t.Error("Expected date in intermediate metadata")
+		}
+		if intermediateMetadata.Commit == "" {
+			t.Error("Expected commit in intermediate metadata")
+		}
+	})
+
 	t.Run("filter by vendor IDs", func(t *testing.T) {
 		cfg := apiv1beta.GetConfig{
 			SkipVerify: true,

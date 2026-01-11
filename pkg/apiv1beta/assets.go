@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/cache"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/github"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/digest"
@@ -20,15 +21,15 @@ var (
 
 // assetsConfig configures which assets to download.
 type assetsConfig struct {
-	bundle                    []byte
-	httpClient                utils.HTTPClient
-	sourceRepo                *github.Repo
-	cachePath                 string
-	disableLocalCache         bool
-	tag                       string
-	downloadChecksums         bool
-	downloadChecksumSignature bool
-	downloadProvenance        bool
+	bundle                []byte
+	httpClient            utils.HTTPClient
+	sourceRepo            *github.Repo
+	cachePath             string
+	disableLocalCache     bool
+	tag                   string
+	needChecksums         bool
+	needChecksumSignature bool
+	needProvenance        bool
 }
 
 func (c *assetsConfig) CheckAndSetDefaults() error {
@@ -54,7 +55,7 @@ func (c *assetsConfig) CheckAndSetDefaults() error {
 }
 
 func (c *assetsConfig) shouldFetchVerificationAssets() bool {
-	return c.downloadChecksums || c.downloadChecksumSignature || c.downloadProvenance
+	return c.needChecksums || c.needChecksumSignature || c.needProvenance
 }
 
 type assets struct {
@@ -146,74 +147,122 @@ func getAssetsFromCache(cfg assetsConfig) (*assets, error) {
 //   - provenance: GitHub Attestation (stored in GitHub API)
 func getAssetsFromGitHub(ctx context.Context, cfg assetsConfig) (*assets, error) {
 	client := github.NewHTTPClient(cfg.httpClient)
+	response := &assets{}
 
-	bundleData := bytes.Clone(cfg.bundle)
-	if len(bundleData) == 0 {
-		var err error
-		bundleData, err = client.DownloadReleaseAsset(ctx, *cfg.sourceRepo, cfg.tag, bundleFilename)
-		if err != nil {
-			return nil, fmt.Errorf("failed to download bundle: %w", err)
-		}
+	// Step 1: Download checksums.txt to determine which bundles to fetch
+	checksum, err := client.DownloadReleaseAsset(ctx, *cfg.sourceRepo, cfg.tag, checksumsFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to download checksums: %w", err)
 	}
-
-	response := &assets{
-		rootBundleData: bundleData,
-	}
-
-	if !cfg.shouldFetchVerificationAssets() {
-		return response, nil
-	}
-
-	if cfg.downloadChecksums {
-		checksum, err := client.DownloadReleaseAsset(ctx, *cfg.sourceRepo, cfg.tag, checksumsFile)
-		if err != nil {
-			return nil, fmt.Errorf("failed to download checksums: %w", err)
-		}
+	if cfg.needChecksums {
 		response.checksum = checksum
 	}
 
-	if cfg.downloadChecksumSignature {
-		checksumSig, err := client.DownloadReleaseAsset(ctx, *cfg.sourceRepo, cfg.tag, checksumsSig)
+	// Step 2: Download checksum signature if needed
+	if cfg.needChecksumSignature {
+		response.checksumSignature, err = client.DownloadReleaseAsset(ctx, *cfg.sourceRepo, cfg.tag, checksumsSig)
 		if err != nil {
 			return nil, fmt.Errorf("failed to download checksum signature: %w", err)
 		}
-		response.checksumSignature = checksumSig
 	}
 
-	// Download intermediate bundle if present in checksums.txt
-	if len(response.checksum) > 0 && hasIntermediateBundle(response.checksum) {
-		intermediateBundle, err := client.DownloadReleaseAsset(ctx, *cfg.sourceRepo, cfg.tag, intermediateBundleFilename)
-		if err != nil {
-			return nil, fmt.Errorf("failed to download intermediate bundle: %w", err)
-		}
-		response.intermediateBundleData = intermediateBundle
+	// Step 3: Handle bundle from config if provided
+	providedBundleType, err := handleProvidedBundle(cfg.bundle, response)
+	if err != nil {
+		return nil, err
 	}
 
-	// Download provenance attestation if requested
-	if cfg.downloadProvenance {
-		bundleDigest := digest.ComputeSHA256(response.rootBundleData)
-		attestations, err := client.GetAttestations(ctx, *cfg.sourceRepo, bundleDigest)
+	// Step 4: Download bundles not provided in config
+	if err := downloadMissingBundles(ctx, client, cfg, checksum, providedBundleType, response); err != nil {
+		return nil, err
+	}
+
+	// Step 5: Download provenance if needed
+	if cfg.needProvenance {
+		response.provenance, err = downloadProvenance(ctx, client, cfg, response.rootBundleData)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get attestations: %w", err)
+			return nil, err
 		}
-		if len(attestations) == 0 {
-			return nil, fmt.Errorf("no attestations found for digest %s", bundleDigest)
-		}
-		// Take the first attestation and serialize it to JSON
-		provenanceJSON, err := json.Marshal(attestations[0].Bundle)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal provenance: %w", err)
-		}
-		compactJSON, _ := utils.JsonCompact(provenanceJSON) // should not fail
-		response.provenance = compactJSON
 	}
 
 	return response, nil
 }
 
-// hasIntermediateBundle checks if the checksums.txt file contains an entry for the intermediate bundle.
-func hasIntermediateBundle(checksumData []byte) bool {
-	return bytes.Contains(checksumData, []byte(intermediateBundleFilename))
+// handleProvidedBundle processes a bundle provided via config and assigns it to the response.
+func handleProvidedBundle(bundleData []byte, response *assets) (bundle.BundleType, error) {
+	if len(bundleData) == 0 {
+		return bundle.TypeUnspecified, nil
+	}
+
+	metadata, err := bundle.ParseMetadata(bundleData)
+	if err != nil {
+		return bundle.TypeUnspecified, fmt.Errorf("failed to parse bundle metadata: %w", err)
+	}
+
+	switch metadata.Type {
+	case bundle.TypeRoot:
+		response.rootBundleData = bytes.Clone(bundleData)
+	case bundle.TypeIntermediate:
+		response.intermediateBundleData = bytes.Clone(bundleData)
+	default:
+		return bundle.TypeUnspecified, fmt.Errorf("unsupported bundle type: %s", metadata.Type)
+	}
+
+	return metadata.Type, nil
+}
+
+// downloadMissingBundles downloads bundles that weren't provided in config.
+func downloadMissingBundles(ctx context.Context, client *github.HTTPClient, cfg assetsConfig, checksum []byte, providedType bundle.BundleType, response *assets) error {
+	if providedType != bundle.TypeRoot && hasBundle(checksum, bundle.TypeRoot) {
+		data, err := client.DownloadReleaseAsset(ctx, *cfg.sourceRepo, cfg.tag, bundleFilename)
+		if err != nil {
+			return fmt.Errorf("failed to download bundle: %w", err)
+		}
+		response.rootBundleData = data
+	}
+
+	if providedType != bundle.TypeIntermediate && hasBundle(checksum, bundle.TypeIntermediate) {
+		data, err := client.DownloadReleaseAsset(ctx, *cfg.sourceRepo, cfg.tag, intermediateBundleFilename)
+		if err != nil {
+			return fmt.Errorf("failed to download intermediate bundle: %w", err)
+		}
+		response.intermediateBundleData = data
+	}
+
+	return nil
+}
+
+// downloadProvenance downloads and returns the provenance attestation for the given bundle.
+func downloadProvenance(ctx context.Context, client *github.HTTPClient, cfg assetsConfig, rootBundleData []byte) ([]byte, error) {
+	if len(rootBundleData) == 0 {
+		return nil, fmt.Errorf("root bundle data is required for provenance verification")
+	}
+
+	bundleDigest := digest.ComputeSHA256(rootBundleData)
+	attestations, err := client.GetAttestations(ctx, *cfg.sourceRepo, bundleDigest)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get attestations: %w", err)
+	}
+	if len(attestations) == 0 {
+		return nil, fmt.Errorf("no attestations found for digest %s", bundleDigest)
+	}
+
+	provenanceJSON, err := json.Marshal(attestations[0].Bundle)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal provenance: %w", err)
+	}
+
+	compactJSON, _ := utils.JsonCompact(provenanceJSON) // should never fail
+	return compactJSON, nil
+}
+
+// hasBundle checks if the checksums.txt file contains an entry for the specified bundle type.
+func hasBundle(checksumData []byte, bundleType bundle.BundleType) bool {
+	filename := bundleFilename // default to root bundle filename
+	if bundleType == bundle.TypeIntermediate {
+		filename = intermediateBundleFilename
+	}
+	return bytes.Contains(checksumData, []byte(filename))
 }
 
 // getReleaseTag determines which release to fetch.
