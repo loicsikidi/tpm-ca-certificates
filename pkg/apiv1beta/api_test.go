@@ -99,10 +99,10 @@ func TestGetBundleFromCache(t *testing.T) {
 
 		// Load from cache
 		assetsCfg := assetsConfig{
-			cachePath:                 tmpDir,
-			downloadChecksums:         true,
-			downloadChecksumSignature: true,
-			downloadProvenance:        true,
+			cachePath:             tmpDir,
+			needChecksums:         true,
+			needChecksumSignature: true,
+			needProvenance:        true,
 		}
 		result, err := getAssetsFromCache(assetsCfg)
 		if err != nil {
@@ -157,10 +157,10 @@ func TestGetBundleFromCache(t *testing.T) {
 		tmpDir := t.TempDir()
 
 		assetsCfg := assetsConfig{
-			cachePath:                 tmpDir,
-			downloadChecksums:         true,
-			downloadChecksumSignature: true,
-			downloadProvenance:        true,
+			cachePath:             tmpDir,
+			needChecksums:         true,
+			needChecksumSignature: true,
+			needProvenance:        true,
 		}
 		_, err := getAssetsFromCache(assetsCfg)
 		if err == nil {
@@ -184,10 +184,10 @@ func TestGetBundleFromCache(t *testing.T) {
 		}
 		// Try to load without verification assets
 		assetsCfg := assetsConfig{
-			cachePath:                 tmpDir,
-			downloadChecksums:         true,
-			downloadChecksumSignature: true,
-			downloadProvenance:        true,
+			cachePath:             tmpDir,
+			needChecksums:         true,
+			needChecksumSignature: true,
+			needProvenance:        true,
 		}
 		_, err = getAssetsFromCache(assetsCfg)
 		if err == nil {

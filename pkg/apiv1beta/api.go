@@ -157,9 +157,9 @@ func (c *GetConfig) toAssetsConfig() assetsConfig {
 		sourceRepo:        c.sourceRepo,
 	}
 	if !c.SkipVerify {
-		cfg.downloadChecksums = true
-		cfg.downloadChecksumSignature = true
-		cfg.downloadProvenance = true
+		cfg.needChecksums = true
+		cfg.needChecksumSignature = true
+		cfg.needProvenance = true
 	}
 	return cfg
 }
@@ -341,15 +341,15 @@ func (c *VerifyConfig) shouldFetchVerificationAssets() bool {
 
 func (c *VerifyConfig) toAssetsConfig() assetsConfig {
 	return assetsConfig{
-		bundle:                    c.Bundle,
-		httpClient:                c.HTTPClient,
-		cachePath:                 cache.CacheDir(),
-		disableLocalCache:         c.DisableLocalCache,
-		tag:                       c.BundleMetadata.Date,
-		sourceRepo:                c.sourceRepo,
-		downloadChecksums:         len(c.Checksum) == 0,
-		downloadChecksumSignature: len(c.ChecksumSignature) == 0,
-		downloadProvenance:        len(c.Provenance) == 0,
+		bundle:                c.Bundle,
+		httpClient:            c.HTTPClient,
+		cachePath:             cache.CacheDir(),
+		disableLocalCache:     c.DisableLocalCache,
+		tag:                   c.BundleMetadata.Date,
+		sourceRepo:            c.sourceRepo,
+		needChecksums:         len(c.Checksum) == 0,
+		needChecksumSignature: len(c.ChecksumSignature) == 0,
+		needProvenance:        len(c.Provenance) == 0,
 	}
 }
 
