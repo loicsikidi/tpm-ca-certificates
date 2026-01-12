@@ -8,6 +8,7 @@ This directory contains the evidence and documentation proving how the URLs for 
 |-----------|-------------|:-------------:|:-------------------:|
 | INTC | Intel | [README](INTC/) | C |
 | IFX | Infineon | [README](IFX/) | B |
+| MSFT | Microsoft | [README](MSFT/) | C |
 | NTC | Nuvoton Technology | [README](NTC/) | A |
 | STM | STMicroelectronics | [README](STM/) | A |
 
