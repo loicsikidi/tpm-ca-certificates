@@ -1,4 +1,4 @@
-# Infineon Technologies (IFX) TPM Root Certificates
+# Infineon Technologies (IFX)
 
 ## Overview
 

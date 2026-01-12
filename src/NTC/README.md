@@ -1,4 +1,4 @@
-# Nuvoton Technology Corporation (NTC) TPM Root Certificates
+# Nuvoton Technology Corporation (NTC)
 
 ## Certificate Inventory
 
