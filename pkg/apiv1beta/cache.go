@@ -63,13 +63,8 @@ func (c *CacheConfig) CheckAndSetDefaults() error {
 
 // checkCacheExists verifies if a cache exists for the specified version.
 func checkCacheExists(cachePath string, version string) bool {
-	configData, err := cache.LoadFile(cachePath, cache.ConfigFilename)
+	cfg, err := getCacheConfig(cachePath)
 	if err != nil {
-		return false
-	}
-
-	var cfg CacheConfig
-	if err := json.Unmarshal(configData, &cfg); err != nil {
 		return false
 	}
 
@@ -90,6 +85,21 @@ func checkCacheExists(cachePath string, version string) bool {
 	}
 
 	return true
+}
+
+// getCacheConfig loads the cache configuration from the specified cache path.
+func getCacheConfig(cachePath string) (*CacheConfig, error) {
+	configData, err := cache.LoadFile(cachePath, cache.ConfigFilename)
+	if err != nil {
+		return nil, err
+	}
+
+	var cfg CacheConfig
+	if err := json.Unmarshal(configData, &cfg); err != nil {
+		return nil, err
+	}
+
+	return &cfg, nil
 }
 
 // persistAllBundleAssets writes all bundle assets including intermediate bundle, trusted root, and cache config
@@ -123,18 +133,11 @@ func persistAllBundleAssets(
 		return err
 	}
 
-	// Save intermediate bundle if present
-	if len(intermediateBundle) > 0 {
-		if err := cache.SaveFile(outputDir, cache.IntermediateBundleFilename, intermediateBundle); err != nil {
-			return err
-		}
+	if err := cache.SaveFile(outputDir, cache.IntermediateBundleFilename, intermediateBundle); err != nil {
+		return err
 	}
-
-	// Save trusted root if present
-	if len(trustedRoot) > 0 {
-		if err := cache.SaveFile(outputDir, cache.TrustedRootFilename, trustedRoot); err != nil {
-			return err
-		}
+	if err := cache.SaveFile(outputDir, cache.TrustedRootFilename, trustedRoot); err != nil {
+		return err
 	}
 
 	return nil

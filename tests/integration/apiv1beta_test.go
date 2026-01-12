@@ -28,10 +28,13 @@ func TestVerifyTrustedBundle(t *testing.T) {
 			t.Skip("Skipping integration test in short mode")
 		}
 
+		cachePath := t.TempDir()
+
 		// First download a bundle
 		trustedBundle, err := apiv1beta.GetTrustedBundle(t.Context(), apiv1beta.GetConfig{
 			Date:       testutil.BundleVersion,
 			SkipVerify: true,
+			CachePath:  cachePath,
 		})
 		if err != nil {
 			t.Fatalf("Failed to download bundle: %v", err)
@@ -39,7 +42,8 @@ func TestVerifyTrustedBundle(t *testing.T) {
 
 		// Now verify it with auto-detected metadata and auto-downloaded checksums
 		_, err = apiv1beta.VerifyTrustedBundle(t.Context(), apiv1beta.VerifyConfig{
-			Bundle: trustedBundle.GetRawRoot(),
+			Bundle:    trustedBundle.GetRawRoot(),
+			CachePath: cachePath,
 		})
 		if err != nil {
 			t.Fatalf("Verification failed: %v", err)
@@ -67,6 +71,7 @@ func TestVerifyTrustedBundle(t *testing.T) {
 				Date:   testutil.BundleVersion,
 				Commit: "", // Empty commit should fail validation
 			},
+			CachePath: t.TempDir(),
 		})
 		if err == nil {
 			t.Fatal("Expected error when BundleMetadata has empty Commit")

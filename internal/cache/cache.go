@@ -101,6 +101,11 @@ func LoadFile(cacheDir string, filename string) ([]byte, error) {
 
 // SaveFile writes data to a specified file in the cache directory.
 func SaveFile(cacheDir, filename string, data []byte) error {
+	// Skip saving empty files
+	if len(data) == 0 {
+		return nil
+	}
+
 	filePath := filepath.Join(cacheDir, filename)
 	perm := os.FileMode(0644)
 	if filename == TrustedRootFilename {
