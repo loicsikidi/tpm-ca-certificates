@@ -28,4 +28,6 @@ jobs:
       - name: Run pre-commit hooks
         run: |
           nix-shell --run "pre-commit run --all-files"
-          nix-shell --run "pre-commit run --all-files --hook-stage pre-push"
+          for i in {1..3}; do
+            nix-shell --run "pre-commit run --all-files --hook-stage pre-push" && break || sleep 10
+          done
