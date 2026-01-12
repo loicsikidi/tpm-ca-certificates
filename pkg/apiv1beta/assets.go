@@ -113,6 +113,13 @@ func getAssetsFromCache(cfg assetsConfig) (*assets, error) {
 	if !cfg.shouldFetchVerificationAssets() {
 		return result, nil
 	}
+	c, err := getCacheConfig(cfg.cachePath)
+	if err != nil {
+		return nil, err
+	}
+	if c.SkipVerify && cfg.shouldFetchVerificationAssets() {
+		return nil, ErrIncompleteCache
+	}
 
 	checksum, err := cache.LoadFile(cfg.cachePath, cache.ChecksumsFilename)
 	if err != nil {

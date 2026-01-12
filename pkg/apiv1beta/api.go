@@ -309,6 +309,11 @@ type VerifyConfig struct {
 	// Optional. If not provided, the provenance will be downloaded from the GitHub API.
 	Provenance []byte
 
+	// CachePath is the location on disk for tpmtb cache.
+	//
+	// Optional. If empty, the default cache path is used ($HOME/.tpmtb).
+	CachePath string
+
 	// HTTPClient is the HTTP client to use for requests.
 	//
 	// Optional. If nil, http.DefaultClient will be used.
@@ -343,7 +348,7 @@ func (c *VerifyConfig) toAssetsConfig() assetsConfig {
 	return assetsConfig{
 		bundle:                c.Bundle,
 		httpClient:            c.HTTPClient,
-		cachePath:             cache.CacheDir(),
+		cachePath:             c.CachePath,
 		disableLocalCache:     c.DisableLocalCache,
 		tag:                   c.BundleMetadata.Date,
 		sourceRepo:            c.sourceRepo,
@@ -381,6 +386,9 @@ func (c *VerifyConfig) CheckAndSetDefaults() error {
 	}
 	if c.HTTPClient == nil {
 		c.HTTPClient = HTTPClient()
+	}
+	if c.CachePath == "" {
+		c.CachePath = cache.CacheDir()
 	}
 
 	return nil
