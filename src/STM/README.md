@@ -1,4 +1,4 @@
-# STMicroelectronics (STM) TPM Certificates
+# STMicroelectronics (STM)
 
 ## Certificate Inventory
 

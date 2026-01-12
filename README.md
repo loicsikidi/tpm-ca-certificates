@@ -137,7 +137,7 @@ BSD-3-Clause License. See the [LICENSE](LICENSE) file for detail
 
 ## Alternatives
 
-Microsoft maintains an archive with a number of TPM root and intermediate certificates as described in their [documentation](https://learn.microsoft.com/en-us/windows-hardware/drivers/install/trusted-root-certification-authorities-certificate-store).
+Microsoft maintains an archive with a number of TPM root and intermediate certificates as described in their [documentation](https://learn.microsoft.com/en-us/windows-server/security/guarded-fabric-shielded-vm/guarded-fabric-install-trusted-tpm-root-certificates).
 
 Here's a comparative overview:
 

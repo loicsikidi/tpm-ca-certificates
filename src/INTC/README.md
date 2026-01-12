@@ -1,4 +1,4 @@
-# Intel (INTC) TPM Root Certificates
+# Intel (INTC)
 
 ## Certificate Inventory
 
