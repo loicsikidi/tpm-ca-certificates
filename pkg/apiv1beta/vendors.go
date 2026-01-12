@@ -28,7 +28,7 @@ const (
 	IFX  = vendors.IFX
 	INTC = vendors.INTC
 	// LEN  = vendors.LEN
-	// MSFT = vendors.MSFT
+	MSFT = vendors.MSFT
 	// NSG  = vendors.NSG
 	// NSM  = vendors.NSM
 	NTC = vendors.NTC
