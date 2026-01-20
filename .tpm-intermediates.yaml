@@ -714,6 +714,14 @@ vendors:
           validation:
             fingerprint:
                 sha256: "F4:3A:A9:CC:82:B5:BA:F4:E6:0B:F8:B6:A6:33:41:F1:BD:C9:98:8A:9B:EF:00:81:9E:3F:02:7E:55:84:C8:3A"
+    - id: "MSFT"
+      name: "Microsoft"
+      certificates:
+        - name: "Microsoft Pluton Policy CA A"
+          url: "https://www.microsoft.com/pkiops/certs/Microsoft%20Pluton%20Policy%20CA%20A.crt"
+          validation:
+            fingerprint:
+                sha256: "EF:3A:56:45:E8:5C:87:82:34:43:19:4F:52:05:AC:59:0E:A9:D6:B9:B9:CE:06:58:74:91:F9:56:35:F0:EE:59"
     - id: "NTC"
       name: "Nuvoton Technology"
       certificates:
