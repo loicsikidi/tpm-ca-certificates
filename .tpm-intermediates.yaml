@@ -469,6 +469,51 @@ vendors:
           validation:
             fingerprint:
                 sha256: "34:87:EB:BB:5E:39:6C:FE:76:B1:6D:B0:8D:F3:E4:73:B6:6A:B4:6D:63:AB:99:6A:1D:62:CE:97:F9:3F:8C:8C"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 ECC CA 079"
+          url: "https://pki.infineon.com/OptigaEccMfrCA079/OptigaEccMfrCA079.crt"
+          validation:
+            fingerprint:
+                sha256: "F1:6F:4A:A3:03:AA:3F:D1:6E:D8:C8:01:F9:63:49:42:84:E9:E2:B7:6C:35:F2:91:08:55:F9:F3:EB:54:0C:08"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 ECC CA 080"
+          url: "https://pki.infineon.com/OptigaEccMfrCA080/OptigaEccMfrCA080.crt"
+          validation:
+            fingerprint:
+                sha256: "B8:6F:35:ED:59:43:50:CD:24:B1:37:F0:B3:6E:36:E7:1C:6C:ED:CF:8B:96:95:33:33:0D:BF:DD:38:FC:B4:B4"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 ECC CA 081"
+          url: "https://pki.infineon.com/OptigaEccMfrCA081/OptigaEccMfrCA081.crt"
+          validation:
+            fingerprint:
+                sha256: "4A:80:E3:1F:83:39:F3:42:C4:7D:6E:41:E3:42:F1:E6:85:D3:E7:01:B4:7B:F3:22:89:7C:69:9D:CE:27:DB:1D"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 ECC CA 082"
+          url: "https://pki.infineon.com/OptigaEccMfrCA082/OptigaEccMfrCA082.crt"
+          validation:
+            fingerprint:
+                sha256: "FF:61:13:14:CD:84:97:C5:53:56:B8:9B:D4:01:D9:76:AE:8F:B1:DF:52:59:80:9C:27:EA:10:DA:8C:F2:76:38"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 ECC CA 083"
+          url: "https://pki.infineon.com/OptigaEccMfrCA083/OptigaEccMfrCA083.crt"
+          validation:
+            fingerprint:
+                sha256: "D1:ED:C2:1B:8A:C1:D1:F2:E4:5B:C4:A9:16:73:8B:7E:7E:1E:22:EA:DF:3E:9F:C3:9F:9B:DA:64:B1:FE:01:D8"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 ECC CA 084"
+          url: "https://pki.infineon.com/OptigaEccMfrCA084/OptigaEccMfrCA084.crt"
+          validation:
+            fingerprint:
+                sha256: "7A:09:CC:8F:CD:22:44:97:41:35:B7:04:D8:A2:92:86:21:19:13:3F:D4:33:CC:2B:92:4A:0E:88:A5:38:94:33"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 ECC CA 085"
+          url: "https://pki.infineon.com/OptigaEccMfrCA085/OptigaEccMfrCA085.crt"
+          validation:
+            fingerprint:
+                sha256: "E6:97:24:C0:D6:9D:E7:5D:DC:21:CF:5D:BE:5F:DE:EF:96:29:49:C2:32:A7:23:63:6F:CE:1B:E1:45:41:ED:BF"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 ECC CA 086"
+          url: "https://pki.infineon.com/OptigaEccMfrCA086/OptigaEccMfrCA086.crt"
+          validation:
+            fingerprint:
+                sha256: "B4:5C:31:5D:AF:4B:88:6A:41:8C:6D:86:43:FD:DF:FD:DF:8B:3F:AB:DD:AA:18:3C:5F:C5:34:13:38:52:99:01"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 ECC CA 087"
+          url: "https://pki.infineon.com/OptigaEccMfrCA087/OptigaEccMfrCA087.crt"
+          validation:
+            fingerprint:
+                sha256: "7F:CB:7E:5A:BC:39:2A:3C:F2:35:5E:18:5F:08:17:36:8D:AE:8F:77:1A:47:27:AB:EA:3C:C5:B0:37:1F:57:84"
         - name: "Infineon OPTIGA(TM) TPM 2.0 RSA CA 037"
           url: "https://pki.infineon.com/OptigaRsaMfrCA037/OptigaRsaMfrCA037.crt"
           validation:
@@ -624,6 +669,51 @@ vendors:
           validation:
             fingerprint:
                 sha256: "7F:B7:A0:6D:4A:5B:7B:43:96:13:A4:68:C1:DE:46:06:CF:0A:DD:B3:88:6E:C0:68:E3:54:D1:CB:C2:AE:E1:BB"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 RSA CA 079"
+          url: "https://pki.infineon.com/OptigaRsaMfrCA079/OptigaRsaMfrCA079.crt"
+          validation:
+            fingerprint:
+                sha256: "63:2A:0D:85:B2:25:D3:36:77:F7:2E:81:30:92:BD:F6:29:DA:48:B4:3E:E7:88:3C:F2:E9:AF:10:85:32:F1:44"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 RSA CA 080"
+          url: "https://pki.infineon.com/OptigaRsaMfrCA080/OptigaRsaMfrCA080.crt"
+          validation:
+            fingerprint:
+                sha256: "D6:96:1A:8B:1C:89:22:01:E6:B1:B7:A0:5F:06:17:61:E6:69:7D:40:11:27:04:13:C0:BB:78:1D:EF:21:0F:6C"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 RSA CA 081"
+          url: "https://pki.infineon.com/OptigaRsaMfrCA081/OptigaRsaMfrCA081.crt"
+          validation:
+            fingerprint:
+                sha256: "D1:84:84:2B:97:06:A4:92:52:77:23:09:E1:05:18:ED:AB:2F:EA:B7:B1:0D:82:EE:44:5A:5E:58:5A:C3:59:BE"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 RSA CA 082"
+          url: "https://pki.infineon.com/OptigaRsaMfrCA082/OptigaRsaMfrCA082.crt"
+          validation:
+            fingerprint:
+                sha256: "89:E8:06:25:0F:7F:7D:ED:A1:94:A7:38:A5:BE:50:DD:E6:10:EF:A7:54:FF:43:45:E4:B1:58:F0:FD:90:63:6F"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 RSA CA 083"
+          url: "https://pki.infineon.com/OptigaRsaMfrCA083/OptigaRsaMfrCA083.crt"
+          validation:
+            fingerprint:
+                sha256: "D5:49:5C:48:D3:4F:F2:93:51:85:05:7D:B2:1B:10:67:89:A2:D0:37:65:A6:41:71:79:FD:55:F5:5F:C5:BF:D2"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 RSA CA 084"
+          url: "https://pki.infineon.com/OptigaRsaMfrCA084/OptigaRsaMfrCA084.crt"
+          validation:
+            fingerprint:
+                sha256: "B6:7C:86:33:B8:03:E9:FE:B6:ED:0F:0B:35:FE:BB:CB:E5:F5:73:9C:BC:70:80:C0:C3:2E:87:C8:07:55:5C:24"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 RSA CA 085"
+          url: "https://pki.infineon.com/OptigaRsaMfrCA085/OptigaRsaMfrCA085.crt"
+          validation:
+            fingerprint:
+                sha256: "CF:25:D3:B1:15:67:A7:62:59:AE:D3:FA:8C:A9:0D:1C:92:C8:22:E8:F4:08:A6:08:50:C1:74:8F:BB:DA:05:B5"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 RSA CA 086"
+          url: "https://pki.infineon.com/OptigaRsaMfrCA086/OptigaRsaMfrCA086.crt"
+          validation:
+            fingerprint:
+                sha256: "25:8C:26:63:BD:8C:49:15:4E:66:6A:65:82:BD:05:71:22:33:B3:67:32:EE:18:DF:E6:A4:2B:B7:62:F2:23:04"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 RSA CA 087"
+          url: "https://pki.infineon.com/OptigaRsaMfrCA087/OptigaRsaMfrCA087.crt"
+          validation:
+            fingerprint:
+                sha256: "F4:3A:A9:CC:82:B5:BA:F4:E6:0B:F8:B6:A6:33:41:F1:BD:C9:98:8A:9B:EF:00:81:9E:3F:02:7E:55:84:C8:3A"
     - id: "NTC"
       name: "Nuvoton Technology"
       certificates:

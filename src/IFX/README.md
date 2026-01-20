@@ -23,8 +23,8 @@ This turned out to be a real treasure hunt!
 | Infineon OPTIGA(TM) RSA Root CA 3 | Root | PKI endpoint discovery | No |
 | Infineon OPTIGA(TM) ECC Manufacturing CA 000 to 036 | Intermediate | Official documentation | No |
 | Infineon OPTIGA(TM) RSA Manufacturing CA 000 to 036 | Intermediate | Official documentation | No |
-| Infineon OPTIGA(TM) TPM 2.0 ECC CA 037 to 078 | Intermediate | Official documentation | No |
-| Infineon OPTIGA(TM) TPM 2.0 RSA CA 037 to 078 | Intermediate | Official documentation | No |
+| Infineon OPTIGA(TM) TPM 2.0 ECC CA 037 to 087 | Intermediate | Official documentation | No |
+| Infineon OPTIGA(TM) TPM 2.0 RSA CA 037 to 087 | Intermediate | Official documentation | No |
 
 ## Discovery Process
 
