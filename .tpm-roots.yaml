@@ -45,6 +45,11 @@ vendors:
     - id: "MSFT"
       name: "Microsoft"
       certificates:
+        - name: "Microsoft Pluton Root CA 2021"
+          url: "https://www.microsoft.com/pkiops/certs/Microsoft%20Pluton%20Root%20CA%202021.crt"
+          validation:
+            fingerprint:
+                sha256: "32:AB:5F:E7:CB:43:96:65:9F:CB:62:1C:A1:4C:6F:B8:FC:24:20:F6:40:50:63:7D:77:E4:5A:86:C5:D3:91:6E"
         - name: "Microsoft TPM Root Certificate Authority 2014"
           url: "https://www.microsoft.com/pkiops/certs/Microsoft%20TPM%20Root%20Certificate%20Authority%202014.crt"
           validation:
