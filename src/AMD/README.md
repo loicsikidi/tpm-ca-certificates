@@ -28,16 +28,12 @@ AMD provides TPM certificates through their firmware TPM (fTPM) and Pluton imple
 
 Since the domain **ftpm.amd.com** is owned by Advanced Micro Devices, Inc., we can reasonably assume this certificate is legitimate.
 
-### AMDTPM ECC
-
-**Discovery Method**:
-1. Retrieved the certificate bundle maintained by Microsoft
-2. Selected an intermediate certificate issued by AMD from the bundle
-3. Extracted the Authority Information Access (AIA) extension from the intermediate certificate
-4. The AIA extension contained a URL pointing to the root certificate: `http://ftpm.amd.com/pki/aia/23452201D41C5AB064032BD23F158FEF`
-5. Downloaded the certificate from the AIA URL
-
-Since the domain **ftpm.amd.com** is owned by Advanced Micro Devices, Inc., we can reasonably assume this certificate is legitimate.
+**Verification**:
+You can verify the AIA extraction process yourself using the included intermediate certificate:
+```bash
+openssl x509 -in src/AMD/AMD-fTPM-RSA-ICA-PHXFamily.crt -noout -text | grep -A2 "Authority Information Access"
+```
+Expected output should contain: `CA Issuers - URI:http://ftpm.amd.com/pki/aia/264D39A23CEB5D5B49D610044EEBD121`
 
 ### AMDTPM ECC
 
@@ -49,3 +45,28 @@ Since the domain **ftpm.amd.com** is owned by Advanced Micro Devices, Inc., we c
 5. Downloaded the certificate from the AIA URL
 
 Since the domain **ftpm.amd.com** is owned by Advanced Micro Devices, Inc., we can reasonably assume this certificate is legitimate.
+
+**Verification**:
+You can verify the AIA extraction process yourself using the included intermediate certificate:
+```bash
+openssl x509 -in src/AMD/AMD-fTPM-ECC-ICA-PHXFamily.crt -noout -text | grep -A2 "Authority Information Access"
+```
+Expected output should contain: `CA Issuers - URI:http://ftpm.amd.com/pki/aia/23452201D41C5AB064032BD23F158FEF`
+
+### AMD Pluton Global Factory ICA
+
+**Discovery Method**:
+1. Retrieved the certificate bundle maintained by Microsoft
+2. Selected an intermediate certificate issued by AMD from the bundle
+3. Extracted the Authority Information Access (AIA) extension from the intermediate certificate
+4. The AIA extension contained a URL pointing to the root certificate: `https://ftpm.amd.com/hsp/ica/AMD-Pluton-Global-Factory-ICA.crt`
+5. Downloaded the certificate from the AIA URL
+
+Since the domain **ftpm.amd.com** is owned by Advanced Micro Devices, Inc., we can reasonably assume this certificate is legitimate.
+
+**Verification**:
+You can verify the AIA extraction process yourself using the included intermediate certificate:
+```bash
+openssl x509 -in src/AMD/AMD-Pluton-Per-Product-Factory-FIPS-EKICA-DFID00B20F00.crt -noout -text | grep -A2 "Authority Information Access"
+```
+Expected output should contain: `CA Issuers - URI:https://ftpm.amd.com/hsp/ica/AMD-Pluton-Global-Factory-ICA.crt`
