@@ -1,6 +1,24 @@
 ---
 version: "alpha"
 vendors:
+    - id: "AMD"
+      name: "AMD"
+      certificates:
+        - name: "AMD Pluton Global Factory ICA"
+          url: "https://ftpm.amd.com/hsp/ica/AMD-Pluton-Global-Factory-ICA.crt"
+          validation:
+            fingerprint:
+                sha256: "59:3A:17:94:F9:E1:74:76:C7:AD:42:7D:29:08:A9:7C:45:14:51:C9:E0:93:9F:DC:80:D5:D6:62:C2:32:D4:01"
+        - name: "AMDTPM ECC"
+          url: "https://ftpm.amd.com/pki/aia/23452201D41C5AB064032BD23F158FEF"
+          validation:
+            fingerprint:
+                sha256: "C2:CB:57:BF:72:3C:17:4F:16:6C:5A:A1:DC:64:16:09:81:05:4B:EE:18:C7:0E:B1:DE:BF:C1:51:8A:FA:92:D2"
+        - name: "AMDTPM RSA"
+          url: "https://ftpm.amd.com/pki/aia/264D39A23CEB5D5B49D610044EEBD121"
+          validation:
+            fingerprint:
+                sha256: "B7:3F:14:DE:A3:BD:AA:0B:E8:74:40:DE:3F:C7:18:C7:71:F2:CB:F8:B7:B2:23:1C:6E:A2:28:D3:B2:08:60:EF"
     - id: "IFX"
       name: "Infineon"
       certificates:
