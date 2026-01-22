@@ -23,7 +23,7 @@ vendors:
       name: "Infineon"
       certificates:
         - name: "Infineon OPTIGA(TM) ECC Root CA"
-          url: "https://www.infineon.com/assets/row/public/documents/30/67/infineon-optigatm-trust-ecc-root-ca-certificates-en.cer"
+          url: "https://pki.infineon.com/OptigaEccRootCA/OptigaEccRootCA.crt"
           validation:
             fingerprint:
                 sha256: "CF:EB:02:FE:CD:55:AD:7A:73:C6:E1:D1:19:85:D4:C4:7D:EE:24:8A:B6:3D:CB:66:09:1A:24:89:66:04:43:C3"
