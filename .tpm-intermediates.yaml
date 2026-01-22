@@ -69,11 +69,6 @@ vendors:
           validation:
             fingerprint:
                 sha256: "62:3A:50:D9:89:35:00:07:FB:42:9C:5E:1D:BC:15:20:BF:26:95:C3:D9:DA:25:8F:D7:37:72:83:70:3E:D7:CA"
-        - name: "Pluton Factory DEVICE EK ICA DFID00A70F00"
-          url: "https://ftpm.amd.com/hsp/ica/00A70F00-device.crt"
-          validation:
-            fingerprint:
-                sha256: "7F:BA:DE:15:0B:A8:0D:32:C7:7E:37:3B:38:F6:E0:50:40:C2:33:FE:E5:F8:3E:86:FC:3F:53:A5:47:66:0C:83"
         - name: "Pluton Factory FIPS EK ICA DFID0001"
           url: "https://ftpm.amd.com/hsp/ica/0001-fips.crt"
           validation:
@@ -89,11 +84,6 @@ vendors:
           validation:
             fingerprint:
                 sha256: "1C:74:E7:D6:28:FB:F4:6A:C9:78:A5:C7:C5:E4:F1:CE:CD:5F:59:89:E8:6D:54:46:11:A6:14:5E:2C:64:B4:E3"
-        - name: "Pluton Factory FIPS EK ICA DFID00A70F00"
-          url: "https://ftpm.amd.com/hsp/ica/00A70F00-fips.crt"
-          validation:
-            fingerprint:
-                sha256: "8B:23:68:C4:C0:98:55:39:20:0C:B4:2D:4D:1B:24:0B:61:D0:B3:6F:4F:98:82:E8:12:BD:86:06:03:6F:97:5E"
     - id: "IFX"
       name: "Infineon"
       certificates:

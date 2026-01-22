@@ -1,0 +1,16 @@
+---
+version: "alpha"
+vendors:
+    - id: "AMD"
+      name: "AMD"
+      certificates:
+        - name: "Pluton Factory DEVICE EK ICA DFID00A70F00"
+          url: "https://ftpm.amd.com/hsp/ica/00A70F00-device.crt"
+          validation:
+            fingerprint:
+                sha256: "7F:BA:DE:15:0B:A8:0D:32:C7:7E:37:3B:38:F6:E0:50:40:C2:33:FE:E5:F8:3E:86:FC:3F:53:A5:47:66:0C:83"
+        - name: "Pluton Factory FIPS EK ICA DFID00A70F00"
+          url: "https://ftpm.amd.com/hsp/ica/00A70F00-fips.crt"
+          validation:
+            fingerprint:
+                sha256: "8B:23:68:C4:C0:98:55:39:20:0C:B4:2D:4D:1B:24:0B:61:D0:B3:6F:4F:98:82:E8:12:BD:86:06:03:6F:97:5E"
