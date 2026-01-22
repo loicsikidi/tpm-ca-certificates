@@ -34,6 +34,9 @@ This turned out to be a real treasure hunt!
 - **Web Page**: https://www.infineon.com/design-resources/platforms/optiga-software-tools/optiga-tpm-certificates/optiga-trust-certificates
 - **Screenshot Reference**: ![infineon_website.png](infineon_website.png)
 
+> [!NOTE]
+> **Erratum (2026-01-22)**: The certificate URL has been switched from the documentation endpoint to the PKI API endpoint (`https://pki.infineon.com/OptigaEccRootCA/OptigaEccRootCA.crt`). The previous documentation endpoint returns an HTTP 202 error. This change harmonizes the configuration with other Infineon root certificates, all of which use the PKI API endpoints.
+
 ### Infineon OPTIGA(TM) RSA Root CA
 
 **Discovery Method**:
