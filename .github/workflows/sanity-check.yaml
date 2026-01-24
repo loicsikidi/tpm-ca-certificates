@@ -112,9 +112,9 @@ jobs:
           mv scripts/predict-new-urls.gos scripts/predict-new-urls.go
           mv scripts/verify-coverage.gos scripts/verify-coverage.go
           echo "Predicting available ${{ matrix.vendor }} ${{ matrix.cert-type }} certificates..."
-          nix-shell --run 'scripts/predict-new-urls.go --vendor ${{ matrix.vendor }} --type ${{ matrix.cert-type }} --out /tmp/${{ matrix.vendor }}-${{ matrix.cert-type }}-available.txt'
+          nix-shell --run 'scripts/predict-new-urls.go --vendor ${{ matrix.vendor-id }} --type ${{ matrix.cert-type }} --out /tmp/${{ matrix.vendor }}-${{ matrix.cert-type }}-available.txt'
           echo "Verifying all available certificates are in config..."
-          nix-shell --run 'scripts/verify-coverage.go --in /tmp/${{ matrix.vendor }}-${{ matrix.cert-type }}-available.txt --config ${{ matrix.config-file }} --vendor ${{ matrix.vendor }}'
+          nix-shell --run 'scripts/verify-coverage.go --in /tmp/${{ matrix.vendor }}-${{ matrix.cert-type }}-available.txt --config ${{ matrix.config-file }} --vendor ${{ matrix.vendor-id }}'
   integration-tests:
     name: Run Integration Tests
     runs-on: ubuntu-latest
