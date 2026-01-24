@@ -1,0 +1,199 @@
+#!/usr/bin/env -S gos run
+// /// script
+// dependencies = [
+//     "go.yaml.in/yaml/v4@v4.0.0-rc.3",
+// ]
+// ///
+
+// compare-changes.gos compares two versions of TPM certificate configurations
+// and generates a markdown changelog table.
+//
+// Usage:
+//
+//	scripts/compare-changes.gos <old-roots.yaml> <new-roots.yaml> <old-intermediates.yaml> <new-intermediates.yaml>
+//
+// Example:
+//
+//	# Compare two git tags
+//	git show 2026-01-12:.tpm-roots.yaml > /tmp/roots-old.yaml
+//	git show 2026-01-22:.tpm-roots.yaml > /tmp/roots-new.yaml
+//	git show 2026-01-12:.tpm-intermediates.yaml > /tmp/intermediates-old.yaml
+//	git show 2026-01-22:.tpm-intermediates.yaml > /tmp/intermediates-new.yaml
+//	scripts/compare-changes.gos /tmp/roots-old.yaml /tmp/roots-new.yaml /tmp/intermediates-old.yaml /tmp/intermediates-new.yaml
+//
+// The script outputs a markdown table with the following columns:
+//   - Certificate: The name of the certificate
+//   - Type: Either "Root" or "Intermediate"
+//   - Vendor: The vendor ID (AMD, IFX, INTC, MSFT, NTC, STM)
+//   - Action: One of "ADD", "REMOVE", or "UPDATE URL"
+package main
+
+import (
+	"fmt"
+	"os"
+	"sort"
+
+	"go.yaml.in/yaml/v4"
+)
+
+type Config struct {
+	Version string   `yaml:"version"`
+	Vendors []Vendor `yaml:"vendors"`
+}
+
+type Vendor struct {
+	ID           string        `yaml:"id"`
+	Name         string        `yaml:"name"`
+	Certificates []Certificate `yaml:"certificates"`
+}
+
+type Certificate struct {
+	Name       string     `yaml:"name"`
+	URL        string     `yaml:"url"`
+	Validation Validation `yaml:"validation"`
+}
+
+type Validation struct {
+	Fingerprint Fingerprint `yaml:"fingerprint"`
+}
+
+type Fingerprint struct {
+	SHA256 string `yaml:"sha256,omitempty"`
+	SHA1   string `yaml:"sha1,omitempty"`
+}
+
+type Change struct {
+	Certificate string
+	Type        string
+	Vendor      string
+	Action      string
+}
+
+func main() {
+	if len(os.Args) != 5 {
+		fmt.Fprintf(os.Stderr, "Usage: %s <old-roots> <new-roots> <old-intermediates> <new-intermediates>\n", os.Args[0])
+		os.Exit(1)
+	}
+
+	oldRoots := loadConfig(os.Args[1])
+	newRoots := loadConfig(os.Args[2])
+	oldIntermediates := loadConfig(os.Args[3])
+	newIntermediates := loadConfig(os.Args[4])
+
+	var changes []Change
+
+	// Compare roots
+	changes = append(changes, compareConfigs(oldRoots, newRoots, "Root")...)
+
+	// Compare intermediates
+	changes = append(changes, compareConfigs(oldIntermediates, newIntermediates, "Intermediate")...)
+
+	// Sort changes by vendor, then by type, then by action, then by certificate name
+	sort.Slice(changes, func(i, j int) bool {
+		if changes[i].Vendor != changes[j].Vendor {
+			return changes[i].Vendor < changes[j].Vendor
+		}
+		if changes[i].Type != changes[j].Type {
+			return changes[i].Type < changes[j].Type
+		}
+		if changes[i].Action != changes[j].Action {
+			return changes[i].Action < changes[j].Action
+		}
+		return changes[i].Certificate < changes[j].Certificate
+	})
+
+	// Print markdown table
+	fmt.Println("| Certificate | Type | Vendor | Action |")
+	fmt.Println("|-------------|:----:|:------:|:------:|")
+	for _, change := range changes {
+		fmt.Printf("| %s | %s | %s | %s |\n", change.Certificate, change.Type, change.Vendor, change.Action)
+	}
+}
+
+func loadConfig(filename string) Config {
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error reading %s: %v\n", filename, err)
+		os.Exit(1)
+	}
+
+	var config Config
+	if err := yaml.Unmarshal(data, &config); err != nil {
+		fmt.Fprintf(os.Stderr, "Error parsing %s: %v\n", filename, err)
+		os.Exit(1)
+	}
+
+	return config
+}
+
+func compareConfigs(oldConfig, newConfig Config, certType string) []Change {
+	var changes []Change
+
+	// Build maps for easy lookup
+	oldCerts := make(map[string]map[string]Certificate) // vendor -> cert name -> cert
+	newCerts := make(map[string]map[string]Certificate)
+
+	for _, vendor := range oldConfig.Vendors {
+		if oldCerts[vendor.ID] == nil {
+			oldCerts[vendor.ID] = make(map[string]Certificate)
+		}
+		for _, cert := range vendor.Certificates {
+			oldCerts[vendor.ID][cert.Name] = cert
+		}
+	}
+
+	for _, vendor := range newConfig.Vendors {
+		if newCerts[vendor.ID] == nil {
+			newCerts[vendor.ID] = make(map[string]Certificate)
+		}
+		for _, cert := range vendor.Certificates {
+			newCerts[vendor.ID][cert.Name] = cert
+		}
+	}
+
+	// Find additions
+	for _, vendor := range newConfig.Vendors {
+		for _, cert := range vendor.Certificates {
+			if _, exists := oldCerts[vendor.ID][cert.Name]; !exists {
+				changes = append(changes, Change{
+					Certificate: cert.Name,
+					Type:        certType,
+					Vendor:      vendor.ID,
+					Action:      "ADD",
+				})
+			}
+		}
+	}
+
+	// Find removals
+	for _, vendor := range oldConfig.Vendors {
+		for _, cert := range vendor.Certificates {
+			if _, exists := newCerts[vendor.ID][cert.Name]; !exists {
+				changes = append(changes, Change{
+					Certificate: cert.Name,
+					Type:        certType,
+					Vendor:      vendor.ID,
+					Action:      "REMOVE",
+				})
+			}
+		}
+	}
+
+	// Find URL changes
+	for vendorID, certs := range oldCerts {
+		for certName, oldCert := range certs {
+			if newCert, exists := newCerts[vendorID][certName]; exists {
+				if oldCert.URL != newCert.URL {
+					changes = append(changes, Change{
+						Certificate: certName,
+						Type:        certType,
+						Vendor:      vendorID,
+						Action:      "UPDATE URL",
+					})
+				}
+			}
+		}
+	}
+
+	return changes
+}
