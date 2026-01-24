@@ -1,0 +1,247 @@
+#!/usr/bin/env -S gos run
+
+package main
+
+import (
+	"flag"
+	"fmt"
+	"net/http"
+	"os"
+	"sort"
+	"strings"
+	"sync"
+)
+
+const (
+	defaultCount = 150
+)
+
+// CertType represents the type of certificate (root or intermediate).
+type CertType string
+
+const (
+	CertTypeRoot         CertType = "root"
+	CertTypeIntermediate CertType = "intermediate"
+)
+
+// VendorPattern represents a URL pattern for a specific certificate type.
+type VendorPattern struct {
+	Name        string
+	CertType    CertType
+	URLTemplate string
+	// MaxCount specifies the maximum number to scan for this pattern.
+	// If 0, uses the global count flag.
+	MaxCount int
+	// StartIndex specifies the starting index for scanning.
+	// Defaults to 0 if not specified.
+	StartIndex int
+}
+
+// VendorConfig contains configuration for scanning a vendor's PKI.
+type VendorConfig struct {
+	ID       string
+	Name     string
+	Patterns []VendorPattern
+}
+
+var vendors = map[string]VendorConfig{
+	"ifx": {
+		ID:   "IFX",
+		Name: "Infineon",
+		Patterns: []VendorPattern{
+			{
+				Name:        "RSA Intermediate",
+				CertType:    CertTypeIntermediate,
+				URLTemplate: "https://pki.infineon.com/OptigaRsaMfrCA%03d/OptigaRsaMfrCA%03d.crt",
+				MaxCount:    0, // uses global count
+			},
+			{
+				Name:        "ECC Intermediate",
+				CertType:    CertTypeIntermediate,
+				URLTemplate: "https://pki.infineon.com/OptigaEccMfrCA%03d/OptigaEccMfrCA%03d.crt",
+				MaxCount:    0, // uses global count
+			},
+			{
+				Name:        "RSA Root",
+				CertType:    CertTypeRoot,
+				URLTemplate: "https://pki.infineon.com/OptigaRsaRootCA%d/OptigaRsaRootCA%d.crt",
+				MaxCount:    10, // root certificates usually have low numbers
+			},
+			{
+				Name:        "ECC Root",
+				CertType:    CertTypeRoot,
+				URLTemplate: "https://pki.infineon.com/OptigaEccRootCA%d/OptigaEccRootCA%d.crt",
+				MaxCount:    10, // root certificates usually have low numbers
+			},
+		},
+	},
+	"stm": {
+		ID:   "STM",
+		Name: "STMicroelectronics",
+		Patterns: []VendorPattern{
+			{
+				Name:        "STSAFE ECC Root",
+				CertType:    CertTypeRoot,
+				URLTemplate: "https://sw-center.st.com/STSAFE/STSAFEEccRootCA%02d.crt",
+				MaxCount:    10,
+				StartIndex:  1,
+			},
+			{
+				Name:        "STSAFE RSA Root",
+				CertType:    CertTypeRoot,
+				URLTemplate: "https://sw-center.st.com/STSAFE/STSAFERsaRootCA%02d.crt",
+				MaxCount:    10,
+				StartIndex:  1,
+			},
+			{
+				Name:        "TPM ECC Intermediate",
+				CertType:    CertTypeIntermediate,
+				URLTemplate: "https://secure.globalsign.com/cacert/stmtpmeccint%02d.crt",
+				MaxCount:    10,
+				StartIndex:  1,
+			},
+			{
+				Name:        "TPM ECC384 Intermediate",
+				CertType:    CertTypeIntermediate,
+				URLTemplate: "https://secure.globalsign.com/cacert/stmtpmecc384int%02d.crt",
+				MaxCount:    10,
+				StartIndex:  1,
+			},
+			{
+				Name:        "TPM EK Intermediate",
+				CertType:    CertTypeIntermediate,
+				URLTemplate: "https://secure.globalsign.com/cacert/stmtpmekint%02d.crt",
+				MaxCount:    10,
+				StartIndex:  1,
+			},
+		},
+	},
+}
+
+func main() {
+	count := flag.Int("count", defaultCount, "maximum number to check")
+	out := flag.String("out", "", "output file (default: stdout)")
+	vendor := flag.String("vendor", "ifx", "vendor to scan (ifx, all)")
+	certType := flag.String("type", "", "filter by certificate type: 'root' or 'intermediate' (empty = no filter)")
+	flag.Parse()
+
+	// Validate type flag
+	if *certType != "" && *certType != "root" && *certType != "intermediate" {
+		fmt.Fprintf(os.Stderr, "Error: --type must be either 'root' or 'intermediate'\n")
+		os.Exit(1)
+	}
+
+	// Determine which vendors to scan
+	var vendorsToScan []VendorConfig
+	vendorKey := strings.ToLower(*vendor)
+	if vendorKey == "all" {
+		for _, v := range vendors {
+			vendorsToScan = append(vendorsToScan, v)
+		}
+	} else {
+		v, ok := vendors[vendorKey]
+		if !ok {
+			fmt.Fprintf(os.Stderr, "Unknown vendor: %s\n", *vendor)
+			fmt.Fprintf(os.Stderr, "Available vendors: ")
+			keys := make([]string, 0, len(vendors))
+			for k := range vendors {
+				keys = append(keys, k)
+			}
+			sort.Strings(keys)
+			fmt.Fprintf(os.Stderr, "%s, all\n", strings.Join(keys, ", "))
+			os.Exit(1)
+		}
+		vendorsToScan = append(vendorsToScan, v)
+	}
+
+	var (
+		wg   sync.WaitGroup
+		mu   sync.Mutex
+		urls []string
+	)
+
+	// Channel to limit concurrent requests
+	semaphore := make(chan struct{}, 10)
+
+	// Scan each vendor
+	for _, v := range vendorsToScan {
+		for _, pattern := range v.Patterns {
+			// Skip pattern if type filter is set and doesn't match
+			if *certType != "" && string(pattern.CertType) != *certType {
+				continue
+			}
+
+			// Determine the count for this pattern
+			maxCount := *count
+			if pattern.MaxCount > 0 {
+				maxCount = pattern.MaxCount
+			}
+
+			startIndex := pattern.StartIndex
+			for i := startIndex; i < startIndex+maxCount; i++ {
+				wg.Add(1)
+
+				go func(vendorID string, patternName string, urlTemplate string, num int) {
+					defer wg.Done()
+					semaphore <- struct{}{}
+					defer func() { <-semaphore }()
+
+					// Format URL based on number of placeholders in template
+					var url string
+					placeholderCount := strings.Count(urlTemplate, "%") - strings.Count(urlTemplate, "%%")
+					if placeholderCount == 1 {
+						url = fmt.Sprintf(urlTemplate, num)
+					} else {
+						url = fmt.Sprintf(urlTemplate, num, num)
+					}
+
+					if checkURL(url) {
+						mu.Lock()
+						urls = append(urls, url)
+						mu.Unlock()
+					}
+				}(v.ID, pattern.Name, pattern.URLTemplate, i)
+			}
+		}
+	}
+
+	wg.Wait()
+
+	// Sort URLs alphabetically
+	sort.Strings(urls)
+
+	if len(urls) == 0 {
+		fmt.Fprintln(os.Stderr, "No certificates found")
+		os.Exit(1)
+	}
+
+	// Determine output destination
+	var output *os.File
+	if *out == "" {
+		output = os.Stdout
+	} else {
+		f, err := os.Create(*out)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to create output file: %v\n", err)
+			os.Exit(1)
+		}
+		defer f.Close()
+		output = f
+	}
+
+	// Print all found URLs
+	for _, url := range urls {
+		fmt.Fprintln(output, url)
+	}
+}
+
+// checkURL verifies if a URL returns HTTP 200.
+func checkURL(url string) bool {
+	resp, err := http.Head(url)
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+
+	return resp.StatusCode == http.StatusOK
+}
