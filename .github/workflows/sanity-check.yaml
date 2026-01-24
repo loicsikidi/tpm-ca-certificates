@@ -71,11 +71,33 @@ jobs:
             ./tpmtb bundle download --type ${{ matrix.bundle-type }}
             ./tpmtb bundle verify ./${{ matrix.bundle-file }}
             ./tpmtb bundle validate ./${{ matrix.bundle-file }}
-  infineon-coverage:
-    name: Verify Infineon Certificates Coverage
+  vendor-coverage:
+    name: Verify ${{ matrix.vendor }} ${{ matrix.cert-type }} Certificates Coverage
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        vendor: [ifx, stm]
+        cert-type: [root, intermediate]
+        include:
+          - vendor: ifx
+            vendor-id: IFX
+            cert-type: root
+            config-file: .tpm-roots.yaml
+          - vendor: ifx
+            vendor-id: IFX
+            cert-type: intermediate
+            config-file: .tpm-intermediates.yaml
+          - vendor: stm
+            vendor-id: STM
+            cert-type: root
+            config-file: .tpm-roots.yaml
+          - vendor: stm
+            vendor-id: STM
+            cert-type: intermediate
+            config-file: .tpm-intermediates.yaml
     steps:
       - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
@@ -84,15 +106,15 @@ jobs:
         with:
           nix_path: nixpkgs=channel:nixos-unstable
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
-      - name: run infineon coverage check
+      - name: Check ${{ matrix.vendor }} ${{ matrix.cert-type }} coverage
         run: |
           echo "Renaming Go scripts..."
-          mv scripts/scan-infineon-pki.gos scripts/scan-infineon-pki.go
-          mv scripts/verify-infineon-coverage.gos scripts/verify-infineon-coverage.go
-          echo "Scanning Infineon PKI for available certificates..."
-          nix-shell --run 'scripts/scan-infineon-pki.go --out /tmp/infineon-available.txt'
+          mv scripts/predict-new-urls.gos scripts/predict-new-urls.go
+          mv scripts/verify-coverage.gos scripts/verify-coverage.go
+          echo "Predicting available ${{ matrix.vendor }} ${{ matrix.cert-type }} certificates..."
+          nix-shell --run 'scripts/predict-new-urls.go --vendor ${{ matrix.vendor }} --type ${{ matrix.cert-type }} --out /tmp/${{ matrix.vendor }}-${{ matrix.cert-type }}-available.txt'
           echo "Verifying all available certificates are in config..."
-          nix-shell --run 'scripts/verify-infineon-coverage.go --urls /tmp/infineon-available.txt --config .tpm-intermediates.yaml --vendor-id IFX'
+          nix-shell --run 'scripts/verify-coverage.go --urls /tmp/${{ matrix.vendor }}-${{ matrix.cert-type }}-available.txt --config ${{ matrix.config-file }} --vendor-id ${{ matrix.vendor-id }} --type ${{ matrix.cert-type }}'
   integration-tests:
     name: Run Integration Tests
     runs-on: ubuntu-latest

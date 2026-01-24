@@ -52,7 +52,13 @@ func main() {
 
 	if *urlsFile == "" {
 		fmt.Fprintln(os.Stderr, "Error: --urls flag is required")
-		fmt.Fprintln(os.Stderr, "Usage: verify-infineon-coverage.go --urls <file> [--config <file>] [--vendor-id <id>]")
+		fmt.Fprintln(os.Stderr, "Usage: verify-infineon-coverage.go --urls <file> [--config <file>] [--vendor-id <id>] [--type <root|intermediate>]")
+		os.Exit(1)
+	}
+
+	// Validate type flag
+	if *certType != "" && *certType != "root" && *certType != "intermediate" {
+		fmt.Fprintf(os.Stderr, "Error: --type must be either 'root' or 'intermediate'\n")
 		os.Exit(1)
 	}
 
@@ -62,7 +68,14 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error loading URLs: %v\n", err)
 		os.Exit(1)
 	}
-	fmt.Fprintf(os.Stderr, "Found %d available certificates in %s\n", len(availableURLs), *urlsFile)
+
+	// Filter by type if requested
+	if *certType != "" {
+		availableURLs = filterByType(availableURLs, *certType)
+		fmt.Fprintf(os.Stderr, "Found %d available %s certificates in %s\n", len(availableURLs), *certType, *urlsFile)
+	} else {
+		fmt.Fprintf(os.Stderr, "Found %d available certificates in %s\n", len(availableURLs), *urlsFile)
+	}
 
 	// Load config file
 	configURLs, err := loadConfigURLs(*configFile, *vendorID)
@@ -70,7 +83,14 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error loading config: %v\n", err)
 		os.Exit(1)
 	}
-	fmt.Fprintf(os.Stderr, "Found %d certificates in config\n", len(configURLs))
+
+	// Filter config URLs by type if requested
+	if *certType != "" {
+		configURLs = filterByType(configURLs, *certType)
+		fmt.Fprintf(os.Stderr, "Found %d %s certificates in config\n", len(configURLs), *certType)
+	} else {
+		fmt.Fprintf(os.Stderr, "Found %d certificates in config\n", len(configURLs))
+	}
 
 	// Find missing URLs
 	missingURLs := findMissing(availableURLs, configURLs)
@@ -154,4 +174,33 @@ func findMissing(available, config []string) []string {
 	}
 
 	return missing
+}
+
+// filterByType filters URLs by certificate type based on the URL path.
+// Detection rules:
+//   - URLs containing "/Root/" are root certificates (Infineon pattern)
+//   - URLs containing "/Intermediate/" are intermediate certificates (Infineon pattern)
+//   - URLs containing "RootCA" in filename are root certificates (STM, AMD patterns)
+//   - URLs containing "int" or "ica" in filename are intermediate certificates (STM, AMD patterns)
+func filterByType(urls []string, certType string) []string {
+	var filtered []string
+	for _, url := range urls {
+		urlLower := strings.ToLower(url)
+
+		// Detect root certificates
+		isRoot := strings.Contains(url, "/Root/") ||
+			strings.Contains(urlLower, "rootca")
+
+		// Detect intermediate certificates
+		isIntermediate := strings.Contains(url, "/Intermediate/") ||
+			strings.Contains(urlLower, "int") ||
+			strings.Contains(urlLower, "ica")
+
+		if certType == "root" && isRoot && !isIntermediate {
+			filtered = append(filtered, url)
+		} else if certType == "intermediate" && isIntermediate {
+			filtered = append(filtered, url)
+		}
+	}
+	return filtered
 }
