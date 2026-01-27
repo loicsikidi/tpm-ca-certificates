@@ -49,7 +49,7 @@ func runAddVendor(opts *addOptions) error {
 		return err
 	}
 
-	cfg, err := config.LoadConfig(opts.configPath)
+	cfg, err := config.LoadConfigWithDynamicURIResolution(opts.configPath)
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
 	}

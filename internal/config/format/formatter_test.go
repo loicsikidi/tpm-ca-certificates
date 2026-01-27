@@ -104,6 +104,51 @@ func TestEncodeURL(t *testing.T) {
 	}
 }
 
+func TestEncodeURI(t *testing.T) {
+	f := NewFormatter()
+
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name:  "url with unencoded space",
+			input: "https://example.com/Nuvoton TPM Root CA.cer",
+			want:  "https://example.com/Nuvoton%20TPM%20Root%20CA.cer",
+		},
+		{
+			name:  "url already encoded",
+			input: "https://example.com/Nuvoton%20TPM%20Root%20CA.cer",
+			want:  "https://example.com/Nuvoton%20TPM%20Root%20CA.cer",
+		},
+		{
+			name:  "url without spaces",
+			input: "https://example.com/cert.cer",
+			want:  "https://example.com/cert.cer",
+		},
+		{
+			name:  "file uro",
+			input: "file:///{repo}/path/to/cert.cer",
+			want:  "file:///{repo}/path/to/cert.cer",
+		},
+		{
+			name:  "empty string",
+			input: "",
+			want:  "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := f.encodeURI(tt.input)
+			if got != tt.want {
+				t.Errorf("encodeURI() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestApplyFormatting(t *testing.T) {
 	f := NewFormatter()
 

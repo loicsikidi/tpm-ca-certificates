@@ -72,6 +72,7 @@ func runList(opts *listOptions) error {
 
 		for _, cert := range vendor.Certificates {
 			fmt.Printf("  Certificate: %s\n", cert.Name)
+			//nolint:staticcheck // SA1019: need to transition from URL to URI
 			fmt.Printf("    URL: %s\n", cert.URL)
 
 			fp := cert.Validation.Fingerprint

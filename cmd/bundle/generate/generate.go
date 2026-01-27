@@ -99,7 +99,7 @@ func Run(ctx context.Context, o *Opts) error {
 		return err
 	}
 
-	cfg, err := config.LoadConfig(o.ConfigPath)
+	cfg, err := config.LoadConfigWithDynamicURIResolution(o.ConfigPath)
 	if err != nil {
 		return fmt.Errorf("failed to load configuration: %w", err)
 	}
