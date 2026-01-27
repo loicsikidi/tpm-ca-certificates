@@ -104,7 +104,7 @@ func TestGetBundleFromCache(t *testing.T) {
 			needChecksumSignature: true,
 			needProvenance:        true,
 		}
-		result, err := getAssetsFromCache(assetsCfg)
+		result, err := getAssetsFromCache(t.Context(), assetsCfg)
 		if err != nil {
 			t.Fatalf("Failed to load from cache: %v", err)
 		}
@@ -134,7 +134,7 @@ func TestGetBundleFromCache(t *testing.T) {
 		assetsCfg := assetsConfig{
 			cachePath: tmpDir,
 		}
-		result, err := getAssetsFromCache(assetsCfg)
+		result, err := getAssetsFromCache(t.Context(), assetsCfg)
 		if err != nil {
 			t.Fatalf("Failed to load from cache: %v", err)
 		}
@@ -162,7 +162,7 @@ func TestGetBundleFromCache(t *testing.T) {
 			needChecksumSignature: true,
 			needProvenance:        true,
 		}
-		_, err := getAssetsFromCache(assetsCfg)
+		_, err := getAssetsFromCache(t.Context(), assetsCfg)
 		if err == nil {
 			t.Fatal("Expected error when bundle file does not exist")
 		}
@@ -189,7 +189,7 @@ func TestGetBundleFromCache(t *testing.T) {
 			needChecksumSignature: true,
 			needProvenance:        true,
 		}
-		_, err = getAssetsFromCache(assetsCfg)
+		_, err = getAssetsFromCache(t.Context(), assetsCfg)
 		if err == nil {
 			t.Fatal("Expected error when verification assets are missing")
 		}

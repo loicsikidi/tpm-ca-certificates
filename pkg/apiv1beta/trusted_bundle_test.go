@@ -1,6 +1,7 @@
 package apiv1beta
 
 import (
+	"context"
 	"crypto/x509"
 	"os"
 	"path/filepath"
@@ -37,14 +38,14 @@ func TestPersist(t *testing.T) {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
 
-		tb, err := newTrustedBundle(bundleData)
+		tb, err := newTrustedBundle(context.Background(), bundleData)
 		if err != nil {
 			t.Fatalf("Failed to create trusted bundle: %v", err)
 		}
 		tb.(*trustedBundle).vendorFilter = []VendorID{IFX}
 
 		// Persist the bundle
-		if err := tb.Persist(tmpDir); err != nil {
+		if err := tb.Persist(context.Background(), tmpDir); err != nil {
 			t.Fatalf("Failed to persist bundle: %v", err)
 		}
 
@@ -99,12 +100,12 @@ func TestPersist(t *testing.T) {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
 
-		tb, err := newTrustedBundle(bundleData)
+		tb, err := newTrustedBundle(context.Background(), bundleData)
 		if err != nil {
 			t.Fatalf("Failed to create trusted bundle: %v", err)
 		}
 
-		if err := tb.Persist(tmpDir); err != nil {
+		if err := tb.Persist(context.Background(), tmpDir); err != nil {
 			t.Fatalf("Failed to persist bundle: %v", err)
 		}
 
@@ -128,7 +129,7 @@ func TestGetVendors(t *testing.T) {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
 
-		tb, err := newTrustedBundle(bundleData)
+		tb, err := newTrustedBundle(context.Background(), bundleData)
 		if err != nil {
 			t.Fatalf("Failed to create trusted bundle: %v", err)
 		}
@@ -151,7 +152,7 @@ func TestGetVendors(t *testing.T) {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
 
-		tb, err := newTrustedBundle(bundleData)
+		tb, err := newTrustedBundle(context.Background(), bundleData)
 		if err != nil {
 			t.Fatalf("Failed to create trusted bundle: %v", err)
 		}
@@ -174,7 +175,7 @@ func TestGetVendors(t *testing.T) {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
 
-		tb, err := newTrustedBundle(bundleData)
+		tb, err := newTrustedBundle(context.Background(), bundleData)
 		if err != nil {
 			t.Fatalf("Failed to create trusted bundle: %v", err)
 		}
@@ -195,7 +196,7 @@ func TestGetVendors(t *testing.T) {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
 
-		tb, err := newTrustedBundle(bundleData)
+		tb, err := newTrustedBundle(context.Background(), bundleData)
 		if err != nil {
 			t.Fatalf("Failed to create trusted bundle: %v", err)
 		}
@@ -363,7 +364,7 @@ func TestGetVerifyOptions(t *testing.T) {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
 
-		tb, err := newTrustedBundle(bundleData)
+		tb, err := newTrustedBundle(context.Background(), bundleData)
 		if err != nil {
 			t.Fatalf("Failed to create trusted bundle: %v", err)
 		}
@@ -389,7 +390,7 @@ func TestGetVerifyOptions(t *testing.T) {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
 
-		tb, err := newTrustedBundle(bundleData)
+		tb, err := newTrustedBundle(context.Background(), bundleData)
 		if err != nil {
 			t.Fatalf("Failed to create trusted bundle: %v", err)
 		}
@@ -541,7 +542,7 @@ func TestContains(t *testing.T) {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
 
-		tb, err := newTrustedBundle(bundleData)
+		tb, err := newTrustedBundle(context.Background(), bundleData)
 		if err != nil {
 			t.Fatalf("Failed to create trusted bundle: %v", err)
 		}
@@ -578,7 +579,7 @@ func TestContains(t *testing.T) {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
 
-		tb, err := newTrustedBundle(bundleData)
+		tb, err := newTrustedBundle(context.Background(), bundleData)
 		if err != nil {
 			t.Fatalf("Failed to create trusted bundle: %v", err)
 		}
@@ -633,7 +634,7 @@ func TestContains(t *testing.T) {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
 
-		tb, err := newTrustedBundle(bundleData)
+		tb, err := newTrustedBundle(context.Background(), bundleData)
 		if err != nil {
 			t.Fatalf("Failed to create trusted bundle: %v", err)
 		}
@@ -665,7 +666,7 @@ func TestContains(t *testing.T) {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
 
-		tb, err := newTrustedBundle(bundleData)
+		tb, err := newTrustedBundle(context.Background(), bundleData)
 		if err != nil {
 			t.Fatalf("Failed to create trusted bundle: %v", err)
 		}
@@ -709,7 +710,7 @@ func TestContains(t *testing.T) {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
 
-		tb, err := newTrustedBundle(bundleData)
+		tb, err := newTrustedBundle(context.Background(), bundleData)
 		if err != nil {
 			t.Fatalf("Failed to create trusted bundle: %v", err)
 		}
