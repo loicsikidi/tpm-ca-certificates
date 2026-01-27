@@ -9,7 +9,7 @@ func TestValidateAndPrepareInputs(t *testing.T) {
 	t.Run("rejects HTTP URL", func(t *testing.T) {
 		opts := &AddOptions{
 			VendorID:      "STM",
-			URL:           "http://example.com/cert.crt",
+			URIs:          "http://example.com/cert.crt",
 			HashAlgorithm: "sha256",
 		}
 
@@ -26,7 +26,7 @@ func TestValidateAndPrepareInputs(t *testing.T) {
 	t.Run("rejects multiple URLs with HTTP", func(t *testing.T) {
 		opts := &AddOptions{
 			VendorID:      "STM",
-			URL:           "https://example.com/cert1.crt,http://example.com/cert2.crt",
+			URIs:          "https://example.com/cert1.crt,http://example.com/cert2.crt",
 			HashAlgorithm: "sha256",
 		}
 
@@ -40,30 +40,30 @@ func TestValidateAndPrepareInputs(t *testing.T) {
 		}
 	})
 
-	t.Run("rejects invalid URL scheme", func(t *testing.T) {
+	t.Run("rejects invalid URI scheme", func(t *testing.T) {
 		opts := &AddOptions{
 			VendorID:      "STM",
-			URL:           "ftp://example.com/cert.crt",
+			URIs:          "ftp://example.com/cert.crt",
 			HashAlgorithm: "sha256",
 		}
 
 		_, _, _, err := validateAndPrepareInputs(opts)
 		if err == nil {
-			t.Fatal("validateAndPrepareInputs() error = nil, want error for invalid URL scheme")
+			t.Fatal("validateAndPrepareInputs() error = nil, want error for invalid URI scheme")
 		}
 
-		if !strings.Contains(err.Error(), "invalid URL scheme") {
-			t.Errorf("validateAndPrepareInputs() error = %v, want error containing 'invalid URL scheme'", err)
+		if !strings.Contains(err.Error(), "invalid URI scheme") {
+			t.Errorf("validateAndPrepareInputs() error = %v, want error containing 'invalid URI scheme'", err)
 		}
-		if !strings.Contains(err.Error(), "must use HTTPS") {
-			t.Errorf("validateAndPrepareInputs() error = %v, want error containing 'must use HTTPS'", err)
+		if !strings.Contains(err.Error(), "must use https") {
+			t.Errorf("validateAndPrepareInputs() error = %v, want error containing 'must use https'", err)
 		}
 	})
 
 	t.Run("accepts HTTPS URL", func(t *testing.T) {
 		opts := &AddOptions{
 			VendorID:      "STM",
-			URL:           "https://example.com/cert.crt",
+			URIs:          "https://example.com/cert.crt",
 			HashAlgorithm: "sha256",
 		}
 
@@ -89,7 +89,7 @@ func TestValidateAndPrepareInputs(t *testing.T) {
 	t.Run("accepts multiple HTTPS URLs", func(t *testing.T) {
 		opts := &AddOptions{
 			VendorID:      "STM",
-			URL:           "https://example.com/cert1.crt,https://example.com/cert2.crt",
+			URIs:          "https://example.com/cert1.crt,https://example.com/cert2.crt",
 			HashAlgorithm: "sha256",
 		}
 
@@ -112,7 +112,7 @@ func TestValidateAndPrepareInputs(t *testing.T) {
 	t.Run("rejects invalid hash algorithm", func(t *testing.T) {
 		opts := &AddOptions{
 			VendorID:      "STM",
-			URL:           "https://example.com/cert.crt",
+			URIs:          "https://example.com/cert.crt",
 			HashAlgorithm: "md5",
 		}
 
@@ -129,7 +129,7 @@ func TestValidateAndPrepareInputs(t *testing.T) {
 	t.Run("rejects fingerprint count mismatch", func(t *testing.T) {
 		opts := &AddOptions{
 			VendorID:      "STM",
-			URL:           "https://example.com/cert1.crt,https://example.com/cert2.crt",
+			URIs:          "https://example.com/cert1.crt,https://example.com/cert2.crt",
 			Fingerprint:   "SHA256:AB:CD:EF",
 			HashAlgorithm: "sha256",
 		}
@@ -147,7 +147,7 @@ func TestValidateAndPrepareInputs(t *testing.T) {
 	t.Run("infers hash algorithm from SHA256 fingerprint", func(t *testing.T) {
 		opts := &AddOptions{
 			VendorID:      "STM",
-			URL:           "https://example.com/cert.crt",
+			URIs:          "https://example.com/cert.crt",
 			Fingerprint:   "SHA256:AB:CD:EF:01:23:45:67:89",
 			HashAlgorithm: "sha256", // default value
 		}
@@ -171,7 +171,7 @@ func TestValidateAndPrepareInputs(t *testing.T) {
 	t.Run("infers hash algorithm from SHA512 fingerprint", func(t *testing.T) {
 		opts := &AddOptions{
 			VendorID:      "STM",
-			URL:           "https://example.com/cert.crt",
+			URIs:          "https://example.com/cert.crt",
 			Fingerprint:   "SHA512:AB:CD:EF:01:23:45:67:89",
 			HashAlgorithm: "sha256", // default value, should be overridden
 		}
@@ -195,7 +195,7 @@ func TestValidateAndPrepareInputs(t *testing.T) {
 	t.Run("infers hash algorithm from multiple fingerprints", func(t *testing.T) {
 		opts := &AddOptions{
 			VendorID:      "STM",
-			URL:           "https://example.com/cert1.crt,https://example.com/cert2.crt",
+			URIs:          "https://example.com/cert1.crt,https://example.com/cert2.crt",
 			Fingerprint:   "SHA512:AB:CD:EF,SHA512:12:34:56",
 			HashAlgorithm: "sha256", // default value, should be overridden
 		}
@@ -219,7 +219,7 @@ func TestValidateAndPrepareInputs(t *testing.T) {
 	t.Run("rejects mixed hash algorithms in fingerprints", func(t *testing.T) {
 		opts := &AddOptions{
 			VendorID:      "STM",
-			URL:           "https://example.com/cert1.crt,https://example.com/cert2.crt",
+			URIs:          "https://example.com/cert1.crt,https://example.com/cert2.crt",
 			Fingerprint:   "SHA256:AB:CD:EF,SHA512:12:34:56",
 			HashAlgorithm: "sha256",
 		}

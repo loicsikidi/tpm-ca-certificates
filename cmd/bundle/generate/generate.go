@@ -70,7 +70,7 @@ By default, output is written to stdout. Use --output to write to a file instead
 }
 
 func Run(ctx context.Context, o *Opts) error {
-	cfg, err := config.LoadConfig(o.ConfigPath)
+	cfg, err := config.LoadConfigWithDynamicURIResolution(o.ConfigPath)
 	if err != nil {
 		return fmt.Errorf("failed to load configuration: %w", err)
 	}

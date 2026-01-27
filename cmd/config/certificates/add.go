@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/x509"
 	"fmt"
+	"net/url"
 	"slices"
 	"strings"
 
@@ -30,7 +31,7 @@ type AddOptions struct {
 	ConfigPath    string
 	VendorID      string
 	Name          string
-	URL           string
+	URIs          string
 	Fingerprint   string
 	HashAlgorithm string
 	Concurrency   int
@@ -82,7 +83,7 @@ When a fingerprint is provided, the hash algorithm is automatically inferred fro
 	cmd.Flags().StringVarP(&opts.ConfigPath, "config", "c", ".tpm-roots.yaml", "Path to the configuration file")
 	cmd.Flags().StringVarP(&opts.VendorID, "vendor-id", "i", "", "Vendor ID to add the certificate to")
 	cmd.Flags().StringVarP(&opts.Name, "name", "n", "", "Name of the certificate (optional when multiple URLs provided, ignored for multiple URLs)")
-	cmd.Flags().StringVarP(&opts.URL, "url", "u", "", "URL(s) of the certificate(s) to download (comma-separated for multiple)")
+	cmd.Flags().StringVarP(&opts.URIs, "uri", "u", "", "URI(s) of the certificate(s) to download (comma-separated for multiple)")
 	cmd.Flags().StringVarP(&opts.Fingerprint, "fingerprint", "f", "", "Fingerprint(s) in format HASH_ALG:HASH (comma-separated for multiple URLs)")
 	cmd.Flags().StringVarP(&opts.HashAlgorithm, "hash-algorithm", "a", "sha256", "Hash algorithm to use for fingerprint calculation (sha1, sha256, sha384, sha512)")
 	cmd.Flags().IntVarP(&opts.Concurrency, "workers", "j", 0,
@@ -95,7 +96,7 @@ When a fingerprint is provided, the hash algorithm is automatically inferred fro
 }
 
 type certDownloadResult struct {
-	url         string
+	uri         string
 	cert        *x509.Certificate
 	fingerprint string
 	err         error
@@ -103,7 +104,7 @@ type certDownloadResult struct {
 
 // Run executes the add command with the given options.
 func Run(ctx context.Context, opts *AddOptions) error {
-	hashAlgo, urls, fingerprints, err := validateAndPrepareInputs(opts)
+	hashAlgo, uris, fingerprints, err := validateAndPrepareInputs(opts)
 	if err != nil {
 		return err
 	}
@@ -117,9 +118,9 @@ func Run(ctx context.Context, opts *AddOptions) error {
 	if workers == 0 {
 		workers = concurrency.DetectCPUCount()
 	}
-	results := downloadCertificatesParallel(ctx, urls, fingerprints, hashAlgo, workers)
+	results := downloadCertificatesParallel(ctx, uris, fingerprints, hashAlgo, workers)
 
-	successfulCerts, failures := processDownloadResults(results, cfg.Vendors[vendorIdx].Certificates, opts.Name, hashAlgo, len(urls))
+	successfulCerts, failures := processDownloadResults(results, cfg.Vendors[vendorIdx].Certificates, opts.Name, hashAlgo, len(uris))
 
 	if len(successfulCerts) > 0 {
 		for _, cert := range successfulCerts {
@@ -134,7 +135,7 @@ func Run(ctx context.Context, opts *AddOptions) error {
 		}
 	}
 
-	return displayResults(successfulCerts, failures, len(urls), opts.VendorID)
+	return displayResults(successfulCerts, failures, len(uris), opts.VendorID)
 }
 
 // parseAndValidateFingerprints parses fingerprints and infers the hash algorithm.
@@ -187,36 +188,42 @@ func determineHashAlgorithm(inferredAlgo, flagAlgo string) (string, error) {
 	return hashAlgo, nil
 }
 
-// parseAndValidateURLs parses and validates URLs from the input string.
-func parseAndValidateURLs(urlInput string) ([]string, error) {
-	var urls []string
-	urlsRaw := strings.SplitSeq(urlInput, ",")
-	for u := range urlsRaw {
+// parseAndValidateURIs parses and validates URIs from the input string.
+func parseAndValidateURIs(uriInput string) ([]string, error) {
+	var uris []string
+	urisRaw := strings.SplitSeq(uriInput, ",")
+	for u := range urisRaw {
 		trimmed := strings.TrimSpace(u)
 		if trimmed != "" {
-			urls = append(urls, trimmed)
+			uris = append(uris, trimmed)
 		}
 	}
 
-	if len(urls) == 0 {
-		return nil, fmt.Errorf("no valid URLs provided")
+	if len(uris) == 0 {
+		return nil, fmt.Errorf("no valid URIs provided")
 	}
 
-	// Validate that all URLs use HTTPS
-	for _, url := range urls {
-		if strings.HasPrefix(strings.ToLower(url), "http://") {
-			return nil, fmt.Errorf("insecure HTTP URL not allowed: %s (use HTTPS instead)", url)
+	// Validate that all URLs use HTTPS or file scheme
+	for _, uri := range uris {
+		u, err := url.Parse(uri)
+		if err != nil {
+			return nil, fmt.Errorf("invalid URI: %s", uri)
 		}
-		if !strings.HasPrefix(strings.ToLower(url), "https://") {
-			return nil, fmt.Errorf("invalid URL scheme: %s (must use HTTPS)", url)
+		switch strings.ToLower(u.Scheme) {
+		case "https", "file":
+			continue
+		case "http":
+			return nil, fmt.Errorf("insecure HTTP URL not allowed: %s (use HTTPS instead)", uri)
+		default:
+			return nil, fmt.Errorf("invalid URI scheme: %s (must use https or file)", uri)
 		}
 	}
 
-	return urls, nil
+	return uris, nil
 }
 
 // validateAndPrepareInputs validates options and prepares URLs and fingerprints.
-func validateAndPrepareInputs(opts *AddOptions) (hashAlgo string, urls, fingerprints []string, err error) {
+func validateAndPrepareInputs(opts *AddOptions) (hashAlgo string, uris []string, fingerprints []string, err error) {
 	if err := vendors.ValidateVendorID(opts.VendorID); err != nil {
 		return "", nil, nil, err
 	}
@@ -238,21 +245,21 @@ func validateAndPrepareInputs(opts *AddOptions) (hashAlgo string, urls, fingerpr
 	}
 
 	// Parse and validate URLs
-	urls, err = parseAndValidateURLs(opts.URL)
+	uris, err = parseAndValidateURIs(opts.URIs)
 	if err != nil {
 		return "", nil, nil, err
 	}
 
-	if len(fingerprints) > 0 && len(fingerprints) != len(urls) {
-		return "", nil, nil, fmt.Errorf("number of fingerprints (%d) doesn't match number of URLs (%d)", len(fingerprints), len(urls))
+	if len(fingerprints) > 0 && len(fingerprints) != len(uris) {
+		return "", nil, nil, fmt.Errorf("number of fingerprints (%d) doesn't match number of URLs (%d)", len(fingerprints), len(uris))
 	}
 
 	// Warn if multiple URLs provided with -n flag
-	if len(urls) > 1 && opts.Name != "" {
-		cli.DisplayWarning("⚠️  Multiple URLs provided, ignoring -n flag (names will be deduced from certificate CN)")
+	if len(uris) > 1 && opts.Name != "" {
+		cli.DisplayWarning("⚠️  Multiple URIs provided, ignoring -n flag (names will be deduced from certificate CN)")
 	}
 
-	return hashAlgo, urls, fingerprints, nil
+	return hashAlgo, uris, fingerprints, nil
 }
 
 // loadConfigAndFindVendor loads the configuration and finds the vendor index.
@@ -277,18 +284,18 @@ func loadConfigAndFindVendor(configPath, vendorID string) (*config.TPMRootsConfi
 }
 
 type downloadFailure struct {
-	url string
+	uri string
 	err error
 }
 
 // processDownloadResults processes download results and creates certificate entries.
-func processDownloadResults(results []certDownloadResult, existingCerts []config.Certificate, providedName, hashAlgo string, urlCount int) ([]config.Certificate, []downloadFailure) {
+func processDownloadResults(results []certDownloadResult, existingCerts []config.Certificate, providedName, hashAlgo string, uriCount int) ([]config.Certificate, []downloadFailure) {
 	var successfulCerts []config.Certificate
 	var failures []downloadFailure
 
 	for _, result := range results {
 		if result.err != nil {
-			failures = append(failures, downloadFailure{result.url, result.err})
+			failures = append(failures, downloadFailure{result.uri, result.err})
 			continue
 		}
 
@@ -297,23 +304,23 @@ func processDownloadResults(results []certDownloadResult, existingCerts []config
 		if certName == "" {
 			certName = extractCertificateName(result.cert)
 			if certName == "" {
-				failures = append(failures, downloadFailure{result.url, fmt.Errorf("certificate CN is empty, please provide a name with -n flag")})
+				failures = append(failures, downloadFailure{result.uri, fmt.Errorf("certificate CN is empty, please provide a name with -n flag")})
 				continue
 			}
-			if urlCount == 1 {
+			if uriCount == 1 {
 				cli.DisplayWarning("⚠️  No name provided, using certificate CN: %s", certName)
 			}
 		}
 
-		if err := validate.CheckCertificate(existingCerts, result.url, result.cert); err != nil {
-			failures = append(failures, downloadFailure{result.url, err})
+		if err := validate.CheckCertificate(existingCerts, result.uri, result.cert); err != nil {
+			failures = append(failures, downloadFailure{result.uri, err})
 			continue
 		}
 
 		fingerprintValidation := config.NewFingerprint(hashAlgo, result.fingerprint)
 		newCert := config.Certificate{
 			Name: certName,
-			URL:  result.url,
+			URI:  result.uri,
 			Validation: config.Validation{
 				Fingerprint: *fingerprintValidation,
 			},
@@ -368,7 +375,7 @@ func displayResults(successfulCerts []config.Certificate, failures []downloadFai
 			fmt.Println()
 			cli.DisplayError("❌ Failed (%d):", failCount)
 			for _, f := range failures {
-				fmt.Printf("  • %s - %v\n", f.url, f.err)
+				fmt.Printf("  • %s - %v\n", f.uri, f.err)
 			}
 		}
 	}
@@ -381,26 +388,26 @@ func displayResults(successfulCerts []config.Certificate, failures []downloadFai
 }
 
 // downloadCertificatesParallel downloads multiple certificates in parallel with a goroutine limit.
-func downloadCertificatesParallel(ctx context.Context, urls []string, fingerprints []string, hashAlgo string, maxWorkers int) []certDownloadResult {
+func downloadCertificatesParallel(ctx context.Context, uris []string, fingerprints []string, hashAlgo string, maxWorkers int) []certDownloadResult {
 	type downloadInput struct {
-		url         string
+		uri         string
 		fingerprint string
 	}
 
-	inputs := make([]downloadInput, len(urls))
-	for i, url := range urls {
-		inputs[i] = downloadInput{url: url}
+	inputs := make([]downloadInput, len(uris))
+	for i, uri := range uris {
+		inputs[i] = downloadInput{uri: uri}
 		if i < len(fingerprints) {
 			inputs[i].fingerprint = fingerprints[i]
 		}
 	}
 
 	return concurrency.Execute(maxWorkers, inputs, func(idx int, input downloadInput) certDownloadResult {
-		result := certDownloadResult{url: input.url}
+		result := certDownloadResult{uri: input.uri}
 
 		// Download certificate
 		client := download.NewClient()
-		cert, err := client.DownloadCertificate(ctx, input.url)
+		cert, err := client.FetchCertificate(ctx, input.uri)
 		if err != nil {
 			result.err = err
 			return result
@@ -429,7 +436,7 @@ func downloadCertificatesParallel(ctx context.Context, urls []string, fingerprin
 			fpValidation = fingerprint.New(cert.Raw, hashAlgo)
 
 			// Show warning only for single URL (not cluttering output for multi-URL)
-			if len(urls) == 1 {
+			if len(uris) == 1 {
 				cli.DisplayWarning("⚠️  No fingerprint provided, calculating %s fingerprint automatically", strings.ToUpper(hashAlgo))
 			}
 		}

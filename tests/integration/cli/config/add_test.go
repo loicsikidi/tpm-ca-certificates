@@ -37,7 +37,7 @@ vendors:
 			opts: certificates.AddOptions{
 				VendorID:      "STM",
 				Name:          "New Test Certificate",
-				URL:           "https://secure.globalsign.com/cacert/gstpmroot.crt",
+				URIs:          "https://secure.globalsign.com/cacert/gstpmroot.crt",
 				HashAlgorithm: "sha256",
 			},
 			expectError: false,
@@ -81,7 +81,7 @@ vendors:
 			opts: certificates.AddOptions{
 				VendorID:      "STM",
 				Name:          "STSAFE ECC Root CA 02",
-				URL:           "https://sw-center.st.com/STSAFE/STSAFEEccRootCA02.crt",
+				URIs:          "https://sw-center.st.com/STSAFE/STSAFEEccRootCA02.crt",
 				Fingerprint:   "SHA256:FD:1E:7B:68:AC:CD:82:56:36:B2:7B:31:77:C6:74:02:D4:63:A7:F0:4C:97:B6:C4:7A:B7:05:FC:DC:1A:04:F6",
 				HashAlgorithm: "sha256",
 			},
@@ -127,7 +127,7 @@ vendors:
 			opts: certificates.AddOptions{
 				VendorID:      "NONEXISTENT",
 				Name:          "Test Certificate",
-				URL:           "https://example.com/cert.crt",
+				URIs:          "https://example.com/cert.crt",
 				HashAlgorithm: "sha256",
 			},
 			expectError: true,
@@ -298,7 +298,7 @@ vendors:
 				ConfigPath:    configPath,
 				VendorID:      "STM",
 				Name:          "Test Cert",
-				URL:           "https://secure.globalsign.com/cacert/gstpmroot.crt",
+				URIs:          "https://secure.globalsign.com/cacert/gstpmroot.crt",
 				HashAlgorithm: tt.hashAlgo,
 				Fingerprint:   tt.fingerprint,
 			}

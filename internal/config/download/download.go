@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/loicsikidi/tpm-ca-certificates/internal/config/download/source"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
 )
 
@@ -40,6 +41,8 @@ func NewClient(optionalClient ...utils.HTTPClient) *Client {
 //	if err != nil {
 //	    log.Fatal(err)
 //	}
+//
+// Deprecated: Use [FetchCertificate] instead.
 func (c *Client) DownloadCertificate(ctx context.Context, url string) (*x509.Certificate, error) {
 	data, err := utils.HttpGET(ctx, c.HTTPClient, url)
 	if err != nil {
@@ -49,6 +52,34 @@ func (c *Client) DownloadCertificate(ctx context.Context, url string) (*x509.Cer
 	cert, err := ParseCertificate(data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse certificate from %s: %w", url, err)
+	}
+
+	return cert, nil
+}
+
+// FetchCertificate retrieves a certificate from a URI (supports https:// and file:// schemes).
+//
+// Example:
+//
+//	client := download.NewClient()
+//	cert, err := client.FetchCertificate(ctx, "file:///home/user/repo/certs/root.pem")
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+func (c *Client) FetchCertificate(ctx context.Context, uri string) (*x509.Certificate, error) {
+	resolver, err := source.NewResolver(uri, c.HTTPClient)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create resolver for %s: %w", uri, err)
+	}
+
+	data, err := resolver.Fetch(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch certificate from %s: %w", uri, err)
+	}
+
+	cert, err := ParseCertificate(data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse certificate from %s: %w", uri, err)
 	}
 
 	return cert, nil

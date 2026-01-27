@@ -105,7 +105,7 @@ func TestTPMRootsConfig_CheckAndSetDefault(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "certificate without url",
+			name: "certificate without url and uri",
 			config: TPMRootsConfig{
 				Version: "alpha",
 				Vendors: []Vendor{
@@ -114,6 +114,91 @@ func TestTPMRootsConfig_CheckAndSetDefault(t *testing.T) {
 						Certificates: []Certificate{
 							{
 								Name: "Test Cert",
+								Validation: Validation{
+									Fingerprint: Fingerprint{SHA1: "AA:BB:CC"},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "valid certificate with URI (https)",
+			config: TPMRootsConfig{
+				Version: "alpha",
+				Vendors: []Vendor{
+					{
+						Name: "Test Vendor",
+						Certificates: []Certificate{
+							{
+								Name: "Test Cert",
+								URI:  "https://example.com/cert.cer",
+								Validation: Validation{
+									Fingerprint: Fingerprint{SHA1: "AA:BB:CC"},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid certificate with URI (file)",
+			config: TPMRootsConfig{
+				Version: "alpha",
+				Vendors: []Vendor{
+					{
+						Name: "Test Vendor",
+						Certificates: []Certificate{
+							{
+								Name: "Test Cert",
+								URI:  "file:///{repo}/certs/root.pem",
+								Validation: Validation{
+									Fingerprint: Fingerprint{SHA1: "AA:BB:CC"},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid certificate with both URL and URI",
+			config: TPMRootsConfig{
+				Version: "alpha",
+				Vendors: []Vendor{
+					{
+						Name: "Test Vendor",
+						Certificates: []Certificate{
+							{
+								Name: "Test Cert",
+								URL:  "https://example.com/cert.cer",
+								URI:  "file:///{repo}/certs/root.pem",
+								Validation: Validation{
+									Fingerprint: Fingerprint{SHA1: "AA:BB:CC"},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "certificate with invalid URI scheme",
+			config: TPMRootsConfig{
+				Version: "alpha",
+				Vendors: []Vendor{
+					{
+						Name: "Test Vendor",
+						Certificates: []Certificate{
+							{
+								Name: "Test Cert",
+								URI:  "ftp://example.com/cert.cer",
 								Validation: Validation{
 									Fingerprint: Fingerprint{SHA1: "AA:BB:CC"},
 								},
@@ -216,4 +301,151 @@ vendors:
 			t.Error("LoadConfig() expected error for invalid YAML")
 		}
 	})
+}
+
+func TestCertificate_GetSourceLocation(t *testing.T) {
+	tests := []struct {
+		name string
+		cert Certificate
+		want string
+	}{
+		{
+			name: "returns URI when present",
+			cert: Certificate{
+				URL: "https://example.com/old.cer",
+				URI: "file://./certs/new.pem",
+			},
+			want: "file://./certs/new.pem",
+		},
+		{
+			name: "returns URL when URI is empty",
+			cert: Certificate{
+				URL: "https://example.com/cert.cer",
+			},
+			want: "https://example.com/cert.cer",
+		},
+		{
+			name: "returns empty when both are empty",
+			cert: Certificate{},
+			want: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.cert.GetSourceLocation()
+			if got != tt.want {
+				t.Errorf("GetSourceLocation() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCertificate_Equal(t *testing.T) {
+	tests := []struct {
+		name  string
+		cert1 *Certificate
+		cert2 *Certificate
+		want  bool
+	}{
+		{
+			name: "equal by name",
+			cert1: &Certificate{
+				Name: "Same Name",
+				URL:  "https://example.com/cert1.cer",
+			},
+			cert2: &Certificate{
+				Name: "Same Name",
+				URL:  "https://example.com/cert2.cer",
+			},
+			want: true,
+		},
+		{
+			name: "equal by URL",
+			cert1: &Certificate{
+				Name: "Cert 1",
+				URL:  "https://example.com/cert.cer",
+			},
+			cert2: &Certificate{
+				Name: "Cert 2",
+				URL:  "https://example.com/cert.cer",
+			},
+			want: true,
+		},
+		{
+			name: "equal by URI",
+			cert1: &Certificate{
+				Name: "Cert 1",
+				URI:  "file://./certs/root.pem",
+			},
+			cert2: &Certificate{
+				Name: "Cert 2",
+				URI:  "file://./certs/root.pem",
+			},
+			want: true,
+		},
+		{
+			name: "equal when URL matches URI",
+			cert1: &Certificate{
+				Name: "Cert 1",
+				URL:  "https://example.com/cert.cer",
+			},
+			cert2: &Certificate{
+				Name: "Cert 2",
+				URI:  "https://example.com/cert.cer",
+			},
+			want: true,
+		},
+		{
+			name: "equal by fingerprint",
+			cert1: &Certificate{
+				Name: "Cert 1",
+				URL:  "https://example.com/cert1.cer",
+				Validation: Validation{
+					Fingerprint: Fingerprint{SHA256: "ABC123"},
+				},
+			},
+			cert2: &Certificate{
+				Name: "Cert 2",
+				URL:  "https://example.com/cert2.cer",
+				Validation: Validation{
+					Fingerprint: Fingerprint{SHA256: "ABC123"},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "not equal",
+			cert1: &Certificate{
+				Name: "Cert 1",
+				URL:  "https://example.com/cert1.cer",
+				Validation: Validation{
+					Fingerprint: Fingerprint{SHA256: "ABC123"},
+				},
+			},
+			cert2: &Certificate{
+				Name: "Cert 2",
+				URL:  "https://example.com/cert2.cer",
+				Validation: Validation{
+					Fingerprint: Fingerprint{SHA256: "DEF456"},
+				},
+			},
+			want: false,
+		},
+		{
+			name:  "nil certificates",
+			cert1: nil,
+			cert2: &Certificate{Name: "Cert"},
+			want:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.cert1.Equal(tt.cert2)
+			if got != tt.want {
+				t.Errorf("Equal() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
