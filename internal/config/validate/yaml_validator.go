@@ -258,6 +258,7 @@ func (v *YAMLValidator) validateDuplicateCertificates(cfg *config.TPMRootsConfig
 func (v *YAMLValidator) validateURLEncoding(cfg *config.TPMRootsConfig) {
 	for i, vendor := range cfg.Vendors {
 		for j, cert := range vendor.Certificates {
+			//nolint:staticcheck // SA1019: need to transition from URL to URI
 			parsedURL, err := url.Parse(cert.URL)
 			if err != nil {
 				path := fmt.Sprintf("vendors[%d].certificates[%d].url", i, j)
@@ -272,6 +273,7 @@ func (v *YAMLValidator) validateURLEncoding(cfg *config.TPMRootsConfig) {
 			}
 
 			encoded := parsedURL.String()
+			//nolint:staticcheck // SA1019: need to transition from URL to URI
 			if encoded != cert.URL {
 				path := fmt.Sprintf("vendors[%d].certificates[%d].url", i, j)
 				v.addError(path, fmt.Sprintf("URL not properly encoded: got %q, expected %q", cert.URL, encoded))

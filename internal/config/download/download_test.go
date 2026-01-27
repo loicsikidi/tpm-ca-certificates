@@ -4,6 +4,8 @@ import (
 	"encoding/pem"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -107,6 +109,83 @@ func TestParseCertificate(t *testing.T) {
 		_, err := download.ParseCertificate([]byte("invalid data"))
 		if err == nil {
 			t.Error("parseCertificate() expected error for invalid data")
+		}
+	})
+}
+
+func TestFetchCertificate(t *testing.T) {
+	t.Run("fetch from HTTPS URI", func(t *testing.T) {
+		testData, _ := testutil.GenerateTestCertDER(t)
+		server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			w.Write(testData)
+		}))
+		defer server.Close()
+
+		client := download.NewClient(server.Client())
+		_, err := client.FetchCertificate(t.Context(), server.URL)
+		if err != nil {
+			t.Fatalf("FetchCertificate() error = %v", err)
+		}
+	})
+
+	t.Run("fetch from file:// URI with absolute path", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		testData, _ := testutil.GenerateTestCertDER(t)
+
+		// Create test certificate file
+		certPath := filepath.Join(tmpDir, "cert.pem")
+		pemBlock := pem.EncodeToMemory(&pem.Block{
+			Type:  "CERTIFICATE",
+			Bytes: testData,
+		})
+		if err := os.WriteFile(certPath, pemBlock, 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		client := download.NewClient()
+		uri := "file://" + certPath
+		_, err := client.FetchCertificate(t.Context(), uri)
+		if err != nil {
+			t.Fatalf("FetchCertificate() error = %v", err)
+		}
+	})
+
+	t.Run("returns error for unsupported scheme", func(t *testing.T) {
+		client := download.NewClient()
+		_, err := client.FetchCertificate(t.Context(), "ftp://example.com/cert.cer")
+		if err == nil {
+			t.Error("FetchCertificate() expected error for unsupported scheme")
+		}
+		if !strings.Contains(err.Error(), "unsupported URI scheme") {
+			t.Errorf("FetchCertificate() unexpected error message: got=%s", err)
+		}
+	})
+
+	t.Run("returns error for non-existent file", func(t *testing.T) {
+		client := download.NewClient()
+		_, err := client.FetchCertificate(t.Context(), "file:///non/existent/cert.pem")
+		if err == nil {
+			t.Error("FetchCertificate() expected error for non-existent file")
+		}
+	})
+
+	t.Run("returns error for invalid certificate data", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		certPath := filepath.Join(tmpDir, "invalid.pem")
+
+		if err := os.WriteFile(certPath, []byte("invalid certificate data"), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		client := download.NewClient()
+		uri := "file://" + certPath
+		_, err := client.FetchCertificate(t.Context(), uri)
+		if err == nil {
+			t.Error("FetchCertificate() expected error for invalid certificate")
+		}
+		if !strings.Contains(err.Error(), "failed to parse certificate") {
+			t.Errorf("FetchCertificate() unexpected error message: got=%s", err)
 		}
 	})
 }
