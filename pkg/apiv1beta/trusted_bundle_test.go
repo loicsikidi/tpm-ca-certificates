@@ -38,7 +38,7 @@ func TestPersist(t *testing.T) {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
 
-		tb, err := newTrustedBundle(context.Background(), bundleData)
+		tb, err := newTrustedBundle(t.Context(), bundleData)
 		if err != nil {
 			t.Fatalf("Failed to create trusted bundle: %v", err)
 		}
@@ -100,7 +100,7 @@ func TestPersist(t *testing.T) {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
 
-		tb, err := newTrustedBundle(context.Background(), bundleData)
+		tb, err := newTrustedBundle(t.Context(), bundleData)
 		if err != nil {
 			t.Fatalf("Failed to create trusted bundle: %v", err)
 		}
@@ -129,7 +129,7 @@ func TestGetVendors(t *testing.T) {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
 
-		tb, err := newTrustedBundle(context.Background(), bundleData)
+		tb, err := newTrustedBundle(t.Context(), bundleData)
 		if err != nil {
 			t.Fatalf("Failed to create trusted bundle: %v", err)
 		}
@@ -152,7 +152,7 @@ func TestGetVendors(t *testing.T) {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
 
-		tb, err := newTrustedBundle(context.Background(), bundleData)
+		tb, err := newTrustedBundle(t.Context(), bundleData)
 		if err != nil {
 			t.Fatalf("Failed to create trusted bundle: %v", err)
 		}
@@ -175,7 +175,7 @@ func TestGetVendors(t *testing.T) {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
 
-		tb, err := newTrustedBundle(context.Background(), bundleData)
+		tb, err := newTrustedBundle(t.Context(), bundleData)
 		if err != nil {
 			t.Fatalf("Failed to create trusted bundle: %v", err)
 		}
@@ -196,7 +196,7 @@ func TestGetVendors(t *testing.T) {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
 
-		tb, err := newTrustedBundle(context.Background(), bundleData)
+		tb, err := newTrustedBundle(t.Context(), bundleData)
 		if err != nil {
 			t.Fatalf("Failed to create trusted bundle: %v", err)
 		}
@@ -364,7 +364,7 @@ func TestGetVerifyOptions(t *testing.T) {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
 
-		tb, err := newTrustedBundle(context.Background(), bundleData)
+		tb, err := newTrustedBundle(t.Context(), bundleData)
 		if err != nil {
 			t.Fatalf("Failed to create trusted bundle: %v", err)
 		}
@@ -390,7 +390,7 @@ func TestGetVerifyOptions(t *testing.T) {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
 
-		tb, err := newTrustedBundle(context.Background(), bundleData)
+		tb, err := newTrustedBundle(t.Context(), bundleData)
 		if err != nil {
 			t.Fatalf("Failed to create trusted bundle: %v", err)
 		}
@@ -542,7 +542,7 @@ func TestContains(t *testing.T) {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
 
-		tb, err := newTrustedBundle(context.Background(), bundleData)
+		tb, err := newTrustedBundle(t.Context(), bundleData)
 		if err != nil {
 			t.Fatalf("Failed to create trusted bundle: %v", err)
 		}
@@ -579,7 +579,7 @@ func TestContains(t *testing.T) {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
 
-		tb, err := newTrustedBundle(context.Background(), bundleData)
+		tb, err := newTrustedBundle(t.Context(), bundleData)
 		if err != nil {
 			t.Fatalf("Failed to create trusted bundle: %v", err)
 		}
@@ -634,7 +634,7 @@ func TestContains(t *testing.T) {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
 
-		tb, err := newTrustedBundle(context.Background(), bundleData)
+		tb, err := newTrustedBundle(t.Context(), bundleData)
 		if err != nil {
 			t.Fatalf("Failed to create trusted bundle: %v", err)
 		}
@@ -666,7 +666,7 @@ func TestContains(t *testing.T) {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
 
-		tb, err := newTrustedBundle(context.Background(), bundleData)
+		tb, err := newTrustedBundle(t.Context(), bundleData)
 		if err != nil {
 			t.Fatalf("Failed to create trusted bundle: %v", err)
 		}
@@ -710,7 +710,7 @@ func TestContains(t *testing.T) {
 			t.Fatalf("Failed to read test bundle: %v", err)
 		}
 
-		tb, err := newTrustedBundle(context.Background(), bundleData)
+		tb, err := newTrustedBundle(t.Context(), bundleData)
 		if err != nil {
 			t.Fatalf("Failed to create trusted bundle: %v", err)
 		}
