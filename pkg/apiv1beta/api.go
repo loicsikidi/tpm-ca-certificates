@@ -15,6 +15,7 @@ import (
 	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle/verifier"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/cache"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/github"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/observability"
 	verifierutils "github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/verifier"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
 )
@@ -197,12 +198,17 @@ func (c *GetConfig) toAssetsConfig() assetsConfig {
 //	    },
 //	})
 func GetTrustedBundle(ctx context.Context, cfg GetConfig) (TrustedBundle, error) {
+	ctx, span := observability.StartSpan(ctx, "tpmtb.GetTrustedBundle")
+	defer span.End()
+
 	if err := cfg.CheckAndSetDefaults(); err != nil {
+		observability.RecordError(span, err)
 		return nil, fmt.Errorf("invalid config: %w", err)
 	}
 
 	releaseTag, err := getReleaseTag(ctx, cfg)
 	if err != nil {
+		observability.RecordError(span, err)
 		return nil, err
 	}
 
@@ -210,6 +216,7 @@ func GetTrustedBundle(ctx context.Context, cfg GetConfig) (TrustedBundle, error)
 	assetsCfg.tag = releaseTag
 	assets, err := getAssets(ctx, assetsCfg)
 	if err != nil {
+		observability.RecordError(span, err)
 		return nil, err
 	}
 
@@ -224,6 +231,7 @@ func GetTrustedBundle(ctx context.Context, cfg GetConfig) (TrustedBundle, error)
 			HTTPClient:        cfg.HTTPClient,
 			DisableLocalCache: cfg.DisableLocalCache,
 		}); err != nil {
+			observability.RecordError(span, err)
 			return nil, fmt.Errorf("root bundle verification failed: %w", err)
 		}
 
@@ -238,13 +246,15 @@ func GetTrustedBundle(ctx context.Context, cfg GetConfig) (TrustedBundle, error)
 				HTTPClient:        cfg.HTTPClient,
 				DisableLocalCache: cfg.DisableLocalCache,
 			}); err != nil {
+				observability.RecordError(span, err)
 				return nil, fmt.Errorf("intermediate bundle verification failed: %w", err)
 			}
 		}
 	}
 
-	tb, err := newTrustedBundle(assets.rootBundleData, assets.intermediateBundleData)
+	tb, err := newTrustedBundle(ctx, assets.rootBundleData, assets.intermediateBundleData)
 	if err != nil {
+		observability.RecordError(span, err)
 		return nil, err
 	}
 
@@ -259,6 +269,7 @@ func GetTrustedBundle(ctx context.Context, cfg GetConfig) (TrustedBundle, error)
 	if len(assets.intermediateBundleData) > 0 {
 		intermediateMetadata, err := bundle.ParseMetadata(assets.intermediateBundleData)
 		if err != nil {
+			observability.RecordError(span, err)
 			return nil, fmt.Errorf("failed to parse intermediate bundle metadata: %w", err)
 		}
 		tbImpl.intermediateMetadata = intermediateMetadata
@@ -267,7 +278,8 @@ func GetTrustedBundle(ctx context.Context, cfg GetConfig) (TrustedBundle, error)
 	if !cfg.DisableLocalCache {
 		// Persist only if not already cached
 		if !checkCacheExists(cfg.CachePath, releaseTag) {
-			if err := tbImpl.Persist(cfg.CachePath); err != nil {
+			if err := tbImpl.Persist(ctx, cfg.CachePath); err != nil {
+				observability.RecordError(span, err)
 				return nil, fmt.Errorf("failed to persist bundle to cache (if running on read-only filesystem, set DisableLocalCache=true): %w", err)
 			}
 		}
@@ -418,13 +430,18 @@ func (c *VerifyConfig) CheckAndSetDefaults() error {
 //	    ChecksumSignature: checksumSigData,
 //	})
 func VerifyTrustedBundle(ctx context.Context, cfg VerifyConfig) (*VerifyResult, error) {
+	ctx, span := observability.StartSpan(ctx, "tpmtb.VerifyTrustedBundle")
+	defer span.End()
+
 	if err := cfg.CheckAndSetDefaults(); err != nil {
+		observability.RecordError(span, err)
 		return nil, fmt.Errorf("invalid config: %w", err)
 	}
 
 	if cfg.shouldFetchVerificationAssets() {
 		assets, err := getAssets(ctx, cfg.toAssetsConfig())
 		if err != nil {
+			observability.RecordError(span, err)
 			return nil, fmt.Errorf("failed to download verification assets: %w", err)
 		}
 		if len(cfg.Checksum) == 0 {
@@ -450,6 +467,7 @@ func VerifyTrustedBundle(ctx context.Context, cfg VerifyConfig) (*VerifyResult, 
 
 	v, err := verifier.New(verifierCfg)
 	if err != nil {
+		observability.RecordError(span, err)
 		return nil, fmt.Errorf("failed to create verifier: %w", err)
 	}
 
@@ -462,6 +480,7 @@ func VerifyTrustedBundle(ctx context.Context, cfg VerifyConfig) (*VerifyResult, 
 
 	result, err := v.Verify(ctx, verifyCfg)
 	if err != nil {
+		observability.RecordError(span, err)
 		return nil, fmt.Errorf("%w: %v", ErrBundleVerificationFailed, err)
 	}
 

@@ -15,6 +15,7 @@ import (
 	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/cache"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config/vendors"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/observability"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
 )
 
@@ -80,7 +81,7 @@ type TrustedBundle interface {
 	//  * variadic optionalCachePath argument is optional. If not provided, the default cache path is used.
 	//  * if the files already exist, they will be overwritten.
 	//  * use [Load] to reconstruct [TrustedBundle] from persisted files.
-	Persist(optionalCachePath ...string) error
+	Persist(ctx context.Context, optionalCachePath ...string) error
 
 	// Stop stops the auto-update watcher if enabled.
 	//
@@ -288,12 +289,17 @@ func (tb *trustedBundle) containsInCatalog(cert *x509.Certificate, catalog map[v
 }
 
 // Persist writes the bundle and its configuration to disk.
-func (tb *trustedBundle) Persist(optionalCachePath ...string) error {
+func (tb *trustedBundle) Persist(ctx context.Context, optionalCachePath ...string) error {
+	_, span := observability.StartSpan(ctx, "tpmtb.Persist")
+	defer span.End()
+
 	tb.mu.RLock()
 	defer tb.mu.RUnlock()
 
 	if tb.disableLocalCache {
-		return ErrCannotPersistTrustedBundle
+		err := ErrCannotPersistTrustedBundle
+		observability.RecordError(span, err)
+		return err
 	}
 
 	cachePath := filepath.Clean(
@@ -302,6 +308,7 @@ func (tb *trustedBundle) Persist(optionalCachePath ...string) error {
 
 	if !utils.DirExists(cachePath) {
 		if err := os.MkdirAll(cachePath, 0700); err != nil {
+			observability.RecordError(span, err)
 			return fmt.Errorf("failed to create cache directory: %w", err)
 		}
 	}
@@ -320,10 +327,11 @@ func (tb *trustedBundle) Persist(optionalCachePath ...string) error {
 
 	configData, err := json.Marshal(cfg)
 	if err != nil {
+		observability.RecordError(span, err)
 		return fmt.Errorf("failed to marshal config: %w", err)
 	}
 
-	return persistAllBundleAssets(
+	err = persistAllBundleAssets(
 		cachePath,
 		tb.assets.rootBundleData,
 		tb.assets.intermediateBundleData,
@@ -333,6 +341,12 @@ func (tb *trustedBundle) Persist(optionalCachePath ...string) error {
 		/* trustedBundle */ nil,
 		configData,
 	)
+	if err != nil {
+		observability.RecordError(span, err)
+		return err
+	}
+
+	return nil
 }
 
 // Stop stops the auto-update watcher.
@@ -543,7 +557,7 @@ func LoadTrustedBundle(ctx context.Context, cfg LoadConfig) (TrustedBundle, erro
 		}
 	}
 
-	tb, err := newTrustedBundle(rootBundleData, intermediateBundleData)
+	tb, err := newTrustedBundle(ctx, rootBundleData, intermediateBundleData)
 	if err != nil {
 		return nil, err
 	}
@@ -627,12 +641,15 @@ func (tb *trustedBundle) checkAndUpdate(ctx context.Context, cfg updaterConfig) 
 	// Persist the updated bundle if local cache is enabled
 	if !cfg.GetDisableLocalCache() {
 		// Ignore error as persistence failure shouldn't stop the update
-		_ = tb.Persist(cfg.GetCachePath())
+		_ = tb.Persist(ctx, cfg.GetCachePath())
 	}
 }
 
 // newTrustedBundle creates a TrustedBundle from raw bundle data.
-func newTrustedBundle(bundles ...[]byte) (TrustedBundle, error) {
+func newTrustedBundle(ctx context.Context, bundles ...[]byte) (TrustedBundle, error) {
+	_, span := observability.StartSpan(ctx, "tpmtb.newTrustedBundle")
+	defer span.End()
+
 	tb := &trustedBundle{
 		assets: &assets{},
 	}
@@ -642,11 +659,13 @@ func newTrustedBundle(bundles ...[]byte) (TrustedBundle, error) {
 		}
 		metadata, err := bundle.ParseMetadata(b)
 		if err != nil {
+			observability.RecordError(span, err)
 			return nil, fmt.Errorf("failed to parse bundle metadata: %w", err)
 		}
 
 		catalog, err := bundle.ParseBundle(b)
 		if err != nil {
+			observability.RecordError(span, err)
 			return nil, fmt.Errorf("failed to parse bundle: %w", err)
 		}
 
@@ -661,5 +680,6 @@ func newTrustedBundle(bundles ...[]byte) (TrustedBundle, error) {
 			tb.intermediateCatalog = catalog
 		}
 	}
+
 	return tb, nil
 }

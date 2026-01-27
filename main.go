@@ -1,13 +1,16 @@
 package main
 
 import (
+	"context"
 	"os"
+	"time"
 
 	goversion "github.com/caarlos0/go-version"
 	"github.com/loicsikidi/tpm-ca-certificates/cmd/bundle"
 	"github.com/loicsikidi/tpm-ca-certificates/cmd/config"
 	versionCmd "github.com/loicsikidi/tpm-ca-certificates/cmd/version"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/cli"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/observability"
 	"github.com/spf13/cobra"
 )
 
@@ -19,6 +22,20 @@ var (
 )
 
 func main() {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	shutdown, err := observability.Initialize(ctx)
+	if err != nil {
+		cli.DisplayError("Failed to initialize tracing: %v", err)
+		os.Exit(1)
+	}
+
+	defer func() {
+		if err := observability.Shutdown(shutdown); err != nil {
+			cli.DisplayWarning("Failed to shutdown tracing: %v", err)
+		}
+	}()
+
 	rootCmd := &cobra.Command{
 		Use:   "tpmtb",
 		Short: "TPM Trust Bundle",

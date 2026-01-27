@@ -112,6 +112,56 @@ Now you can use `tpm-ca-certificates.pem` as the trusted root certificate bundle
 
 Go to [documentation index](docs/README.md) to explore concepts, guides, and specifications.
 
+## Tracing
+
+> [!WARNING]
+> This feature is experimental and may change or be removed in future releases without notice.
+
+The project includes OpenTelemetry tracing to measure and analyze performance of the `GetTrustedBundle` operation. Tracing is **disabled by default** and must be explicitly enabled.
+
+### Enabling Tracing
+
+To enable tracing, set the `OTEL_ENABLED` environment variable:
+
+```bash
+export OTEL_ENABLED=true
+tpmtb bundle download
+```
+
+### Configuration
+
+Tracing can be configured via environment variables:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `OTEL_ENABLED` | Enable/disable tracing | `false` |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | OTLP gRPC endpoint | `localhost:4317` |
+| `OTEL_SERVICE_NAME` | Service name for traces | `tpmtb` |
+| `OTEL_TRACES_SAMPLER` | Sampling strategy | `always_on` |
+
+Supported samplers: `always_on`, `always_off`, `traceidratio`
+
+### Example with Jaeger
+
+Run Jaeger to collect and visualize traces:
+
+```bash
+docker run -d --name jaeger \
+  -e COLLECTOR_OTLP_ENABLED=true \
+  -p 16686:16686 \
+  -p 4317:4317 \
+  jaegertracing/all-in-one:latest
+```
+
+Enable tracing and run the CLI:
+
+```bash
+export OTEL_ENABLED=true
+tpmtb bundle download
+```
+
+View traces at [http://localhost:16686](http://localhost:16686)
+
 ## Roadmap
 
 - [ ] Improve certificate catalog

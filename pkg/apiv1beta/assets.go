@@ -11,6 +11,7 @@ import (
 	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/cache"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/github"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/observability"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/digest"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
 )
@@ -67,7 +68,11 @@ type assets struct {
 }
 
 func getAssets(ctx context.Context, cfg assetsConfig) (*assets, error) {
+	ctx, span := observability.StartSpan(ctx, "tpmtb.getAssets")
+	defer span.End()
+
 	if err := cfg.CheckAndSetDefaults(); err != nil {
+		observability.RecordError(span, err)
 		return nil, fmt.Errorf("invalid assets config: %w", err)
 	}
 
@@ -77,9 +82,10 @@ func getAssets(ctx context.Context, cfg assetsConfig) (*assets, error) {
 	)
 	if !cfg.disableLocalCache {
 		if checkCacheExists(cfg.cachePath, cfg.tag) {
-			assets, err = getAssetsFromCache(cfg)
+			assets, err = getAssetsFromCache(ctx, cfg)
 			// Ignore ErrIncompleteCache to fallback to GitHub
 			if err != nil && !errors.Is(err, ErrIncompleteCache) {
+				observability.RecordError(span, err)
 				return nil, fmt.Errorf("failed to load from cache: %w", err)
 			}
 		}
@@ -88,20 +94,27 @@ func getAssets(ctx context.Context, cfg assetsConfig) (*assets, error) {
 	if assets == nil {
 		assets, err = getAssetsFromGitHub(ctx, cfg)
 		if err != nil {
+			observability.RecordError(span, err)
 			return nil, err
 		}
 	}
+
 	return assets, nil
 }
 
 // getAssetsFromCache retrieves a TPM trust bundle and its verification assets from local cache.
-func getAssetsFromCache(cfg assetsConfig) (*assets, error) {
+func getAssetsFromCache(ctx context.Context, cfg assetsConfig) (*assets, error) {
+	_, span := observability.StartSpan(ctx, "tpmtb.getAssetsFromCache")
+	defer span.End()
+
 	rootBundleData, err := cache.LoadFile(cfg.cachePath, cache.RootBundleFilename)
 	if err != nil {
+		observability.RecordError(span, err)
 		return nil, err
 	}
 	intermediateBundleData, err := cache.LoadFile(cfg.cachePath, cache.IntermediateBundleFilename)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		observability.RecordError(span, err)
 		return nil, err
 	}
 
@@ -115,30 +128,36 @@ func getAssetsFromCache(cfg assetsConfig) (*assets, error) {
 	}
 	c, err := getCacheConfig(cfg.cachePath)
 	if err != nil {
+		observability.RecordError(span, err)
 		return nil, err
 	}
 	if c.SkipVerify && cfg.shouldFetchVerificationAssets() {
+		observability.RecordError(span, ErrIncompleteCache)
 		return nil, ErrIncompleteCache
 	}
 
 	checksum, err := cache.LoadFile(cfg.cachePath, cache.ChecksumsFilename)
 	if err != nil {
+		observability.RecordError(span, err)
 		return nil, err
 	}
 
 	checksumSig, err := cache.LoadFile(cfg.cachePath, cache.ChecksumsSigFilename)
 	if err != nil {
+		observability.RecordError(span, err)
 		return nil, err
 	}
 
 	provenance, err := cache.LoadFile(cfg.cachePath, cache.ProvenanceFilename)
 	if err != nil {
+		observability.RecordError(span, err)
 		return nil, err
 	}
 
 	if len(provenance) == 0 ||
 		len(checksum) == 0 ||
 		len(checksumSig) == 0 {
+		observability.RecordError(span, ErrIncompleteCache)
 		return nil, ErrIncompleteCache
 	}
 
@@ -153,12 +172,16 @@ func getAssetsFromCache(cfg assetsConfig) (*assets, error) {
 //   - integrity: checksums.txt and checksums.txt.sigstore.json (stored in GitHub Releases)
 //   - provenance: GitHub Attestation (stored in GitHub API)
 func getAssetsFromGitHub(ctx context.Context, cfg assetsConfig) (*assets, error) {
+	ctx, span := observability.StartSpan(ctx, "tpmtb.getAssetsFromGitHub")
+	defer span.End()
+
 	client := github.NewHTTPClient(cfg.httpClient)
 	response := &assets{}
 
 	// Step 1: Download checksums.txt to determine which bundles to fetch
 	checksum, err := client.DownloadReleaseAsset(ctx, *cfg.sourceRepo, cfg.tag, checksumsFile)
 	if err != nil {
+		observability.RecordError(span, err)
 		return nil, fmt.Errorf("failed to download checksums: %w", err)
 	}
 	if cfg.needChecksums {
@@ -169,6 +192,7 @@ func getAssetsFromGitHub(ctx context.Context, cfg assetsConfig) (*assets, error)
 	if cfg.needChecksumSignature {
 		response.checksumSignature, err = client.DownloadReleaseAsset(ctx, *cfg.sourceRepo, cfg.tag, checksumsSig)
 		if err != nil {
+			observability.RecordError(span, err)
 			return nil, fmt.Errorf("failed to download checksum signature: %w", err)
 		}
 	}
@@ -176,11 +200,13 @@ func getAssetsFromGitHub(ctx context.Context, cfg assetsConfig) (*assets, error)
 	// Step 3: Handle bundle from config if provided
 	providedBundleType, err := handleProvidedBundle(cfg.bundle, response)
 	if err != nil {
+		observability.RecordError(span, err)
 		return nil, err
 	}
 
 	// Step 4: Download bundles not provided in config
 	if err := downloadMissingBundles(ctx, client, cfg, checksum, providedBundleType, response); err != nil {
+		observability.RecordError(span, err)
 		return nil, err
 	}
 
@@ -188,6 +214,7 @@ func getAssetsFromGitHub(ctx context.Context, cfg assetsConfig) (*assets, error)
 	if cfg.needProvenance {
 		response.provenance, err = downloadProvenance(ctx, client, cfg, response.rootBundleData)
 		if err != nil {
+			observability.RecordError(span, err)
 			return nil, err
 		}
 	}
@@ -274,9 +301,13 @@ func hasBundle(checksumData []byte, bundleType bundle.BundleType) bool {
 
 // getReleaseTag determines which release to fetch.
 func getReleaseTag(ctx context.Context, cfg GetConfig) (string, error) {
+	ctx, span := observability.StartSpan(ctx, "tpmtb.getReleaseTag")
+	defer span.End()
+
 	client := github.NewHTTPClient(cfg.HTTPClient)
 	if cfg.Date != "" {
 		if err := client.ReleaseExists(ctx, *cfg.sourceRepo, cfg.Date); err != nil {
+			observability.RecordError(span, err)
 			return "", fmt.Errorf("release %s not found: %w", cfg.Date, err)
 		}
 		return cfg.Date, nil
@@ -290,10 +321,14 @@ func getReleaseTag(ctx context.Context, cfg GetConfig) (string, error) {
 	}
 	releases, err := client.GetReleases(ctx, *cfg.sourceRepo, opts)
 	if err != nil {
+		observability.RecordError(span, err)
 		return "", fmt.Errorf("failed to fetch releases: %w", err)
 	}
 	if len(releases) == 0 {
-		return "", fmt.Errorf("no releases found")
+		err := fmt.Errorf("no releases found")
+		observability.RecordError(span, err)
+		return "", err
 	}
+
 	return releases[0].TagName, nil
 }

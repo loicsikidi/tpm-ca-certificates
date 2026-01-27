@@ -12,4 +12,5 @@ exclude = [
     '^https://www\.st\.com',
     '^https://software\.intel\.com',
     '^https://(.*\.)?github(usercontent)?\.(com|io)',
+    'http://localhost:16686',
 ]
