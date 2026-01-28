@@ -185,11 +185,11 @@ func getAssetsFromGitHub(ctx context.Context, cfg assetsConfig) (*assets, error)
 		checksumErr error
 	)
 	func() {
-		ctx, checksumSpan := observability.StartSpan(ctx, "tpmtb.downloadChecksums")
-		defer checksumSpan.End()
+		ctx, span := observability.StartSpan(ctx, "tpmtb.downloadChecksums")
+		defer span.End()
 		checksum, checksumErr = client.DownloadReleaseAsset(ctx, *cfg.sourceRepo, cfg.tag, checksumsFile)
 		if checksumErr != nil {
-			observability.RecordError(checksumSpan, checksumErr)
+			observability.RecordError(span, checksumErr)
 		}
 	}()
 	if checksumErr != nil {
@@ -200,47 +200,22 @@ func getAssetsFromGitHub(ctx context.Context, cfg assetsConfig) (*assets, error)
 		response.checksum = checksum
 	}
 
-	// Steps 2-3: Download checksum signature and handle provided bundle in parallel
-	var (
-		providedBundleType bundle.BundleType
-		checksumSig        []byte
-	)
-
-	g, gctx := errgroup.WithContext(ctx)
-
+	// Steps 2: Download checksum signature
 	if cfg.needChecksumSignature {
-		g.Go(func() error {
-			ctx, span := observability.StartSpan(gctx, "tpmtb.downloadChecksumSignature")
-			defer span.End()
-			sig, err := client.DownloadReleaseAsset(ctx, *cfg.sourceRepo, cfg.tag, checksumsSig)
-			if err != nil {
-				observability.RecordError(span, err)
-				return fmt.Errorf("failed to download checksum signature: %w", err)
-			}
-			checksumSig = sig
-			return nil
-		})
-	}
-
-	g.Go(func() error {
-		_, handleSpan := observability.StartSpan(gctx, "tpmtb.handleProvidedBundle")
-		defer handleSpan.End()
-		bundleType, err := handleProvidedBundle(cfg.bundle, response)
+		ctx, span := observability.StartSpan(ctx, "tpmtb.downloadChecksumSignature")
+		defer span.End()
+		sig, err := client.DownloadReleaseAsset(ctx, *cfg.sourceRepo, cfg.tag, checksumsSig)
 		if err != nil {
-			observability.RecordError(handleSpan, err)
-			return err
+			observability.RecordError(span, err)
+			return nil, fmt.Errorf("failed to download checksum signature: %w", err)
 		}
-		providedBundleType = bundleType
-		return nil
-	})
-
-	if err := g.Wait(); err != nil {
-		observability.RecordError(span, err)
-		return nil, err
+		response.checksumSignature = sig
 	}
 
-	if cfg.needChecksumSignature {
-		response.checksumSignature = checksumSig
+	// Step 3: Handle provided bundle
+	providedBundleType, err := handleProvidedBundle(cfg.bundle, response)
+	if err != nil {
+		return nil, err
 	}
 
 	// Step 4: Download bundles not provided in config (parallelized internally)
