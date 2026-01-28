@@ -207,6 +207,11 @@ func (v *Verifier) GetSigstoreVerifierConfig() (verifier.Config, error) {
 	}
 
 	// Priority 3: Use default (fetch from TUF with local cache enabled)
+	trustedRoot, err := verifier.NewDefaultRoot(v.config.HTTPClient)
+	if err != nil {
+		return cfg, err
+	}
+	cfg.Root = trustedRoot
 	return cfg, nil
 }
 
