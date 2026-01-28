@@ -3,6 +3,7 @@ package verifier
 import (
 	"fmt"
 	"path/filepath"
+	"sync"
 
 	"github.com/cenkalti/backoff/v5"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/cache"
@@ -21,6 +22,10 @@ var (
 		verify.WithTransparencyLog(1),             // Require transparency log entry
 		verify.WithObserverTimestamps(1),          // Use observer timestamps from Rekor
 	}
+
+	defaultRootOnce  sync.Once
+	defaultRootValue root.TrustedMaterial
+	defaultRootErr   error
 )
 
 type Config struct {
@@ -31,11 +36,11 @@ type Config struct {
 
 func (c *Config) CheckAndSetDefaults() error {
 	if c.Root == nil {
-		root, err := root.FetchTrustedRootWithOptions(GetDefaultTUFOptions(c.HTTPClient))
+		trustedRoot, err := NewDefaultRoot(c.HTTPClient)
 		if err != nil {
 			return fmt.Errorf("failed to fetch trusted root: %w", err)
 		}
-		c.Root = root
+		c.Root = trustedRoot
 	}
 	if len(c.Options) == 0 {
 		c.Options = defaultOptions
@@ -51,6 +56,15 @@ func New(cfg Config) (*verify.Verifier, error) {
 	return verify.NewVerifier(cfg.Root, cfg.Options...)
 }
 
+// NewDefaultRoot fetches the default trusted root using a singleton pattern.
+func NewDefaultRoot(optionalClient ...utils.HTTPClient) (root.TrustedMaterial, error) {
+	defaultRootOnce.Do(func() {
+		opts := GetDefaultTUFOptions(optionalClient...)
+		defaultRootValue, defaultRootErr = root.FetchTrustedRootWithOptions(opts)
+	})
+	return defaultRootValue, defaultRootErr
+}
+
 // GetDefaultTUFOptions returns TUF options with sane defaults for Sigstore usage.
 func GetDefaultTUFOptions(optionalClient ...utils.HTTPClient) *tuf.Options {
 	client := utils.OptionalArg(optionalClient)
@@ -59,8 +73,9 @@ func GetDefaultTUFOptions(optionalClient ...utils.HTTPClient) *tuf.Options {
 	// Store TUF cache in a directory owned by tpmtb for better isolation
 	opts.CachePath = filepath.Join(cache.CacheDir(), ".sigstore", "root")
 
-	// Allow TUF cache for 1 day
-	opts.CacheValidity = 1
+	// Rely on cache to avoid unnecessary network calls
+	// the package will automatically refresh the cache once key material expires
+	opts.ForceCache = true
 
 	// configure fetcher with retry logic
 	f := fetcher.NewDefaultFetcher()

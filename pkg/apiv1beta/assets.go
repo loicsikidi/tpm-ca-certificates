@@ -14,6 +14,7 @@ import (
 	"github.com/loicsikidi/tpm-ca-certificates/internal/observability"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/digest"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
+	"golang.org/x/sync/errgroup"
 )
 
 var (
@@ -179,32 +180,45 @@ func getAssetsFromGitHub(ctx context.Context, cfg assetsConfig) (*assets, error)
 	response := &assets{}
 
 	// Step 1: Download checksums.txt to determine which bundles to fetch
-	checksum, err := client.DownloadReleaseAsset(ctx, *cfg.sourceRepo, cfg.tag, checksumsFile)
-	if err != nil {
-		observability.RecordError(span, err)
-		return nil, fmt.Errorf("failed to download checksums: %w", err)
+	var (
+		checksum    []byte
+		checksumErr error
+	)
+	func() {
+		ctx, span := observability.StartSpan(ctx, "tpmtb.downloadChecksums")
+		defer span.End()
+		checksum, checksumErr = client.DownloadReleaseAsset(ctx, *cfg.sourceRepo, cfg.tag, checksumsFile)
+		if checksumErr != nil {
+			observability.RecordError(span, checksumErr)
+		}
+	}()
+	if checksumErr != nil {
+		observability.RecordError(span, checksumErr)
+		return nil, fmt.Errorf("failed to download checksums: %w", checksumErr)
 	}
 	if cfg.needChecksums {
 		response.checksum = checksum
 	}
 
-	// Step 2: Download checksum signature if needed
+	// Steps 2: Download checksum signature
 	if cfg.needChecksumSignature {
-		response.checksumSignature, err = client.DownloadReleaseAsset(ctx, *cfg.sourceRepo, cfg.tag, checksumsSig)
+		ctx, span := observability.StartSpan(ctx, "tpmtb.downloadChecksumSignature")
+		defer span.End()
+		sig, err := client.DownloadReleaseAsset(ctx, *cfg.sourceRepo, cfg.tag, checksumsSig)
 		if err != nil {
 			observability.RecordError(span, err)
 			return nil, fmt.Errorf("failed to download checksum signature: %w", err)
 		}
+		response.checksumSignature = sig
 	}
 
-	// Step 3: Handle bundle from config if provided
+	// Step 3: Handle provided bundle
 	providedBundleType, err := handleProvidedBundle(cfg.bundle, response)
 	if err != nil {
-		observability.RecordError(span, err)
 		return nil, err
 	}
 
-	// Step 4: Download bundles not provided in config
+	// Step 4: Download bundles not provided in config (parallelized internally)
 	if err := downloadMissingBundles(ctx, client, cfg, checksum, providedBundleType, response); err != nil {
 		observability.RecordError(span, err)
 		return nil, err
@@ -212,11 +226,16 @@ func getAssetsFromGitHub(ctx context.Context, cfg assetsConfig) (*assets, error)
 
 	// Step 5: Download provenance if needed
 	if cfg.needProvenance {
-		response.provenance, err = downloadProvenance(ctx, client, cfg, response.rootBundleData)
-		if err != nil {
-			observability.RecordError(span, err)
-			return nil, err
+		provenanceCtx, provenanceSpan := observability.StartSpan(ctx, "tpmtb.downloadProvenance")
+		var provenanceErr error
+		response.provenance, provenanceErr = downloadProvenance(provenanceCtx, client, cfg, response.rootBundleData)
+		if provenanceErr != nil {
+			observability.RecordError(provenanceSpan, provenanceErr)
+			provenanceSpan.End()
+			observability.RecordError(span, provenanceErr)
+			return nil, provenanceErr
 		}
+		provenanceSpan.End()
 	}
 
 	return response, nil
@@ -246,21 +265,52 @@ func handleProvidedBundle(bundleData []byte, response *assets) (bundle.BundleTyp
 }
 
 // downloadMissingBundles downloads bundles that weren't provided in config.
+// Downloads are performed in parallel when both bundles need to be fetched.
 func downloadMissingBundles(ctx context.Context, client *github.HTTPClient, cfg assetsConfig, checksum []byte, providedType bundle.BundleType, response *assets) error {
+	var (
+		rootData         []byte
+		intermediateData []byte
+	)
+
+	g, gctx := errgroup.WithContext(ctx)
+
 	if providedType != bundle.TypeRoot && hasBundle(checksum, bundle.TypeRoot) {
-		data, err := client.DownloadReleaseAsset(ctx, *cfg.sourceRepo, cfg.tag, bundleFilename)
-		if err != nil {
-			return fmt.Errorf("failed to download bundle: %w", err)
-		}
-		response.rootBundleData = data
+		g.Go(func() error {
+			ctx, span := observability.StartSpan(gctx, "tpmtb.downloadRootBundle")
+			defer span.End()
+			data, err := client.DownloadReleaseAsset(ctx, *cfg.sourceRepo, cfg.tag, bundleFilename)
+			if err != nil {
+				observability.RecordError(span, err)
+				return fmt.Errorf("failed to download bundle: %w", err)
+			}
+			rootData = data
+			return nil
+		})
 	}
 
 	if providedType != bundle.TypeIntermediate && hasBundle(checksum, bundle.TypeIntermediate) {
-		data, err := client.DownloadReleaseAsset(ctx, *cfg.sourceRepo, cfg.tag, intermediateBundleFilename)
-		if err != nil {
-			return fmt.Errorf("failed to download intermediate bundle: %w", err)
-		}
-		response.intermediateBundleData = data
+		g.Go(func() error {
+			ctx, span := observability.StartSpan(gctx, "tpmtb.downloadIntermediateBundle")
+			defer span.End()
+			data, err := client.DownloadReleaseAsset(ctx, *cfg.sourceRepo, cfg.tag, intermediateBundleFilename)
+			if err != nil {
+				observability.RecordError(span, err)
+				return fmt.Errorf("failed to download intermediate bundle: %w", err)
+			}
+			intermediateData = data
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return err
+	}
+
+	if rootData != nil {
+		response.rootBundleData = rootData
+	}
+	if intermediateData != nil {
+		response.intermediateBundleData = intermediateData
 	}
 
 	return nil
