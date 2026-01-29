@@ -797,6 +797,19 @@ vendors:
           validation:
             fingerprint:
                 sha256: "F4:3A:A9:CC:82:B5:BA:F4:E6:0B:F8:B6:A6:33:41:F1:BD:C9:98:8A:9B:EF:00:81:9E:3F:02:7E:55:84:C8:3A"
+    - id: "INTC"
+      name: "Intel"
+      certificates:
+        - name: "ODCA CA2 CSME"
+          url: "https://tsci.intel.com/content/OnDieCA/certs/ODCA_CA2_CSME_Intermediate.cer"
+          validation:
+            fingerprint:
+                sha256: "C0:01:DF:02:B3:1A:60:A2:B3:71:30:36:59:56:40:0A:2A:FC:FD:14:7E:85:52:FD:7E:A3:F1:7F:2A:B0:D4:57"
+        - name: "ODCA CA2 OSSE"
+          url: "https://tsci.intel.com/content/OnDieCA/certs/ODCA_CA2_OSSE_Intermediate.cer"
+          validation:
+            fingerprint:
+                sha256: "98:F5:75:D3:7F:CC:E1:13:9B:A4:DD:FB:A8:11:D8:62:A8:26:2A:20:7C:B4:6F:4C:8B:D0:D9:89:1E:40:64:75"
     - id: "MSFT"
       name: "Microsoft"
       certificates:
