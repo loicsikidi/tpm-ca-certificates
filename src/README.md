@@ -11,6 +11,7 @@ This directory contains the evidence and documentation proving how the URLs for 
 | IFX | Infineon | [README](IFX/) | B |
 | MSFT | Microsoft | [README](MSFT/) | C |
 | NTC | Nuvoton Technology | [README](NTC/) | A |
+| NSG | NSING | [README](NSG/) | B |
 | STM | STMicroelectronics | [README](STM/) | A |
 
 ### Accessibility Score Legend
