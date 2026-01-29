@@ -180,21 +180,20 @@ func getAssetsFromGitHub(ctx context.Context, cfg assetsConfig) (*assets, error)
 	response := &assets{}
 
 	// Step 1: Download checksums.txt to determine which bundles to fetch
-	var (
-		checksum    []byte
-		checksumErr error
-	)
-	func() {
+	var checksum []byte
+	{
 		ctx, span := observability.StartSpan(ctx, "tpmtb.downloadChecksums")
 		defer span.End()
+
+		var checksumErr error
 		checksum, checksumErr = client.DownloadReleaseAsset(ctx, *cfg.sourceRepo, cfg.tag, checksumsFile)
 		if checksumErr != nil {
 			observability.RecordError(span, checksumErr)
 		}
-	}()
-	if checksumErr != nil {
-		observability.RecordError(span, checksumErr)
-		return nil, fmt.Errorf("failed to download checksums: %w", checksumErr)
+		if checksumErr != nil {
+			observability.RecordError(span, checksumErr)
+			return nil, fmt.Errorf("failed to download checksums: %w", checksumErr)
+		}
 	}
 	if cfg.needChecksums {
 		response.checksum = checksum
@@ -265,7 +264,6 @@ func handleProvidedBundle(bundleData []byte, response *assets) (bundle.BundleTyp
 }
 
 // downloadMissingBundles downloads bundles that weren't provided in config.
-// Downloads are performed in parallel when both bundles need to be fetched.
 func downloadMissingBundles(ctx context.Context, client *github.HTTPClient, cfg assetsConfig, checksum []byte, providedType bundle.BundleType, response *assets) error {
 	var (
 		rootData         []byte
