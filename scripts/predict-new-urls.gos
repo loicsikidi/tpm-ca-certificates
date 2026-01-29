@@ -116,12 +116,46 @@ var vendors = map[string]VendorConfig{
 			},
 		},
 	},
+	"nsg": {
+		ID:   "NSG",
+		Name: "NSING",
+		Patterns: []VendorPattern{
+			{
+				Name:        "ECC Root",
+				CertType:    CertTypeRoot,
+				URLTemplate: "https://pki.nsing.com.sg/NSEccRootCA%03d/NSEccRootCA%03d.crt",
+				MaxCount:    10,
+				StartIndex:  1,
+			},
+			{
+				Name:        "RSA Root",
+				CertType:    CertTypeRoot,
+				URLTemplate: "https://pki.nsing.com.sg/NSRsaRootCA%03d/NSRsaRootCA%03d.crt",
+				MaxCount:    10,
+				StartIndex:  1,
+			},
+			{
+				Name:        "ECC EK Intermediate",
+				CertType:    CertTypeIntermediate,
+				URLTemplate: "https://pki.nsing.com.sg/NSEccEkCA%03d/NSEccEkCA%03d.crt",
+				MaxCount:    10,
+				StartIndex:  1,
+			},
+			{
+				Name:        "RSA EK Intermediate",
+				CertType:    CertTypeIntermediate,
+				URLTemplate: "https://pki.nsing.com.sg/NSRsaEkCA%03d/NSRsaEkCA%03d.crt",
+				MaxCount:    10,
+				StartIndex:  1,
+			},
+		},
+	},
 }
 
 func main() {
 	count := flag.Int("count", defaultCount, "maximum number to check")
 	out := flag.String("out", "", "output file (default: stdout)")
-	vendor := flag.String("vendor", "ifx", "vendor to scan (ifx, all)")
+	vendor := flag.String("vendor", "ifx", "vendor to scan (ifx, stm, nsg, all)")
 	certType := flag.String("type", "", "filter by certificate type: 'root' or 'intermediate' (empty = no filter)")
 	flag.Parse()
 

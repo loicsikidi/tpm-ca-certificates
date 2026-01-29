@@ -90,6 +90,14 @@ jobs:
             vendor-id: IFX
             cert-type: intermediate
             config-file: .tpm-intermediates.yaml
+          - vendor: nsg
+            vendor-id: NSG
+            cert-type: root
+            config-file: .tpm-roots.yaml
+          - vendor: nsg
+            vendor-id: NSG
+            cert-type: intermediate
+            config-file: .tpm-intermediates.yaml
           - vendor: stm
             vendor-id: STM
             cert-type: root

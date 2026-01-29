@@ -73,6 +73,19 @@ vendors:
           validation:
             fingerprint:
                 sha256: "87:0C:7A:35:CE:AB:3D:59:97:9F:2C:6A:52:40:42:D4:04:CB:71:51:80:04:35:09:25:FB:2C:ED:79:A9:99:DA"
+    - id: "NSG"
+      name: "NSING"
+      certificates:
+        - name: "NSING TPM ECC ROOT CA 001"
+          url: "https://pki.nsing.com.sg/NSEccRootCA001/NSEccRootCA001.crt"
+          validation:
+            fingerprint:
+                sha256: "6C:CF:8A:8A:80:3D:07:A0:02:A1:5D:48:89:FF:A0:B1:25:E4:A8:2A:1F:E4:21:1D:B3:C6:E8:59:29:19:F9:DC"
+        - name: "NSING TPM RSA ROOT CA 001"
+          url: "https://pki.nsing.com.sg/NSRsaRootCA001/NSRsaRootCA001.crt"
+          validation:
+            fingerprint:
+                sha256: "72:CA:00:61:23:95:AF:02:7C:D8:4C:55:14:21:9F:11:0E:96:4D:FA:0B:FC:1E:FB:B3:AC:14:7E:3B:17:39:71"
     - id: "NTC"
       name: "Nuvoton Technology"
       certificates:
