@@ -73,6 +73,15 @@ func GetDefaultTUFOptions(optionalClient ...utils.HTTPClient) *tuf.Options {
 	// Store TUF cache in a directory owned by tpmtb for better isolation
 	opts.CachePath = filepath.Join(cache.CacheDir(), ".sigstore", "root")
 
+	// Attempt to load the trusted root from the local cache if it exists
+	// Note: it can happen that the `root.json` included in `tuf` package is outdated
+	rootPath := filepath.Join(opts.CachePath, tuf.URLToPath("https://tuf-repo-cdn.sigstore.dev"), "root.json")
+	if utils.FileExists(rootPath) {
+		if b, err := utils.ReadFile(rootPath); err == nil {
+			opts.Root = b
+		}
+	}
+
 	// Rely on cache to avoid unnecessary network calls
 	// the package will automatically refresh the cache once key material expires
 	opts.ForceCache = true
