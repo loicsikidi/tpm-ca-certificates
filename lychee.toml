@@ -2,7 +2,7 @@ extensions = ["md"]
 timeout = 30 # in seconds
 header = { "accept" = "text/html" }
 accept = [
-    "200",
+    "200..=202",
     "429",
     "502", # it's ok if the backend is down during the scan
     "503", # it's ok if the backend is down during the scan
