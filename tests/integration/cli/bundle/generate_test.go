@@ -76,6 +76,8 @@ func TestGenerateCommand(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			outputPath := tmpDir + "/" + tt.outputFilename
 
 			opts := &generate.Opts{
@@ -160,11 +162,4 @@ func TestGenerateCommand_InvalidType(t *testing.T) {
 	}
 
 	t.Logf("✓ Correctly rejected invalid bundle type")
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }
