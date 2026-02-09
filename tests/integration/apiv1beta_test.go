@@ -23,7 +23,10 @@ func TestVerifyTrustedBundle(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
+	t.Parallel()
+
 	t.Run("VerifyWithAutoDetectedMetadataAndDownloadedChecksums", func(t *testing.T) {
+		t.Parallel()
 		if testing.Short() {
 			t.Skip("Skipping integration test in short mode")
 		}
@@ -51,6 +54,7 @@ func TestVerifyTrustedBundle(t *testing.T) {
 	})
 
 	t.Run("EmptyBundleError", func(t *testing.T) {
+		t.Parallel()
 		_, err := apiv1beta.VerifyTrustedBundle(t.Context(), apiv1beta.VerifyConfig{
 			Bundle: []byte{},
 		})
@@ -64,6 +68,7 @@ func TestVerifyTrustedBundle(t *testing.T) {
 	})
 
 	t.Run("InvalidBundleMetadata", func(t *testing.T) {
+		t.Parallel()
 		// Bundle with metadata that has Date but no Commit
 		_, err := apiv1beta.VerifyTrustedBundle(t.Context(), apiv1beta.VerifyConfig{
 			Bundle: []byte("dummy"),
@@ -83,6 +88,7 @@ func TestVerifyTrustedBundle(t *testing.T) {
 	})
 
 	t.Run("InvalidBundleContent", func(t *testing.T) {
+		t.Parallel()
 		// Bundle without proper metadata headers should fail parsing
 		_, err := apiv1beta.VerifyTrustedBundle(t.Context(), apiv1beta.VerifyConfig{
 			Bundle: []byte("invalid bundle content without metadata"),
@@ -105,6 +111,7 @@ func TestGetTrustedBundle(t *testing.T) {
 	t.Parallel()
 
 	t.Run("fetch and parse latest bundle", func(t *testing.T) {
+		t.Parallel()
 		cfg := apiv1beta.GetConfig{
 			SkipVerify: true,
 			AutoUpdate: apiv1beta.AutoUpdateConfig{
@@ -151,6 +158,7 @@ func TestGetTrustedBundle(t *testing.T) {
 	})
 
 	t.Run("fetch specific date with verification", func(t *testing.T) {
+		t.Parallel()
 		cfg := apiv1beta.GetConfig{
 			Date: testutil.BundleVersion,
 			AutoUpdate: apiv1beta.AutoUpdateConfig{
@@ -171,6 +179,7 @@ func TestGetTrustedBundle(t *testing.T) {
 	})
 
 	t.Run("stop is idempotent", func(t *testing.T) {
+		t.Parallel()
 		cfg := apiv1beta.GetConfig{
 			SkipVerify: true,
 			AutoUpdate: apiv1beta.AutoUpdateConfig{
@@ -194,6 +203,7 @@ func TestGetTrustedBundle(t *testing.T) {
 	})
 
 	t.Run("fetch latest bundle without verification", func(t *testing.T) {
+		t.Parallel()
 		cfg := apiv1beta.GetConfig{
 			SkipVerify: true,
 			AutoUpdate: apiv1beta.AutoUpdateConfig{
@@ -237,6 +247,7 @@ func TestGetTrustedBundle(t *testing.T) {
 	})
 
 	t.Run("fetch bundle with SkipVerify downloads both root and intermediate bundles", func(t *testing.T) {
+		t.Parallel()
 		cfg := apiv1beta.GetConfig{
 			SkipVerify: true,
 			AutoUpdate: apiv1beta.AutoUpdateConfig{
@@ -289,6 +300,7 @@ func TestGetTrustedBundle(t *testing.T) {
 	})
 
 	t.Run("filter by vendor IDs", func(t *testing.T) {
+		t.Parallel()
 		cfg := apiv1beta.GetConfig{
 			SkipVerify: true,
 			VendorIDs:  []apiv1beta.VendorID{apiv1beta.NTC, apiv1beta.IFX},
@@ -311,9 +323,9 @@ func TestGetTrustedBundle(t *testing.T) {
 	})
 
 	t.Run("auto-update refreshes to newer version", func(t *testing.T) {
-		// Start with an older version (2025-12-03)
+		// Start with an older version (2025-12-05)
 		cfg := apiv1beta.GetConfig{
-			Date:       "2025-12-03",
+			Date:       testutil.BundleVersion,
 			SkipVerify: true,
 			AutoUpdate: apiv1beta.AutoUpdateConfig{
 				Interval: 2 * time.Second, // Short interval for testing
@@ -329,25 +341,25 @@ func TestGetTrustedBundle(t *testing.T) {
 
 		// Verify initial version
 		initialMetadata := tb.GetRootMetadata()
-		if initialMetadata.Date != "2025-12-03" {
-			t.Errorf("Expected initial date '2025-12-03', got %q", initialMetadata.Date)
+		if initialMetadata.Date != testutil.BundleVersion {
+			t.Errorf("Expected initial date %q, got %q", testutil.BundleVersion, initialMetadata.Date)
 		}
 		t.Logf("Initial bundle date: %s", initialMetadata.Date)
 
 		// Wait for auto-update to trigger (interval + some buffer)
-		time.Sleep(3 * time.Second)
+		time.Sleep(4 * time.Second)
 
 		// Check if bundle was updated to latest version (2025-12-05)
 		updatedMetadata := tb.GetRootMetadata()
 		t.Logf("Updated bundle date: %s", updatedMetadata.Date)
 
-		if updatedMetadata.Date == "2025-12-03" {
+		if updatedMetadata.Date == testutil.BundleVersion {
 			t.Error("Bundle was not auto-updated after interval")
 		}
 
 		// The bundle should now be at the latest version (2025-12-05 or newer)
 		if updatedMetadata.Date < testutil.BundleVersion {
-			t.Errorf("Expected bundle to update to at least '2025-12-05', got %q", updatedMetadata.Date)
+			t.Errorf("Expected bundle to update to at least %q, got %q", testutil.BundleVersion, updatedMetadata.Date)
 		}
 
 		// Verify commit also changed
@@ -361,6 +373,8 @@ func TestTrustedBundle_ThreadSafety(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping thread safety test in short mode")
 	}
+
+	t.Parallel()
 
 	cfg := apiv1beta.GetConfig{
 		SkipVerify: true,
@@ -425,7 +439,10 @@ func TestSmartCache(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
+	t.Parallel()
+
 	t.Run("first fetch downloads and caches bundle", func(t *testing.T) {
+		t.Parallel()
 		tmpDir := t.TempDir()
 
 		// First call should download from GitHub and cache
@@ -472,6 +489,7 @@ func TestSmartCache(t *testing.T) {
 	})
 
 	t.Run("second fetch uses cache", func(t *testing.T) {
+		t.Parallel()
 		tmpDir := t.TempDir()
 
 		// First call to populate cache
@@ -535,6 +553,7 @@ func TestSmartCache(t *testing.T) {
 	})
 
 	t.Run("different version triggers new download", func(t *testing.T) {
+		t.Parallel()
 		tmpDir := t.TempDir()
 
 		// First call with version 2025-12-05
@@ -593,6 +612,7 @@ func TestSmartCache(t *testing.T) {
 	})
 
 	t.Run("DisableLocalCache bypasses cache", func(t *testing.T) {
+		t.Parallel()
 		tmpDir := t.TempDir()
 
 		// Call with DisableLocalCache=true should not create cache
@@ -779,6 +799,7 @@ func TestSave(t *testing.T) {
 	t.Parallel()
 
 	t.Run("save bundle with all verification assets", func(t *testing.T) {
+		t.Parallel()
 		tmpDir := t.TempDir()
 
 		// Save the latest bundle
@@ -828,6 +849,7 @@ func TestSave(t *testing.T) {
 	})
 
 	t.Run("save specific date with vendor filter", func(t *testing.T) {
+		t.Parallel()
 		tmpDir := t.TempDir()
 
 		// Save a specific date with vendor filter
@@ -856,6 +878,7 @@ func TestSave(t *testing.T) {
 	})
 
 	t.Run("persist saves all files to output directory", func(t *testing.T) {
+		t.Parallel()
 		tmpDir := t.TempDir()
 
 		// Save and persist
@@ -908,6 +931,7 @@ func TestSave(t *testing.T) {
 	})
 
 	t.Run("save and load for offline verification", func(t *testing.T) {
+		t.Parallel()
 		tmpDir := t.TempDir()
 
 		// Save bundle
