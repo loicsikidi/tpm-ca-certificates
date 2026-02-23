@@ -163,13 +163,13 @@ func displayAttestationMetadata(vr *verify.VerificationResult) string {
 	}
 
 	// Build output
-	sb.WriteString(fmt.Sprintf("  - Build repo:..... %s\n", buildRepo))
-	sb.WriteString(fmt.Sprintf("  - Build workflow:. %s\n", buildWorkflow))
-	sb.WriteString(fmt.Sprintf("  - Git commit:..... %s\n", gitCommit))
-	sb.WriteString(fmt.Sprintf("  - Signer repo:.... %s\n", signerRepo))
-	sb.WriteString(fmt.Sprintf("  - Signer workflow: %s\n", signerWorkflow))
+	fmt.Fprintf(&sb, "  - Build repo:..... %s\n", buildRepo)
+	fmt.Fprintf(&sb, "  - Build workflow:. %s\n", buildWorkflow)
+	fmt.Fprintf(&sb, "  - Git commit:..... %s\n", gitCommit)
+	fmt.Fprintf(&sb, "  - Signer repo:.... %s\n", signerRepo)
+	fmt.Fprintf(&sb, "  - Signer workflow: %s\n", signerWorkflow)
 	if rekorTimestamp != "" {
-		sb.WriteString(fmt.Sprintf("  - Rekor timestamp: %s\n", rekorTimestamp))
+		fmt.Fprintf(&sb, "  - Rekor timestamp: %s\n", rekorTimestamp)
 	}
 
 	return sb.String()

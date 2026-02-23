@@ -24,9 +24,9 @@ type ValidationError struct {
 
 func (e ValidationError) String() string {
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf("  Vendor: %s (%s)\n", e.VendorName, e.VendorID))
-	b.WriteString(fmt.Sprintf("  Certificate: %s\n", e.CertName))
-	b.WriteString(fmt.Sprintf("  Error: %s\n", e.Error))
+	fmt.Fprintf(&b, "  Vendor: %s (%s)\n", e.VendorName, e.VendorID)
+	fmt.Fprintf(&b, "  Certificate: %s\n", e.CertName)
+	fmt.Fprintf(&b, "  Error: %s\n", e.Error)
 	return b.String()
 }
 
@@ -42,12 +42,12 @@ type ExpirationWarning struct {
 
 func (w ExpirationWarning) String() string {
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf("  Vendor: %s (%s)\n", w.VendorName, w.VendorID))
-	b.WriteString(fmt.Sprintf("  Certificate: %s\n", w.CertName))
+	fmt.Fprintf(&b, "  Vendor: %s (%s)\n", w.VendorName, w.VendorID)
+	fmt.Fprintf(&b, "  Certificate: %s\n", w.CertName)
 	if w.IsExpired {
-		b.WriteString(fmt.Sprintf("  Status: Expired on %s\n", w.ExpiryDate.Format("2006-01-02")))
+		fmt.Fprintf(&b, "  Status: Expired on %s\n", w.ExpiryDate.Format("2006-01-02"))
 	} else {
-		b.WriteString(fmt.Sprintf("  Status: Expires in %d days (%s)\n", w.DaysLeft, w.ExpiryDate.Format("2006-01-02")))
+		fmt.Fprintf(&b, "  Status: Expires in %d days (%s)\n", w.DaysLeft, w.ExpiryDate.Format("2006-01-02"))
 	}
 	return b.String()
 }
