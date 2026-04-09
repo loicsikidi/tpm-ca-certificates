@@ -1,0 +1,289 @@
+---
+version: "alpha"
+vendors:
+    - id: "AMD"
+      name: "AMD"
+      certificates:
+        - name: "Pluton Factory DEVICE EK ICA DFID00A70F00"
+          url: "https://ftpm.amd.com/hsp/ica/00A70F00-device.crt"
+          validation:
+            fingerprint:
+                sha256: "7F:BA:DE:15:0B:A8:0D:32:C7:7E:37:3B:38:F6:E0:50:40:C2:33:FE:E5:F8:3E:86:FC:3F:53:A5:47:66:0C:83"
+        - name: "Pluton Factory FIPS EK ICA DFID00A70F00"
+          url: "https://ftpm.amd.com/hsp/ica/00A70F00-fips.crt"
+          validation:
+            fingerprint:
+                sha256: "8B:23:68:C4:C0:98:55:39:20:0C:B4:2D:4D:1B:24:0B:61:D0:B3:6F:4F:98:82:E8:12:BD:86:06:03:6F:97:5E"
+    - id: "IFX"
+      name: "Infineon"
+      certificates:
+        - name: "Infineon OPTIGA(TM) ECC Manufacturing CA 000"
+          url: "https://pki.infineon.com/OptigaEccMfrCA000/OptigaEccMfrCA000.crt"
+          validation:
+            fingerprint:
+                sha256: "28:4B:B4:91:4B:65:E9:3A:4B:42:1F:77:66:86:E3:27:7A:EA:C7:63:47:3D:EF:1A:C9:57:6A:17:E2:A7:41:E8"
+        - name: "Infineon OPTIGA(TM) ECC Manufacturing CA 001"
+          url: "https://pki.infineon.com/OptigaEccMfrCA001/OptigaEccMfrCA001.crt"
+          validation:
+            fingerprint:
+                sha256: "D9:6D:40:D5:27:E1:11:4C:24:40:BE:8E:13:BF:93:A3:17:64:F3:E1:D1:B1:5D:39:C9:18:91:82:8E:BD:24:85"
+        - name: "Infineon OPTIGA(TM) ECC Manufacturing CA 002"
+          url: "https://pki.infineon.com/OptigaEccMfrCA002/OptigaEccMfrCA002.crt"
+          validation:
+            fingerprint:
+                sha256: "91:06:B4:CC:DB:61:3E:CB:04:25:A2:64:CE:2D:2E:E8:1E:AB:F2:62:A7:10:F9:B0:3A:10:CB:55:4F:E7:0C:8D"
+        - name: "Infineon OPTIGA(TM) ECC Manufacturing CA 004"
+          url: "https://pki.infineon.com/OptigaEccMfrCA004/OptigaEccMfrCA004.crt"
+          validation:
+            fingerprint:
+                sha256: "F6:0E:D4:6D:31:B4:28:0E:1B:6A:15:9D:46:B3:F2:41:BB:C2:F3:30:3E:14:6B:11:25:0A:D2:F0:C1:62:B4:91"
+        - name: "Infineon OPTIGA(TM) ECC Manufacturing CA 005"
+          url: "https://pki.infineon.com/OptigaEccMfrCA005/OptigaEccMfrCA005.crt"
+          validation:
+            fingerprint:
+                sha256: "2F:EE:D2:9D:18:C2:F5:71:13:4F:87:46:4B:D5:3F:C8:35:DA:81:32:F9:4E:DE:39:6C:86:06:2D:DC:D5:BE:64"
+        - name: "Infineon OPTIGA(TM) ECC Manufacturing CA 006"
+          url: "https://pki.infineon.com/OptigaEccMfrCA006/OptigaEccMfrCA006.crt"
+          validation:
+            fingerprint:
+                sha256: "8D:D5:EC:1F:0A:A5:6E:8F:3C:C6:07:AC:89:51:38:CC:1A:A2:72:20:32:0A:70:37:AA:4A:C3:30:A1:CC:CC:19"
+        - name: "Infineon OPTIGA(TM) ECC Manufacturing CA 008"
+          url: "https://pki.infineon.com/OptigaEccMfrCA008/OptigaEccMfrCA008.crt"
+          validation:
+            fingerprint:
+                sha256: "DD:7C:06:F8:8D:F1:AF:F7:D5:26:24:6B:BF:7C:FE:E6:96:0E:4E:AC:56:6E:25:11:A7:90:C4:65:43:AA:D9:3C"
+        - name: "Infineon OPTIGA(TM) ECC Manufacturing CA 012"
+          url: "https://pki.infineon.com/OptigaEccMfrCA012/OptigaEccMfrCA012.crt"
+          validation:
+            fingerprint:
+                sha256: "D3:CA:5E:98:CB:26:9E:7C:A7:68:5E:0D:10:2E:62:ED:75:8F:27:C5:00:83:EB:3D:F9:C9:33:28:D6:3A:C4:E2"
+        - name: "Infineon OPTIGA(TM) ECC Manufacturing CA 013"
+          url: "https://pki.infineon.com/OptigaEccMfrCA013/OptigaEccMfrCA013.crt"
+          validation:
+            fingerprint:
+                sha256: "2A:5E:CE:05:99:25:75:98:96:5F:03:85:85:E4:F6:B8:F6:B3:93:73:71:86:7B:C9:7B:5A:40:7D:0F:0F:C3:5D"
+        - name: "Infineon OPTIGA(TM) ECC Manufacturing CA 023"
+          url: "https://pki.infineon.com/OptigaEccMfrCA023/OptigaEccMfrCA023.crt"
+          validation:
+            fingerprint:
+                sha256: "2E:65:E2:0C:E1:EC:1E:88:7B:85:21:51:C0:6C:F3:B5:FD:59:02:1E:6B:1E:25:76:E9:11:E0:0B:B1:1A:AD:52"
+        - name: "Infineon OPTIGA(TM) ECC Manufacturing CA 024"
+          url: "https://pki.infineon.com/OptigaEccMfrCA024/OptigaEccMfrCA024.crt"
+          validation:
+            fingerprint:
+                sha256: "A4:33:5A:C8:EB:CB:AD:85:CD:BA:FD:80:51:05:8C:84:41:05:18:E0:96:54:48:BC:1A:82:95:23:41:BD:5C:B4"
+        - name: "Infineon OPTIGA(TM) ECC Manufacturing CA 025"
+          url: "https://pki.infineon.com/OptigaEccMfrCA025/OptigaEccMfrCA025.crt"
+          validation:
+            fingerprint:
+                sha256: "45:63:CE:F6:EB:DC:35:26:15:F1:8A:75:33:CA:A1:CF:F4:E4:08:B6:EF:87:1E:EA:B7:CD:53:24:65:46:5C:46"
+        - name: "Infineon OPTIGA(TM) ECC Manufacturing CA 026"
+          url: "https://pki.infineon.com/OptigaEccMfrCA026/OptigaEccMfrCA026.crt"
+          validation:
+            fingerprint:
+                sha256: "0B:62:DB:90:ED:65:3D:29:37:50:9A:CA:08:E0:26:37:BA:2F:B2:75:30:07:A4:EC:D2:EB:9E:D7:3B:46:06:82"
+        - name: "Infineon OPTIGA(TM) ECC Manufacturing CA 030"
+          url: "https://pki.infineon.com/OptigaEccMfrCA030/OptigaEccMfrCA030.crt"
+          validation:
+            fingerprint:
+                sha256: "9E:C0:9C:91:C4:60:97:D7:54:CA:D7:44:34:2D:8B:63:4B:27:8D:C5:80:95:F0:48:39:21:4F:D9:0A:7D:49:9A"
+        - name: "Infineon OPTIGA(TM) ECC Manufacturing CA 033"
+          url: "https://pki.infineon.com/OptigaEccMfrCA033/OptigaEccMfrCA033.crt"
+          validation:
+            fingerprint:
+                sha256: "BE:F3:B6:40:92:80:98:B5:9E:81:14:D4:38:2A:51:E6:4C:E8:5F:1D:BE:C0:9E:CD:23:E9:DE:EA:D0:20:C1:F4"
+        - name: "Infineon OPTIGA(TM) RSA Manufacturing CA 000"
+          url: "https://pki.infineon.com/OptigaRsaMfrCA000/OptigaRsaMfrCA000.crt"
+          validation:
+            fingerprint:
+                sha256: "7B:1A:67:17:51:17:A4:5C:7D:E1:F4:1B:6A:BC:EA:E9:7B:69:FD:73:BF:32:2A:84:A7:C4:3C:AE:8E:FB:66:64"
+        - name: "Infineon OPTIGA(TM) RSA Manufacturing CA 001"
+          url: "https://pki.infineon.com/OptigaRsaMfrCA001/OptigaRsaMfrCA001.crt"
+          validation:
+            fingerprint:
+                sha256: "A5:18:43:C1:13:FA:21:0B:C0:A8:47:A2:6B:37:AF:10:9A:88:C0:DE:39:E5:3E:E1:FE:95:57:88:D4:DC:63:E0"
+        - name: "Infineon OPTIGA(TM) RSA Manufacturing CA 002"
+          url: "https://pki.infineon.com/OptigaRsaMfrCA002/OptigaRsaMfrCA002.crt"
+          validation:
+            fingerprint:
+                sha256: "64:D2:09:3B:DD:13:DC:C3:CD:32:FF:D8:9A:EE:0B:B8:B0:D6:62:2E:69:2B:FB:19:F5:A8:3E:44:44:97:7E:46"
+        - name: "Infineon OPTIGA(TM) RSA Manufacturing CA 004"
+          url: "https://pki.infineon.com/OptigaRsaMfrCA004/OptigaRsaMfrCA004.crt"
+          validation:
+            fingerprint:
+                sha256: "A9:CC:69:3B:93:CA:AC:51:61:28:1E:44:FC:7E:F7:E0:BF:B6:EF:E0:E7:8B:9F:E6:2B:31:20:A7:51:BC:97:D3"
+        - name: "Infineon OPTIGA(TM) RSA Manufacturing CA 005"
+          url: "https://pki.infineon.com/OptigaRsaMfrCA005/OptigaRsaMfrCA005.crt"
+          validation:
+            fingerprint:
+                sha256: "67:63:E3:30:EE:51:A1:0D:68:04:BA:EC:81:E0:21:E0:5A:91:2E:68:AF:ED:78:2D:8B:17:84:8E:09:FA:80:2F"
+        - name: "Infineon OPTIGA(TM) RSA Manufacturing CA 006"
+          url: "https://pki.infineon.com/OptigaRsaMfrCA006/OptigaRsaMfrCA006.crt"
+          validation:
+            fingerprint:
+                sha256: "A5:7A:11:43:86:D2:19:CC:A5:E3:3A:CB:96:54:47:F2:BB:9B:75:D8:EF:D2:23:EA:06:AE:F7:46:C4:68:4A:24"
+        - name: "Infineon OPTIGA(TM) RSA Manufacturing CA 008"
+          url: "https://pki.infineon.com/OptigaRsaMfrCA008/OptigaRsaMfrCA008.crt"
+          validation:
+            fingerprint:
+                sha256: "96:63:3E:FF:18:AA:EC:E1:5A:64:6A:A3:17:87:59:CE:8B:60:86:D3:41:C6:FD:1B:2A:3F:17:98:CB:A2:29:0B"
+        - name: "Infineon OPTIGA(TM) RSA Manufacturing CA 012"
+          url: "https://pki.infineon.com/OptigaRsaMfrCA012/OptigaRsaMfrCA012.crt"
+          validation:
+            fingerprint:
+                sha256: "45:FB:73:3D:50:FD:88:B6:B4:99:A9:77:27:84:AD:2D:8F:07:3E:B4:97:99:C7:18:67:09:AA:E6:62:F9:73:48"
+        - name: "Infineon OPTIGA(TM) RSA Manufacturing CA 013"
+          url: "https://pki.infineon.com/OptigaRsaMfrCA013/OptigaRsaMfrCA013.crt"
+          validation:
+            fingerprint:
+                sha256: "88:A4:5B:6D:49:3D:88:64:B8:37:92:01:1A:A0:53:B8:1E:34:3E:C4:E2:6B:6D:B3:FC:2F:0D:F4:F3:98:2D:D9"
+        - name: "Infineon OPTIGA(TM) RSA Manufacturing CA 023"
+          url: "https://pki.infineon.com/OptigaRsaMfrCA023/OptigaRsaMfrCA023.crt"
+          validation:
+            fingerprint:
+                sha256: "7D:C4:97:08:BD:14:D3:B3:D4:99:EE:04:20:D7:4F:63:E2:2A:48:50:00:54:91:FF:2B:FC:A3:EA:25:ED:6B:B8"
+        - name: "Infineon OPTIGA(TM) RSA Manufacturing CA 024"
+          url: "https://pki.infineon.com/OptigaRsaMfrCA024/OptigaRsaMfrCA024.crt"
+          validation:
+            fingerprint:
+                sha256: "38:B3:3B:2A:6B:5F:33:45:A2:AB:4C:04:9E:DC:19:99:93:15:BF:88:42:7C:BF:30:E9:56:5D:B3:61:9B:6E:E6"
+        - name: "Infineon OPTIGA(TM) RSA Manufacturing CA 025"
+          url: "https://pki.infineon.com/OptigaRsaMfrCA025/OptigaRsaMfrCA025.crt"
+          validation:
+            fingerprint:
+                sha256: "63:DB:76:F0:ED:66:A5:09:FE:CE:D7:C1:9F:E0:0E:F6:7A:D7:D5:19:A9:77:1F:D4:A6:45:B4:1C:C8:B6:39:56"
+        - name: "Infineon OPTIGA(TM) RSA Manufacturing CA 026"
+          url: "https://pki.infineon.com/OptigaRsaMfrCA026/OptigaRsaMfrCA026.crt"
+          validation:
+            fingerprint:
+                sha256: "1A:A7:1D:9C:98:87:43:E5:54:0E:35:DA:E1:7A:8A:50:70:2E:2A:3D:B0:F0:33:A5:6E:50:DD:1E:EB:68:2E:49"
+        - name: "Infineon OPTIGA(TM) RSA Manufacturing CA 030"
+          url: "https://pki.infineon.com/OptigaRsaMfrCA030/OptigaRsaMfrCA030.crt"
+          validation:
+            fingerprint:
+                sha256: "98:B1:1C:0E:ED:7C:51:BF:BF:A7:A4:F1:31:CB:84:A8:23:0C:39:5C:5D:2F:81:B1:E1:71:97:7E:6E:DE:73:AC"
+        - name: "Infineon OPTIGA(TM) RSA Manufacturing CA 033"
+          url: "https://pki.infineon.com/OptigaRsaMfrCA033/OptigaRsaMfrCA033.crt"
+          validation:
+            fingerprint:
+                sha256: "35:1F:8C:71:22:38:5E:2B:15:32:EE:55:B6:F2:E8:C7:D2:03:CA:73:82:0D:F8:F7:BB:7B:AD:1C:D0:88:B4:60"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 ECC CA 037"
+          url: "https://pki.infineon.com/OptigaEccMfrCA037/OptigaEccMfrCA037.crt"
+          validation:
+            fingerprint:
+                sha256: "C6:F6:6A:DE:3C:FD:77:29:64:B1:1C:3E:58:BC:70:0A:5D:16:0C:74:56:BB:A4:1D:0D:60:02:E4:66:FF:7D:3D"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 ECC CA 038"
+          url: "https://pki.infineon.com/OptigaEccMfrCA038/OptigaEccMfrCA038.crt"
+          validation:
+            fingerprint:
+                sha256: "32:31:92:35:BB:99:1F:7D:A5:A4:F8:33:E4:2D:45:13:BE:40:8A:8F:95:45:3C:3E:A2:5B:AD:10:E7:7B:6E:71"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 ECC CA 048"
+          url: "https://pki.infineon.com/OptigaEccMfrCA048/OptigaEccMfrCA048.crt"
+          validation:
+            fingerprint:
+                sha256: "0F:7F:D9:22:C0:5B:54:81:09:A5:00:D6:61:09:54:D5:5C:3A:39:B8:76:4D:66:36:64:10:F9:63:DC:C0:B4:16"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 ECC CA 051"
+          url: "https://pki.infineon.com/OptigaEccMfrCA051/OptigaEccMfrCA051.crt"
+          validation:
+            fingerprint:
+                sha256: "7B:EA:0C:43:10:FE:C5:96:CB:B9:BD:33:37:CE:8D:0A:E3:EA:79:23:60:03:7C:43:C2:D1:87:D0:A7:36:1C:02"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 ECC CA 053"
+          url: "https://pki.infineon.com/OptigaEccMfrCA053/OptigaEccMfrCA053.crt"
+          validation:
+            fingerprint:
+                sha256: "AF:07:43:DA:8D:EB:96:A0:1B:D8:F2:4A:EE:FB:B6:F3:CA:20:55:7A:85:71:2B:19:06:CA:2B:B2:29:2D:45:F4"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 ECC CA 060"
+          url: "https://pki.infineon.com/OptigaEccMfrCA060/OptigaEccMfrCA060.crt"
+          validation:
+            fingerprint:
+                sha256: "4A:F3:D3:60:08:70:F0:46:28:92:C0:5C:12:7C:2A:F8:A5:30:50:65:E8:B2:59:4B:87:AC:9E:53:C9:3D:1B:15"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 ECC CA 067"
+          url: "https://pki.infineon.com/OptigaEccMfrCA067/OptigaEccMfrCA067.crt"
+          validation:
+            fingerprint:
+                sha256: "F0:45:94:37:C3:8F:92:10:BE:06:D3:C5:19:4E:4E:06:B5:15:35:95:86:1B:FE:EC:7B:35:84:5B:CB:91:5F:66"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 ECC CA 068"
+          url: "https://pki.infineon.com/OptigaEccMfrCA068/OptigaEccMfrCA068.crt"
+          validation:
+            fingerprint:
+                sha256: "11:5D:4B:50:2D:E6:B5:0A:58:F8:85:0C:23:9A:A0:19:C7:E8:12:33:67:E0:E3:86:A1:77:D6:CC:2E:C2:17:3B"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 ECC CA 072"
+          url: "https://pki.infineon.com/OptigaEccMfrCA072/OptigaEccMfrCA072.crt"
+          validation:
+            fingerprint:
+                sha256: "8A:68:B3:BB:89:E0:4D:6B:A2:5E:85:F6:8D:95:82:C0:1D:02:1F:E2:D1:38:00:94:25:83:31:26:5F:62:D7:6E"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 ECC CA 073"
+          url: "https://pki.infineon.com/OptigaEccMfrCA073/OptigaEccMfrCA073.crt"
+          validation:
+            fingerprint:
+                sha256: "1C:7E:C2:CA:35:F2:19:31:BA:70:05:24:0B:0E:48:18:CE:99:DB:4E:2A:F2:13:AF:F4:14:A1:E4:E4:42:AE:26"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 ECC CA 082"
+          url: "https://pki.infineon.com/OptigaEccMfrCA082/OptigaEccMfrCA082.crt"
+          validation:
+            fingerprint:
+                sha256: "FF:61:13:14:CD:84:97:C5:53:56:B8:9B:D4:01:D9:76:AE:8F:B1:DF:52:59:80:9C:27:EA:10:DA:8C:F2:76:38"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 ECC CA 083"
+          url: "https://pki.infineon.com/OptigaEccMfrCA083/OptigaEccMfrCA083.crt"
+          validation:
+            fingerprint:
+                sha256: "D1:ED:C2:1B:8A:C1:D1:F2:E4:5B:C4:A9:16:73:8B:7E:7E:1E:22:EA:DF:3E:9F:C3:9F:9B:DA:64:B1:FE:01:D8"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 RSA CA 037"
+          url: "https://pki.infineon.com/OptigaRsaMfrCA037/OptigaRsaMfrCA037.crt"
+          validation:
+            fingerprint:
+                sha256: "7C:AB:D5:C8:18:74:22:C7:AE:91:59:30:D4:F5:65:F1:9F:A6:40:11:DE:19:F8:8F:07:7B:22:6B:7E:A1:23:17"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 RSA CA 038"
+          url: "https://pki.infineon.com/OptigaRsaMfrCA038/OptigaRsaMfrCA038.crt"
+          validation:
+            fingerprint:
+                sha256: "A3:27:A0:13:F3:CC:0D:A0:51:A5:91:6C:84:5E:7C:AE:F8:CD:3E:AC:52:51:27:A4:04:89:9E:E3:CB:CA:5D:1B"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 RSA CA 048"
+          url: "https://pki.infineon.com/OptigaRsaMfrCA048/OptigaRsaMfrCA048.crt"
+          validation:
+            fingerprint:
+                sha256: "AC:C6:32:B4:5B:04:F7:AF:B0:3D:58:76:90:FD:5E:97:C5:6F:ED:4E:D8:03:32:F7:CE:86:A7:70:EE:55:F8:A4"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 RSA CA 051"
+          url: "https://pki.infineon.com/OptigaRsaMfrCA051/OptigaRsaMfrCA051.crt"
+          validation:
+            fingerprint:
+                sha256: "2E:A3:96:75:B0:4E:7E:00:E9:92:B9:64:5D:3F:FC:5C:17:97:65:7F:54:43:1D:6A:B5:16:B5:B1:7D:58:05:74"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 RSA CA 053"
+          url: "https://pki.infineon.com/OptigaRsaMfrCA053/OptigaRsaMfrCA053.crt"
+          validation:
+            fingerprint:
+                sha256: "70:8D:96:76:8E:51:E1:1B:82:C2:C4:1A:11:B5:02:CF:CB:8E:4A:65:6B:12:E2:6C:94:18:B1:C7:47:F0:5C:66"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 RSA CA 060"
+          url: "https://pki.infineon.com/OptigaRsaMfrCA060/OptigaRsaMfrCA060.crt"
+          validation:
+            fingerprint:
+                sha256: "34:58:C1:7E:1E:C3:13:E2:5C:E0:AE:29:87:5C:7C:53:54:A8:6C:ED:0B:09:8C:C9:25:49:81:72:70:46:E4:37"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 RSA CA 067"
+          url: "https://pki.infineon.com/OptigaRsaMfrCA067/OptigaRsaMfrCA067.crt"
+          validation:
+            fingerprint:
+                sha256: "46:2B:4A:78:75:4D:C6:01:77:AE:06:2D:46:AE:72:CD:AF:7B:54:17:29:A2:F6:10:AF:71:E6:49:6F:7F:B3:2C"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 RSA CA 068"
+          url: "https://pki.infineon.com/OptigaRsaMfrCA068/OptigaRsaMfrCA068.crt"
+          validation:
+            fingerprint:
+                sha256: "C5:22:5D:77:C5:04:40:A9:EC:48:A7:EA:99:EC:51:48:C0:77:31:45:10:CF:3B:50:D7:92:69:17:39:C1:F5:CD"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 RSA CA 072"
+          url: "https://pki.infineon.com/OptigaRsaMfrCA072/OptigaRsaMfrCA072.crt"
+          validation:
+            fingerprint:
+                sha256: "61:55:87:99:FC:0E:70:01:0A:33:31:D1:B5:B7:D0:40:B7:C1:F5:7D:79:05:5C:61:B0:66:4C:98:D1:BA:D7:EE"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 RSA CA 073"
+          url: "https://pki.infineon.com/OptigaRsaMfrCA073/OptigaRsaMfrCA073.crt"
+          validation:
+            fingerprint:
+                sha256: "89:AD:FB:ED:CC:89:6D:68:26:9E:D9:EF:7B:52:D2:B5:40:47:A1:D8:45:BF:FF:20:B2:FB:ED:CC:B0:94:5C:FB"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 RSA CA 082"
+          url: "https://pki.infineon.com/OptigaRsaMfrCA082/OptigaRsaMfrCA082.crt"
+          validation:
+            fingerprint:
+                sha256: "89:E8:06:25:0F:7F:7D:ED:A1:94:A7:38:A5:BE:50:DD:E6:10:EF:A7:54:FF:43:45:E4:B1:58:F0:FD:90:63:6F"
+        - name: "Infineon OPTIGA(TM) TPM 2.0 RSA CA 083"
+          url: "https://pki.infineon.com/OptigaRsaMfrCA083/OptigaRsaMfrCA083.crt"
+          validation:
+            fingerprint:
+                sha256: "D5:49:5C:48:D3:4F:F2:93:51:85:05:7D:B2:1B:10:67:89:A2:D0:37:65:A6:41:71:79:FD:55:F5:5F:C5:BF:D2"

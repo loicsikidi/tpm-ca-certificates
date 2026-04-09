@@ -8,7 +8,7 @@ This directory contains the evidence and documentation proving how the URLs for 
 |-----------|-------------|:-------------:|:-------------------:|
 | AMD | AMD | [README](AMD/) | C |
 | INTC | Intel | [README](INTC/) | C |
-| IFX | Infineon | [README](IFX/) | B |
+| IFX | Infineon | [README](IFX/) | A |
 | MSFT | Microsoft | [README](MSFT/) | C |
 | NTC | Nuvoton Technology | [README](NTC/) | A |
 | NSG | NSING | [README](NSG/) | B |
