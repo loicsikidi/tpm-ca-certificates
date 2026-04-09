@@ -44,6 +44,33 @@ jobs:
               go get -u -t ./...
             fi
             go test -v -short -race ./...
+  integration-tests:
+    name: Run Integration Tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      attestations: read
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: integration tests
+        run: |
+          go test -v -race ./...
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # ISSUE: zizmor doesn't seems to support "with.env" yet and throws an error
+      # Meanwhile, commenting out this step and running tests directly above
+      # - uses: geomys/sandboxed-step@7d75eb49d17fdeeb3656b3a57d35932d205bcfb9 # v1.2.1
+      #   with:
+      #     run: |
+      #       go test -v -race ./...
+      #     env:
+      #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   staticcheck:
     runs-on: ubuntu-latest
     steps:
