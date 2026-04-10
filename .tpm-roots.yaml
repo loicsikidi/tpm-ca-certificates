@@ -9,16 +9,16 @@ vendors:
           validation:
             fingerprint:
                 sha256: "59:3A:17:94:F9:E1:74:76:C7:AD:42:7D:29:08:A9:7C:45:14:51:C9:E0:93:9F:DC:80:D5:D6:62:C2:32:D4:01"
-        - name: "AMDTPM ECC"
+        - name: "AMDTPM ECC (modern version)"
           url: "https://ftpm.amd.com/pki/aia/23452201D41C5AB064032BD23F158FEF"
           validation:
             fingerprint:
-                sha256: "C2:CB:57:BF:72:3C:17:4F:16:6C:5A:A1:DC:64:16:09:81:05:4B:EE:18:C7:0E:B1:DE:BF:C1:51:8A:FA:92:D2"
-        - name: "AMDTPM RSA"
+                sha256: "14:AA:C9:FD:58:47:1A:61:2A:FD:75:D8:C0:95:5D:AF:99:F0:91:B1:86:37:02:F9:E0:D4:11:3F:AF:23:4F:9D"
+        - name: "AMDTPM RSA (modern version)"
           url: "https://ftpm.amd.com/pki/aia/264D39A23CEB5D5B49D610044EEBD121"
           validation:
             fingerprint:
-                sha256: "B7:3F:14:DE:A3:BD:AA:0B:E8:74:40:DE:3F:C7:18:C7:71:F2:CB:F8:B7:B2:23:1C:6E:A2:28:D3:B2:08:60:EF"
+                sha256: "67:BD:24:72:A5:46:75:1C:AC:A5:F3:58:A7:8F:80:72:75:31:67:13:38:96:0A:9B:CF:DF:BE:6A:34:D0:C6:A1"
     - id: "IFX"
       name: "Infineon"
       certificates:
