@@ -4,6 +4,11 @@ vendors:
     - id: "AMD"
       name: "AMD"
       certificates:
+        - name: "AMD PRG-RPL EK ICA"
+          url: "https://ftpm.amd.com/pki/aia/9DE34E7EF9C15FA479A9F398BC865D60"
+          validation:
+            fingerprint:
+                sha256: "F1:C6:64:B0:27:C9:FA:F0:7F:2D:52:3D:6C:84:9F:91:27:19:15:73:E9:F3:25:D6:C4:C7:C5:6A:76:A8:FF:CC"
         - name: "AMD Pluton Per-Product Factory FIPS EK ICA DFID00B20F00"
           url: "https://ftpm.amd.com/hsp/ica/00B20F00-fips.crt"
           validation:
