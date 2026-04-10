@@ -59,14 +59,23 @@ jobs:
               echo "validate command failed ⛔"
               exit 1
             fi
-            if ! go run ./ bundle generate \
-              --config ${{ matrix.config }} \
-              --output test-bundle.pem \
-              --date 1970-01-01 \
-              --commit 0000000000000000000000000000000000000000; then
-              echo "bundle generate command failed ⛔"
-              exit 1
-            fi
+            # Network issues can sometimes occur, so we retry up to 3 times
+            for attempt in {1..3}; do
+              if go run ./ bundle generate \
+                --config ${{ matrix.config }} \
+                --output test-bundle.pem \
+                --date 1970-01-01 \
+                --commit 0000000000000000000000000000000000000000; then
+                break
+              fi
+              if [ $attempt -lt 3 ]; then
+                echo "bundle generate command failed, retrying in 5 seconds... (attempt $attempt/3) ⏳"
+                sleep 5
+              else
+                echo "bundle generate command failed after 3 attempts ⛔"
+                exit 1
+              fi
+            done
             if ! go run ./ bundle validate test-bundle.pem; then
               echo "bundle validate command failed ⛔"
               exit 1
