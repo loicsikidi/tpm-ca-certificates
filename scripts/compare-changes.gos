@@ -25,7 +25,7 @@
 //   - Certificate: The name of the certificate
 //   - Type: Either "Root" or "Intermediate"
 //   - Vendor: The vendor ID (AMD, IFX, INTC, MSFT, NTC, STM)
-//   - Action: One of "ADD", "REMOVE", or "UPDATE URL"
+//   - Action: One of "ADD", "REMOVE", "UPDATE URL", or "UPDATE HASH"
 package main
 
 import (
@@ -179,7 +179,7 @@ func compareConfigs(oldConfig, newConfig Config, certType string) []Change {
 		}
 	}
 
-	// Find URL changes
+	// Find URL changes and hash changes
 	for vendorID, certs := range oldCerts {
 		for certName, oldCert := range certs {
 			if newCert, exists := newCerts[vendorID][certName]; exists {
@@ -189,6 +189,16 @@ func compareConfigs(oldConfig, newConfig Config, certType string) []Change {
 						Type:        certType,
 						Vendor:      vendorID,
 						Action:      "UPDATE URL",
+					})
+				}
+				// Check for hash changes
+				if oldCert.Validation.Fingerprint.SHA256 != newCert.Validation.Fingerprint.SHA256 ||
+					oldCert.Validation.Fingerprint.SHA1 != newCert.Validation.Fingerprint.SHA1 {
+					changes = append(changes, Change{
+						Certificate: certName,
+						Type:        certType,
+						Vendor:      vendorID,
+						Action:      "UPDATE HASH",
 					})
 				}
 			}
