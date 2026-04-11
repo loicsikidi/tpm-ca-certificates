@@ -2,6 +2,8 @@
 
 ![go version](https://img.shields.io/github/go-mod/go-version/loicsikidi/tpm-ca-certificates)
 [![godoc](https://pkg.go.dev/badge/github.com/loicsikidi/tpm-ca-certificates/v1.svg)](https://pkg.go.dev/github.com/loicsikidi/tpm-ca-certificates/pkg/apiv1beta)
+[![latest bundle](https://img.shields.io/github/v/release/loicsikidi/tpm-ca-certificates?filter=2*&sort=date&display_name=tag&label=latest%20bundle)](https://github.com/loicsikidi/tpm-ca-certificates/releases)
+[![latest tpmtb](https://img.shields.io/github/v/release/loicsikidi/tpm-ca-certificates?filter=v*&sort=date&display_name=tag&label=latest%20tpmtb)](https://github.com/loicsikidi/tpm-ca-certificates/releases)
 [![license](https://img.shields.io/badge/license-BSD--3--Clause-blue?style=flat-square)](https://raw.githubusercontent.com/loicsikidi/tpm-ca-certificates/main/LICENSE)
 
 ## Motivation
