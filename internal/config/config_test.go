@@ -37,6 +37,31 @@ func TestTPMRootsConfig_CheckAndSetDefault(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "valid config with description",
+			config: TPMRootsConfig{
+				Version: "alpha",
+				Vendors: []Vendor{
+					{
+						Name: "Test Vendor",
+						ID:   "TV",
+						Certificates: []Certificate{
+							{
+								Name:        "Test Cert",
+								Description: "Test certificate description",
+								URL:         "https://example.com/cert.cer",
+								Validation: Validation{
+									Fingerprint: Fingerprint{
+										SHA1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
 			name: "missing version",
 			config: TPMRootsConfig{
 				Vendors: []Vendor{

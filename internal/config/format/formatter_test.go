@@ -231,6 +231,46 @@ vendors:
 	}
 }
 
+func TestFormatFile_WithDescription(t *testing.T) {
+	f := NewFormatter()
+
+	tmpDir := t.TempDir()
+	inputPath := filepath.Join(tmpDir, "test-desc.yaml")
+	outputPath := filepath.Join(tmpDir, "output-desc.yaml")
+
+	inputYAML := `version: alpha
+vendors:
+- id: TV
+  name: Test Vendor
+  certificates:
+    - name: Test Cert
+      description: Test certificate description
+      url: https://example.com/test.cer
+      validation:
+        fingerprint:
+          sha1: aa:bb:cc:dd
+`
+
+	if err := os.WriteFile(inputPath, []byte(inputYAML), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := f.FormatFile(inputPath, outputPath); err != nil {
+		t.Fatalf("FormatFile() error = %v", err)
+	}
+
+	output, err := os.ReadFile(outputPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	outputStr := string(output)
+
+	if !strings.Contains(outputStr, `"Test certificate description"`) {
+		t.Error("Output should contain quoted description")
+	}
+}
+
 func TestEnsureYAMLDocumentMarker(t *testing.T) {
 	f := NewFormatter()
 

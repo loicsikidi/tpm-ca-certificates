@@ -7,6 +7,7 @@
 | alpha   | 2025-11-26 | Loïc Sikidi | Initial version                               |
 | alpha   | 2025-12-10 | Loïc Sikidi | Add duplicate validation rules                |
 | alpha   | 2025-12-15 | Loïc Sikidi | Add support for two configuration files       |
+| alpha   | 2026-04-11 | Loïc Sikidi | Add optional description field to Certificate |
 
 The TPM Trust Bundle is generated from two human-readable YAML configuration files:
 
@@ -30,6 +31,7 @@ vendors:
       id: "VENDOR_ID"
       certificates:
         - name: "Certificate Name"
+          description: "Optional description of this certificate"
           url: "https://vendor.com/path/to/certificate.cer"
           validation:
             fingerprint:
@@ -49,6 +51,7 @@ vendors:
 | `vendors[].id` | string | Yes | Short vendor identifier (must be from [TCG TPM Vendor ID Registry](https://trustedcomputinggroup.org/wp-content/uploads/TCG-TPM-Vendor-ID-Registry-Family-1.2-and-2.0-Version-1.07-Revision-0.02_pub.pdf)) | `"NTC"` |
 | `vendors[].certificates` | array | No | List of root certificates for this vendor (can be empty) | - |
 | `vendors[].certificates[].name` | string | Yes | Human-readable certificate name | `"Nuvoton TPM Root CA 1110"` |
+| `vendors[].certificates[].description` | string | No | Optional human-readable description of the certificate | `"This certificate is used for TPM 2.0 devices"` |
 | `vendors[].certificates[].url` | string | Yes | Public URL where the certificate can be downloaded | `"https://www.nuvoton.com/..."` |
 | `vendors[].certificates[].validation` | object | Yes | Validation information for the certificate | - |
 | `vendors[].certificates[].validation.fingerprint` | object | Yes | Hash fingerprints of the certificate | - |

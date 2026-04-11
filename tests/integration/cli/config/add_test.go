@@ -112,6 +112,42 @@ vendors:
 			},
 		},
 		{
+			name: "add certificate preserves existing descriptions",
+			initialConfig: `version: "alpha"
+vendors:
+  - id: "STM"
+    name: "STMicroelectronics"
+    certificates:
+      - name: "Existing Cert"
+        description: "Existing certificate description"
+        url: "https://example.com/cert.crt"
+        validation:
+          fingerprint:
+            sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
+`,
+			opts: certificates.AddOptions{
+				VendorID:      "STM",
+				Name:          "New Test Certificate",
+				URL:           "https://secure.globalsign.com/cacert/gstpmroot.crt",
+				HashAlgorithm: "sha256",
+			},
+			expectError: false,
+			validateResult: func(t *testing.T, cfg *config.TPMRootsConfig) {
+				vendor := cfg.Vendors[0]
+				if len(vendor.Certificates) != 2 {
+					t.Fatalf("expected 2 certificates, got %d", len(vendor.Certificates))
+				}
+
+				for _, cert := range vendor.Certificates {
+					if cert.Name == "Existing Cert" {
+						if cert.Description != "Existing certificate description" {
+							t.Errorf("expected description to be preserved, got %q", cert.Description)
+						}
+					}
+				}
+			},
+		},
+		{
 			name: "error when vendor not found",
 			initialConfig: `version: "alpha"
 vendors:
