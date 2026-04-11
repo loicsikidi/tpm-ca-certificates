@@ -87,9 +87,10 @@ func (v *Vendor) CheckAndSetDefault() error {
 
 // Certificate represents a single certificate with its download URL and validation rules.
 type Certificate struct {
-	Name       string     `yaml:"name"`
-	URL        string     `yaml:"url"`
-	Validation Validation `yaml:"validation"`
+	Name        string     `yaml:"name"`
+	Description string     `yaml:"description,omitempty"`
+	URL         string     `yaml:"url"`
+	Validation  Validation `yaml:"validation"`
 }
 
 // CheckAndSetDefault validates a Certificate.
