@@ -33,7 +33,7 @@ Infineon's official page provides detailed information about the certificates us
 
 ## Archived Certificates
 
-Prior to the publication of the official list, several root and intermediate certificates were automatically discovered through exploration of Infineon's PKI infrastructure. These certificates have been removed from the active configuration (`.tpm-roots.yaml` and `.tpm-intermediates.yaml`) but are preserved in the [archived/](archived/) directory for historical reference.
+Prior to the publication of the official list, several root and intermediate certificates were automatically discovered through exploration of Infineon's PKI infrastructure. These certificates have been removed from the active configuration (`.tpm-roots.yaml` and `.tpm-intermediates.yaml`) but are preserved in the [.archived/](../../.archived/) directory for historical reference.
 
 Notably:
 - **Infineon OPTIGA(TM) ECC Root CA 3**
