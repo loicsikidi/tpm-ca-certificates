@@ -142,7 +142,7 @@ func TestGetTrustedBundle(t *testing.T) {
 			t.Error("Expected at least one vendor")
 		}
 
-		certPool := tb.GetRoots()
+		certPool := tb.GetRootCertPool()
 		if certPool == nil {
 			t.Fatal("Expected cert pool, got nil")
 		}
@@ -240,7 +240,7 @@ func TestGetTrustedBundle(t *testing.T) {
 		}
 
 		// Check cert pool
-		certPool := tb.GetRoots()
+		certPool := tb.GetRootCertPool()
 		if certPool == nil {
 			t.Fatal("Expected cert pool, got nil")
 		}
@@ -396,7 +396,7 @@ func TestTrustedBundle_ThreadSafety(t *testing.T) {
 				_ = tb.GetRawRoot()
 				_ = tb.GetRootMetadata()
 				_ = tb.GetVendors()
-				_ = tb.GetRoots()
+				_ = tb.GetRootCertPool()
 			}
 			done <- true
 		}()
@@ -966,7 +966,7 @@ func TestSave(t *testing.T) {
 		}
 
 		// Verify we can get roots
-		certPool := tb.GetRoots()
+		certPool := tb.GetRootCertPool()
 		if certPool == nil {
 			t.Error("Expected cert pool, got nil")
 		}

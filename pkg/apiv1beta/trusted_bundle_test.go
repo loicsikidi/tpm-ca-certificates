@@ -243,7 +243,7 @@ func TestLoadOfflineMode(t *testing.T) {
 		defer tb.Stop()
 
 		// Verify bundle was loaded
-		roots := tb.GetRoots()
+		roots := tb.GetRootCertPool()
 		if roots == nil {
 			t.Fatal("Expected roots to be non-nil")
 		}
@@ -369,7 +369,7 @@ func TestGetVerifyOptions(t *testing.T) {
 			t.Fatalf("Failed to create trusted bundle: %v", err)
 		}
 
-		opts := tb.GetVerifyOptions()
+		opts := tb.getVerifyOptions()
 
 		if opts.Roots == nil {
 			t.Fatal("Expected Roots to be non-nil")
@@ -399,7 +399,7 @@ func TestGetVerifyOptions(t *testing.T) {
 		tbImpl := tb.(*trustedBundle)
 		tbImpl.intermediateCatalog = nil
 
-		opts := tb.GetVerifyOptions()
+		opts := tb.getVerifyOptions()
 
 		if opts.Roots == nil {
 			t.Fatal("Expected Roots to be non-nil")
@@ -448,7 +448,7 @@ func TestVerifyCertificate(t *testing.T) {
 		}
 
 		// Verify the certificate
-		if err := tb.VerifyCertificate(cert); err != nil {
+		if err := tb.Verify(cert); err != nil {
 			t.Fatalf("Failed to verify certificate: %v", err)
 		}
 	})
@@ -489,7 +489,7 @@ func TestVerifyCertificate(t *testing.T) {
 		}
 
 		// Verify the certificate
-		if err := tb.VerifyCertificate(cert); err != nil {
+		if err := tb.Verify(cert); err != nil {
 			t.Fatalf("Failed to verify certificate: %v", err)
 		}
 	})
@@ -529,7 +529,7 @@ func TestVerifyCertificate(t *testing.T) {
 		}
 
 		// Verification should fail
-		if err := tb.VerifyCertificate(cert); err == nil {
+		if err := tb.Verify(cert); err == nil {
 			t.Fatal("Expected verification to fail for certificate from untrusted vendor")
 		}
 	})
