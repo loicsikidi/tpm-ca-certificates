@@ -51,24 +51,24 @@ type TrustedBundle interface {
 	// GetVendors returns the list of vendor IDs in the bundle.
 	GetVendors() []VendorID
 
-	// GetRoots returns an [x509.CertPool] containing all certificates from the bundle,
+	// GetRootCertPool returns an [x509.CertPool] containing all certificates from the bundle,
 	// or only certificates from specified vendors if the bundle was created with VendorIDs filter.
-	GetRoots() *x509.CertPool
+	GetRootCertPool() *x509.CertPool
 
-	// GetIntermediates returns an [x509.CertPool] containing all intermediate certificates from the bundle,
+	// GetIntermediateCertPool returns an [x509.CertPool] containing all intermediate certificates from the bundle,
 	// or only intermediate certificates from specified vendors if the bundle was created with VendorIDs filter.
-	GetIntermediates() *x509.CertPool
+	GetIntermediateCertPool() *x509.CertPool
 
-	// GetVerifyOptions returns [x509.VerifyOptions] configured for TPM certificate verification.
-	GetVerifyOptions() x509.VerifyOptions
+	// getVerifyOptions returns [x509.VerifyOptions] configured for TPM certificate verification.
+	getVerifyOptions() x509.VerifyOptions
 
-	// VerifyCertificate verifies a certificate against the bundle's trust anchors.
+	// Verify verifies a certificate against the bundle's trust anchors.
 	//
 	// This method handles TPM-specific certificate quirks:
 	//   - Clears UnhandledCriticalExtensions to work around TPM-specific OIDs
 	//
 	// Returns an error if the certificate cannot be verified.
-	VerifyCertificate(cert *x509.Certificate) error
+	Verify(cert *x509.Certificate) error
 
 	// Contains checks if a certificate is stored in the bundle.
 	//
@@ -179,23 +179,23 @@ func (tb *trustedBundle) GetVendors() []VendorID {
 	return vendors
 }
 
-// GetRoots returns an x509.CertPool containing certificates.
+// GetRootCertPool returns an x509.CertPool containing certificates.
 //
 // If the bundle was created with VendorIDs filter, only certificates from those vendors are included.
 // Otherwise, all certificates from the bundle are included.
-func (tb *trustedBundle) GetRoots() *x509.CertPool {
+func (tb *trustedBundle) GetRootCertPool() *x509.CertPool {
 	tb.mu.RLock()
 	defer tb.mu.RUnlock()
 
 	return tb.buildCertPool(tb.rootCatalog)
 }
 
-// GetIntermediates returns an x509.CertPool containing intermediate certificates.
+// GetIntermediateCertPool returns an x509.CertPool containing intermediate certificates.
 //
 // If the bundle was created with VendorIDs filter, only certificates from those vendors are included.
 // Otherwise, all certificates from the bundle are included.
 // Returns an empty pool if no intermediate bundle is available.
-func (tb *trustedBundle) GetIntermediates() *x509.CertPool {
+func (tb *trustedBundle) GetIntermediateCertPool() *x509.CertPool {
 	tb.mu.RLock()
 	defer tb.mu.RUnlock()
 
@@ -239,8 +239,8 @@ func (tb *trustedBundle) buildCertPool(catalog map[vendors.ID][]*x509.Certificat
 	return pool
 }
 
-// GetVerifyOptions returns x509.VerifyOptions configured for TPM certificate verification.
-func (tb *trustedBundle) GetVerifyOptions() x509.VerifyOptions {
+// getVerifyOptions returns x509.VerifyOptions configured for TPM certificate verification.
+func (tb *trustedBundle) getVerifyOptions() x509.VerifyOptions {
 	tb.mu.RLock()
 	defer tb.mu.RUnlock()
 
@@ -252,14 +252,14 @@ func (tb *trustedBundle) GetVerifyOptions() x509.VerifyOptions {
 	}
 }
 
-// VerifyCertificate verifies a certificate against the bundle's trust anchors.
-func (tb *trustedBundle) VerifyCertificate(cert *x509.Certificate) error {
+// Verify verifies a certificate against the bundle's trust anchors.
+func (tb *trustedBundle) Verify(cert *x509.Certificate) error {
 	// Copy the EK certificate and mark all critical extensions as handled
 	// to work around TPM-specific OIDs that x509 doesn't recognize
 	ekCopy := *cert
 	ekCopy.UnhandledCriticalExtensions = nil
 
-	opts := tb.GetVerifyOptions()
+	opts := tb.getVerifyOptions()
 	_, err := ekCopy.Verify(opts)
 	return err
 }
@@ -377,84 +377,6 @@ func (tb *trustedBundle) update(assets *assets, metadata *bundle.Metadata, inter
 	tb.rootMetadata = metadata
 	tb.intermediateMetadata = intermediateMetadata
 	tb.rootCatalog = catalog
-}
-
-// AutoUpdateConfig configures automatic updates of the bundle.
-type AutoUpdateConfig struct {
-	// DisableAutoUpdate disables automatic updates of the bundle.
-	//
-	// Optional. Default is false (auto-update enabled).
-	DisableAutoUpdate bool `json:"disableAutoUpdate"`
-
-	// Interval specifies how often the bundle should be updated.
-	//
-	// Optional. If zero, the default interval of 24 hours is used.
-	Interval time.Duration `json:"interval"`
-}
-
-// CheckAndSetDefaults validates and sets default values.
-func (c *AutoUpdateConfig) CheckAndSetDefaults() error {
-	if c.Interval == 0 && !c.DisableAutoUpdate {
-		c.Interval = 24 * time.Hour
-	}
-	return nil
-}
-
-// LoadConfig configures the bundle loading from disk.
-type LoadConfig struct {
-	// CachePath is the location on disk for tpmtb cache.
-	//
-	// Optional. If empty, the default cache path is used ($HOME/.tpmtb).
-	CachePath string
-
-	// DisableLocalCache mode allows to work on a read-only
-	// files system if this is set, cache path is ignored.
-	//
-	// Optional. Default is false (local cache enabled).
-	DisableLocalCache bool
-
-	// SkipVerify disables bundle verification.
-	//
-	// Optional. By default the bundle will be verified using Cosign and GitHub Attestations.
-	SkipVerify bool
-
-	// OfflineMode enables offline verification mode using assets stored in the cache directory.
-	//
-	// This mode automatically disables auto-update since the cached trusted-root.json may not work
-	// with future bundles due to Sigstore key rotation.
-	//
-	// Optional. Default is false (online mode).
-	OfflineMode bool
-}
-
-// CheckAndSetDefaults validates and sets default values.
-func (c *LoadConfig) CheckAndSetDefaults() error {
-	if c.CachePath == "" {
-		c.CachePath = cache.CacheDir()
-	}
-	if !utils.DirExists(c.CachePath) {
-		return fmt.Errorf("cache directory does not exist: %s", c.CachePath)
-	}
-	if c.OfflineMode && c.DisableLocalCache {
-		return fmt.Errorf("offline mode requires local cache to be enabled")
-	}
-	return nil
-}
-
-func (c LoadConfig) GetHTTPClient() utils.HTTPClient {
-	return nil
-}
-
-func (c LoadConfig) GetSkipVerify() bool {
-	return c.SkipVerify
-}
-
-func (c LoadConfig) GetDisableLocalCache() bool {
-	return c.DisableLocalCache
-}
-
-func (c LoadConfig) GetCachePath() string {
-	return c.CachePath
 }
 
 // LoadTrustedBundle reads a persisted [TrustedBundle] from disk and verifies its integrity.

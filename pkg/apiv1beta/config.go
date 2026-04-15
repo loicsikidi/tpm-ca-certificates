@@ -2,6 +2,7 @@ package apiv1beta
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/cache"
@@ -267,6 +268,84 @@ func (c *SaveConfig) CheckAndSetDefaults() error {
 		if err := vendorID.Validate(); err != nil {
 			return fmt.Errorf("invalid vendor ID: %w", err)
 		}
+	}
+	return nil
+}
+
+// LoadConfig configures the bundle loading from disk.
+type LoadConfig struct {
+	// CachePath is the location on disk for tpmtb cache.
+	//
+	// Optional. If empty, the default cache path is used ($HOME/.tpmtb).
+	CachePath string
+
+	// DisableLocalCache mode allows to work on a read-only
+	// files system if this is set, cache path is ignored.
+	//
+	// Optional. Default is false (local cache enabled).
+	DisableLocalCache bool
+
+	// SkipVerify disables bundle verification.
+	//
+	// Optional. By default the bundle will be verified using Cosign and GitHub Attestations.
+	SkipVerify bool
+
+	// OfflineMode enables offline verification mode using assets stored in the cache directory.
+	//
+	// This mode automatically disables auto-update since the cached trusted-root.json may not work
+	// with future bundles due to Sigstore key rotation.
+	//
+	// Optional. Default is false (online mode).
+	OfflineMode bool
+}
+
+// CheckAndSetDefaults validates and sets default values.
+func (c *LoadConfig) CheckAndSetDefaults() error {
+	if c.CachePath == "" {
+		c.CachePath = cache.CacheDir()
+	}
+	if !utils.DirExists(c.CachePath) {
+		return fmt.Errorf("cache directory does not exist: %s", c.CachePath)
+	}
+	if c.OfflineMode && c.DisableLocalCache {
+		return fmt.Errorf("offline mode requires local cache to be enabled")
+	}
+	return nil
+}
+
+func (c LoadConfig) GetHTTPClient() utils.HTTPClient {
+	return nil
+}
+
+func (c LoadConfig) GetSkipVerify() bool {
+	return c.SkipVerify
+}
+
+func (c LoadConfig) GetDisableLocalCache() bool {
+	return c.DisableLocalCache
+}
+
+func (c LoadConfig) GetCachePath() string {
+	return c.CachePath
+}
+
+// AutoUpdateConfig configures automatic updates of the bundle.
+type AutoUpdateConfig struct {
+	// DisableAutoUpdate disables automatic updates of the bundle.
+	//
+	// Optional. Default is false (auto-update enabled).
+	DisableAutoUpdate bool `json:"disableAutoUpdate"`
+
+	// Interval specifies how often the bundle should be updated.
+	//
+	// Optional. If zero, the default interval of 24 hours is used.
+	Interval time.Duration `json:"interval"`
+}
+
+// CheckAndSetDefaults validates and sets default values.
+func (c *AutoUpdateConfig) CheckAndSetDefaults() error {
+	if c.Interval == 0 && !c.DisableAutoUpdate {
+		c.Interval = 24 * time.Hour
 	}
 	return nil
 }
