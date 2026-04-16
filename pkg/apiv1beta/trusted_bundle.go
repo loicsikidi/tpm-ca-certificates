@@ -59,21 +59,23 @@ type TrustedBundle interface {
 	// or only intermediate certificates from specified vendors if the bundle was created with VendorIDs filter.
 	GetIntermediateCertPool() *x509.CertPool
 
-	// getVerifyOptions returns [x509.VerifyOptions] configured for TPM certificate verification.
-	getVerifyOptions() x509.VerifyOptions
-
 	// Verify verifies a certificate against the bundle's trust anchors.
 	//
-	// This method handles TPM-specific certificate quirks:
-	//   - Clears UnhandledCriticalExtensions to work around TPM-specific OIDs
+	// An optional chain parameter allows providing additional intermediate certificates
+	// that are not already in the bundle (eg. stored in the TPM NVRAM or the bundle is out-of-date, etc.).
 	//
 	// Returns an error if the certificate cannot be verified.
-	Verify(cert *x509.Certificate) error
+	Verify(cert *x509.Certificate, optionalChain ...[]*x509.Certificate) error
 
 	// Contains checks if a certificate is stored in the bundle.
 	//
 	// Returns true if the certificate is found in either the root or intermediate catalogs.
 	Contains(cert *x509.Certificate) bool
+
+	// ContainsFunc checks if any certificate in the bundle satisfies the predicate function.
+	//
+	// Returns true if the predicate returns true for any certificate in either the root or intermediate catalogs.
+	ContainsFunc(fn func(c *x509.Certificate) bool) bool
 
 	// Persist marshals bundle and its verification assets to disk at the specified cache path.
 	//
@@ -253,13 +255,29 @@ func (tb *trustedBundle) getVerifyOptions() x509.VerifyOptions {
 }
 
 // Verify verifies a certificate against the bundle's trust anchors.
-func (tb *trustedBundle) Verify(cert *x509.Certificate) error {
+func (tb *trustedBundle) Verify(cert *x509.Certificate, optionalChain ...[]*x509.Certificate) error {
 	// Copy the EK certificate and mark all critical extensions as handled
-	// to work around TPM-specific OIDs that x509 doesn't recognize
+	// to work around TPM-specific OIDs that x509 package doesn't recognize
 	ekCopy := *cert
 	ekCopy.UnhandledCriticalExtensions = nil
 
 	opts := tb.getVerifyOptions()
+
+	chain := utils.OptionalArg(optionalChain)
+	for _, chainCert := range chain {
+		// Skip root certificates
+		if isSelfSigned(chainCert) {
+			continue
+		}
+
+		// Skip certificates already in bundle
+		if tb.Contains(chainCert) {
+			continue
+		}
+
+		opts.Intermediates.AddCert(chainCert)
+	}
+
 	_, err := ekCopy.Verify(opts)
 	return err
 }
@@ -280,6 +298,30 @@ func (tb *trustedBundle) containsInCatalog(cert *x509.Certificate, catalog map[v
 	found := false
 	tb.forEachCert(catalog, func(c *x509.Certificate) bool {
 		if c.Equal(cert) {
+			found = true
+			return false // Stop iteration
+		}
+		return true // Continue iteration
+	})
+	return found
+}
+
+// ContainsFunc checks if any certificate in the bundle satisfies the predicate function.
+//
+// If the bundle was created with VendorIDs filter, only certificates from those vendors are checked.
+// Otherwise, all certificates from the bundle are checked.
+func (tb *trustedBundle) ContainsFunc(fn func(c *x509.Certificate) bool) bool {
+	tb.mu.RLock()
+	defer tb.mu.RUnlock()
+
+	return tb.containsFuncInCatalog(fn, tb.rootCatalog) || tb.containsFuncInCatalog(fn, tb.intermediateCatalog)
+}
+
+// containsFuncInCatalog checks if any certificate in the given catalog satisfies the predicate, applying vendor filters if configured.
+func (tb *trustedBundle) containsFuncInCatalog(fn func(c *x509.Certificate) bool, catalog map[vendors.ID][]*x509.Certificate) bool {
+	found := false
+	tb.forEachCert(catalog, func(c *x509.Certificate) bool {
+		if fn(c) {
 			found = true
 			return false // Stop iteration
 		}
@@ -604,4 +646,12 @@ func newTrustedBundle(ctx context.Context, bundles ...[]byte) (TrustedBundle, er
 	}
 
 	return tb, nil
+}
+
+func isSelfSigned(cert *x509.Certificate) bool {
+	if cert.Issuer.String() == cert.Subject.String() &&
+		cert.CheckSignatureFrom(cert) == nil {
+		return true
+	}
+	return false
 }

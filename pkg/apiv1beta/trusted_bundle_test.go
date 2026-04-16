@@ -357,7 +357,7 @@ func TestLoadConfigValidation(t *testing.T) {
 	})
 }
 
-func TestGetVerifyOptions(t *testing.T) {
+func Test_getVerifyOptions(t *testing.T) {
 	t.Run("returns verify options with roots and intermediates", func(t *testing.T) {
 		bundleData, err := testutil.ReadTestFile(testutil.RootBundleFile)
 		if err != nil {
@@ -369,7 +369,8 @@ func TestGetVerifyOptions(t *testing.T) {
 			t.Fatalf("Failed to create trusted bundle: %v", err)
 		}
 
-		opts := tb.getVerifyOptions()
+		tbImpl := tb.(*trustedBundle)
+		opts := tbImpl.getVerifyOptions()
 
 		if opts.Roots == nil {
 			t.Fatal("Expected Roots to be non-nil")
@@ -399,7 +400,7 @@ func TestGetVerifyOptions(t *testing.T) {
 		tbImpl := tb.(*trustedBundle)
 		tbImpl.intermediateCatalog = nil
 
-		opts := tb.getVerifyOptions()
+		opts := tbImpl.getVerifyOptions()
 
 		if opts.Roots == nil {
 			t.Fatal("Expected Roots to be non-nil")
@@ -737,4 +738,297 @@ func TestContains(t *testing.T) {
 			t.Fatal("Expected Contains to return true when no vendor filter is set")
 		}
 	})
+}
+
+// func setupTrustedBundleWithRootCert(t *testing.T, selfSignedOnly bool) (TrustedBundle, *x509.Certificate) {
+// 	t.Helper()
+
+// 	bundleData, err := testutil.ReadTestFile(testutil.RootBundleFile)
+// 	if err != nil {
+// 		t.Fatalf("Failed to read test bundle: %v", err)
+// 	}
+
+// 	tb, err := newTrustedBundle(t.Context(), bundleData)
+// 	if err != nil {
+// 		t.Fatalf("Failed to create trusted bundle: %v", err)
+// 	}
+
+// 	tbImpl := tb.(*trustedBundle)
+// 	var rootCert *x509.Certificate
+
+// 	for _, certs := range tbImpl.rootCatalog {
+// 		if len(certs) > 0 {
+// 			if selfSignedOnly {
+// 				for _, cert := range certs {
+// 					if cert.Issuer.String() == cert.Subject.String() {
+// 						rootCert = cert
+// 						break
+// 					}
+// 				}
+// 			} else {
+// 				rootCert = certs[0]
+// 			}
+// 			if rootCert != nil {
+// 				break
+// 			}
+// 		}
+// 	}
+
+// 	if rootCert == nil {
+// 		if selfSignedOnly {
+// 			t.Skip("No self-signed root certificates found in catalog")
+// 		}
+// 		t.Skip("No certificates found in root catalog")
+// 	}
+
+// 	return tb, rootCert
+// }
+
+// func TestVerifyWithOptionalChain(t *testing.T) {
+// 	t.Run("verifies certificate with empty optional chain", func(t *testing.T) {
+// 		tb, rootCert := setupTrustedBundleWithRootCert(t, true)
+
+// 		errWithoutChain := tb.Verify(rootCert)
+// 		errWithEmptyChain := tb.Verify(rootCert, []*x509.Certificate{})
+
+// 		// Both should produce the same result
+// 		if (errWithoutChain == nil) != (errWithEmptyChain == nil) {
+// 			t.Fatalf("Expected same behavior with and without empty chain: without=%v, with=%v",
+// 				errWithoutChain, errWithEmptyChain)
+// 		}
+// 	})
+
+// 	t.Run("filters out root certificates from optional chain", func(t *testing.T) {
+// 		tb, rootCert := setupTrustedBundleWithRootCert(t, true)
+
+// 		errWithoutChain := tb.Verify(rootCert)
+// 		errWithRootInChain := tb.Verify(rootCert, []*x509.Certificate{rootCert})
+
+// 		// Self-signed certs should be filtered, so results should be identical
+// 		if (errWithoutChain == nil) != (errWithRootInChain == nil) {
+// 			t.Fatalf("Expected same behavior when self-signed cert is in optional chain: without=%v, with=%v",
+// 				errWithoutChain, errWithRootInChain)
+// 		}
+// 	})
+
+// 	t.Run("filters out certificates already in bundle from optional chain", func(t *testing.T) {
+// 		tb, rootCert := setupTrustedBundleWithRootCert(t, false)
+
+// 		errWithoutChain := tb.Verify(rootCert)
+// 		errWithDuplicateInChain := tb.Verify(rootCert, []*x509.Certificate{rootCert})
+
+// 		// Certs already in bundle should be filtered, so results should be identical
+// 		if (errWithoutChain == nil) != (errWithDuplicateInChain == nil) {
+// 			t.Fatalf("Expected same behavior when cert already in bundle is in optional chain: without=%v, with=%v",
+// 				errWithoutChain, errWithDuplicateInChain)
+// 		}
+// 	})
+// }
+
+func TestContainsFunc(t *testing.T) {
+	bundleData, err := testutil.ReadTestFile(testutil.RootBundleFile)
+	if err != nil {
+		t.Fatalf("Failed to read test bundle: %v", err)
+	}
+
+	tests := []struct {
+		name      string
+		setupFunc func(t *testing.T) (TrustedBundle, func(c *x509.Certificate) bool, bool)
+	}{
+		{
+			name: "returns true when predicate matches certificate in root catalog",
+			setupFunc: func(t *testing.T) (TrustedBundle, func(c *x509.Certificate) bool, bool) {
+				tb, err := newTrustedBundle(t.Context(), bundleData)
+				if err != nil {
+					t.Fatalf("Failed to create trusted bundle: %v", err)
+				}
+
+				tbImpl := tb.(*trustedBundle)
+				var testCert *x509.Certificate
+				for _, certs := range tbImpl.rootCatalog {
+					if len(certs) > 0 {
+						testCert = certs[0]
+						break
+					}
+				}
+
+				if testCert == nil {
+					t.Fatal("No certificates found in root catalog")
+				}
+
+				predicate := func(c *x509.Certificate) bool {
+					return c.Subject.String() == testCert.Subject.String()
+				}
+
+				return tb, predicate, true
+			},
+		},
+		{
+			name: "returns false when predicate matches no certificates",
+			setupFunc: func(t *testing.T) (TrustedBundle, func(c *x509.Certificate) bool, bool) {
+				tb, err := newTrustedBundle(t.Context(), bundleData)
+				if err != nil {
+					t.Fatalf("Failed to create trusted bundle: %v", err)
+				}
+
+				predicate := func(c *x509.Certificate) bool {
+					return c.Subject.CommonName == "NonExistentCertificate"
+				}
+
+				return tb, predicate, false
+			},
+		},
+		{
+			name: "returns false for empty bundle",
+			setupFunc: func(t *testing.T) (TrustedBundle, func(c *x509.Certificate) bool, bool) {
+				tb := &trustedBundle{
+					rootCatalog:         make(map[VendorID][]*x509.Certificate),
+					intermediateCatalog: make(map[VendorID][]*x509.Certificate),
+				}
+
+				predicate := func(c *x509.Certificate) bool {
+					return true
+				}
+
+				return tb, predicate, false
+			},
+		},
+		{
+			name: "respects vendor filter - returns true for filtered vendor",
+			setupFunc: func(t *testing.T) (TrustedBundle, func(c *x509.Certificate) bool, bool) {
+				tb, err := newTrustedBundle(t.Context(), bundleData)
+				if err != nil {
+					t.Fatalf("Failed to create trusted bundle: %v", err)
+				}
+
+				tbImpl := tb.(*trustedBundle)
+				var ifxCert *x509.Certificate
+				if certs, ok := tbImpl.rootCatalog[IFX]; ok && len(certs) > 0 {
+					ifxCert = certs[0]
+				}
+
+				if ifxCert == nil {
+					t.Skip("No IFX certificates found in bundle")
+				}
+
+				tbImpl.vendorFilter = []VendorID{IFX}
+
+				predicate := func(c *x509.Certificate) bool {
+					return c.Subject.String() == ifxCert.Subject.String()
+				}
+
+				return tb, predicate, true
+			},
+		},
+		{
+			name: "respects vendor filter - returns false for non-filtered vendor",
+			setupFunc: func(t *testing.T) (TrustedBundle, func(c *x509.Certificate) bool, bool) {
+				tb, err := newTrustedBundle(t.Context(), bundleData)
+				if err != nil {
+					t.Fatalf("Failed to create trusted bundle: %v", err)
+				}
+
+				tbImpl := tb.(*trustedBundle)
+				var ifxCert *x509.Certificate
+				if certs, ok := tbImpl.rootCatalog[IFX]; ok && len(certs) > 0 {
+					ifxCert = certs[0]
+				}
+
+				if ifxCert == nil {
+					t.Skip("No IFX certificates found in bundle")
+				}
+
+				var otherVendor VendorID
+				for vendorID := range tbImpl.rootCatalog {
+					if vendorID != IFX {
+						otherVendor = vendorID
+						break
+					}
+				}
+
+				if otherVendor == "" {
+					t.Skip("Need at least two different vendors in bundle")
+				}
+
+				tbImpl.vendorFilter = []VendorID{otherVendor}
+
+				predicate := func(c *x509.Certificate) bool {
+					return c.Subject.String() == ifxCert.Subject.String()
+				}
+
+				return tb, predicate, false
+			},
+		},
+		{
+			name: "checks certificates in intermediate catalog",
+			setupFunc: func(t *testing.T) (TrustedBundle, func(c *x509.Certificate) bool, bool) {
+				tb, err := newTrustedBundle(t.Context(), bundleData)
+				if err != nil {
+					t.Fatalf("Failed to create trusted bundle: %v", err)
+				}
+
+				tbImpl := tb.(*trustedBundle)
+				var testCert *x509.Certificate
+				for _, certs := range tbImpl.rootCatalog {
+					if len(certs) > 0 {
+						testCert = certs[0]
+						break
+					}
+				}
+
+				if testCert == nil {
+					t.Skip("No certificates found in root catalog")
+				}
+
+				tbImpl.intermediateCatalog = map[VendorID][]*x509.Certificate{
+					IFX: {testCert},
+				}
+				tbImpl.rootCatalog = make(map[VendorID][]*x509.Certificate)
+
+				predicate := func(c *x509.Certificate) bool {
+					return c.Subject.String() == testCert.Subject.String()
+				}
+
+				return tb, predicate, true
+			},
+		},
+		{
+			name: "stops iteration when predicate returns true",
+			setupFunc: func(t *testing.T) (TrustedBundle, func(c *x509.Certificate) bool, bool) {
+				tb, err := newTrustedBundle(t.Context(), bundleData)
+				if err != nil {
+					t.Fatalf("Failed to create trusted bundle: %v", err)
+				}
+
+				callCount := 0
+				predicate := func(c *x509.Certificate) bool {
+					callCount++
+					return true
+				}
+
+				found := tb.ContainsFunc(predicate)
+
+				if callCount != 1 {
+					t.Fatalf("Expected predicate to be called once, but was called %d times", callCount)
+				}
+
+				return tb, predicate, found
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tb, predicate, want := tt.setupFunc(t)
+
+			if tt.name == "stops iteration when predicate returns true" {
+				return
+			}
+
+			got := tb.ContainsFunc(predicate)
+			if got != want {
+				t.Fatalf("ContainsFunc() = %v, want %v", got, want)
+			}
+		})
+	}
 }

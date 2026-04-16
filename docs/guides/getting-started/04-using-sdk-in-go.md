@@ -58,7 +58,7 @@ func main() {
 	ekCert := loadEKCertificate() // Your implementation
 
 	// Verify the EK certificate against the trusted bundle
-	if err := tb.VerifyCertificate(ekCert); err != nil {
+	if err := tb.Verify(ekCert); err != nil {
 		log.Fatalf("EK certificate verification failed: %v", err)
 	}
 
@@ -67,7 +67,7 @@ func main() {
 ```
 
 > [!NOTE]
-> `VerifyCertificate` automatically handles TPM-specific certificate quirks, including non-standard OIDs and key usages.
+> `Verify` automatically handles TPM-specific certificate quirks, including non-standard OIDs and key usages.
 
 ### Alternative: Using Certificate Pools
 
@@ -76,8 +76,8 @@ If you prefer working with `x509.CertPool` directly:
 ```go
 // Use certPool in your TPM verification logic
 opts := x509.VerifyOptions{
-	Roots: tb.GetRoots(),
-	Intermediates: tb.GetIntermediates(),
+	Roots: tb.GetRootCertPool(),
+	Intermediates: tb.GetIntermediateCertPool(),
 	// ... other options
 }
 ```
@@ -152,65 +152,45 @@ log.Printf("Intermediate bundle commit: %s", metadata.Commit)
 
 ### Verifying EK Certificates
 
-The `VerifyCertificate` method is the recommended way to verify TPM Endorsement Key certificates:
+The `Verify` method is the recommended way to verify TPM Endorsement Key certificates:
 
 ```go
 // Verify an EK certificate
-if err := tb.VerifyCertificate(ekCert); err != nil {
+if err := tb.Verify(ekCert); err != nil {
 	log.Fatalf("Verification failed: %v", err)
 }
 ```
 
-**Why use `VerifyCertificate`?**
+**Why use `Verify`?**
 
 - ✅ Automatically handles TPM-specific OIDs that `x509` doesn't recognize
 - ✅ Clears `UnhandledCriticalExtensions` to work around TPM quirks
 - ✅ Uses appropriate key usages (`ExtKeyUsageAny`) for TPM certificates
 - ✅ Thread-safe and ready for concurrent use
 
-### Advanced Verification with GetVerifyOptions
+### Verifying with Additional Intermediate Certificates
 
-For custom verification scenarios, use `GetVerifyOptions`:
+If you have intermediate certificates that aren't in the bundle (e.g., stored in TPM NVRAM or from an out-of-date bundle), you can provide them:
 
 ```go
-// Get pre-configured verify options for TPM certificates
-opts := tb.GetVerifyOptions()
+// Load intermediate certificates from TPM NVRAM or other sources
+intermediateCerts := []*x509.Certificate{
+	intermediateCert1,
+	intermediateCert2,
+}
 
-// Customize if needed
-opts.CurrentTime = customTime
-opts.DNSName = "example.com" // Usually not needed for EK certs
-
-// Copy and modify the certificate to handle TPM-specific extensions
-ekCopy := *ekCert
-ekCopy.UnhandledCriticalExtensions = nil
-
-// Verify manually
-chains, err := ekCopy.Verify(opts)
-if err != nil {
+// Verify EK certificate with additional intermediates
+if err := tb.Verify(ekCert, intermediateCerts); err != nil {
 	log.Fatalf("Verification failed: %v", err)
 }
-
-log.Printf("Certificate verified with %d chain(s)", len(chains))
 ```
 
-**What `GetVerifyOptions` provides:**
-
-- **Roots**: All root certificates from the bundle (filtered by vendor if configured)
-- **Intermediates**: All intermediate certificates (if available in the bundle)
-- **KeyUsages**: Set to `x509.ExtKeyUsageAny` for TPM compatibility
-
-### Checking Certificate Presence
-
-Check if a certificate is already in the bundle:
-
-```go
-// Check if a certificate is in the root or intermediate catalog
-if tb.Contains(cert) {
-	log.Println("Certificate is a trusted root or intermediate")
-} else {
-	log.Println("Certificate is not in the bundle")
-}
-```
+> [!NOTE]
+> The `Verify` method automatically filters out:
+> - roots from the provided chain
+> - certificates already present in the bundle
+>
+> Only missing intermediate certificates are added to the verification pool.
 
 ## Advanced Usage 🔧
 
@@ -231,15 +211,18 @@ if err != nil {
 }
 defer tb.Stop()
 
-// GetRoots() will only return certificates from specified vendors
-certPool := tb.GetRoots()
+// GetRootCertPool() will only return certificates from specified vendors
+certPool := tb.GetRootCertPool()
 ```
 
 **Available Vendor IDs:**
 
 ```go
+apiv1beta.AMD  // AMD
 apiv1beta.IFX  // Infineon Technologies
 apiv1beta.INTC // Intel
+apiv1beta.MSFT // Microsoft
+apiv1beta.NSG  // NSING
 apiv1beta.NTC  // Nuvoton Technology Corporation
 apiv1beta.STM  // STMicroelectronics
 ```
@@ -440,7 +423,7 @@ if err != nil {
 }
 
 // Bundle is automatically verified on load
-certPool := tb.GetRoots()
+certPool := tb.GetRootCertPool()
 ```
 
 > [!NOTE]
@@ -474,7 +457,7 @@ if err != nil {
 defer tb.Stop() // Still needed to stop the watcher
 
 // Bundle will auto-update every 6 hours
-certPool := tb.GetRoots()
+certPool := tb.GetRootCertPool()
 ```
 
 > [!TIP]
@@ -574,7 +557,7 @@ func main() {
 		log.Fatalf("Failed to load EK certificate: %v", err)
 	}
 
-	if err := tb.VerifyCertificate(ekCert); err != nil {
+	if err := tb.Verify(ekCert); err != nil {
 		log.Fatalf("EK verification failed: %v", err)
 	}
 
