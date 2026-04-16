@@ -82,9 +82,6 @@ opts := x509.VerifyOptions{
 }
 ```
 
-> [!TIP]
-> The bundle is automatically verified using Cosign signatures and GitHub Attestations. See the [verification specification](../../specifications/05-bundle-verification.md) for details.
-
 ## Default Behavior 🎯
 
 The SDK is designed with **security and resilience** in mind. By default:
@@ -132,7 +129,9 @@ defer tb.Stop()
 ```
 
 > [!WARNING]
-> With `DisableLocalCache: true`, the `Persist()` method will return an error. This mode is purely in-memory.
+> With `DisableLocalCache: true`, `Persist` method will return an error.
+> 
+> This setup works purely in-memory.
 
 ### Using Bundle Metadata
 
@@ -165,12 +164,12 @@ if err := tb.Verify(ekCert); err != nil {
 
 - ✅ Automatically handles TPM-specific OIDs that `x509` doesn't recognize
 - ✅ Clears `UnhandledCriticalExtensions` to work around TPM quirks
-- ✅ Uses appropriate key usages (`ExtKeyUsageAny`) for TPM certificates
+- ✅ Uses appropriate key usages for TPM certificates
 - ✅ Thread-safe and ready for concurrent use
 
 ### Verifying with Additional Intermediate Certificates
 
-If you have intermediate certificates that aren't in the bundle (e.g., stored in TPM NVRAM or from an out-of-date bundle), you can provide them:
+If you have intermediate certificates that aren't in the bundle (e.g., stored in TPM NVRAM or the bundle is out-of-date), you can provide them:
 
 ```go
 // Load intermediate certificates from TPM NVRAM or other sources
