@@ -77,16 +77,16 @@ The intermediate bundle follows the same verification process as the root bundle
 
 ## API Changes
 
-### New Method: GetIntermediates
+### New Method: GetIntermediateCertPool
 
 The `TrustedBundle` interface will be extended with a new method to access intermediate certificates:
 
 ```go
 type TrustedBundle interface {
-    // GetRoots returns the root CA certificate pool
-    GetRoots() *x509.CertPool
+    // GetRootCertPool returns the root CA certificate pool
+    GetRootCertPool() *x509.CertPool
 
-    // GetIntermediates returns the intermediate CA certificate pool
-    GetIntermediates() *x509.CertPool
+    // GetIntermediateCertPool returns the intermediate CA certificate pool
+    GetIntermediateCertPool() *x509.CertPool
 }
 ```
