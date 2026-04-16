@@ -193,7 +193,7 @@ func (g *Generator) GenerateWithMetadata(cfg *config.TPMRootsConfig, workers int
 
 	// Build final bundle with header
 	var bundle strings.Builder
-	bundle.WriteString(buildBundleHeader(outputPath, date, commit, bundleType))
+	bundle.WriteString(BuildBundleHeader(outputPath, date, commit, bundleType))
 	bundle.WriteString(strings.Join(pemBlocks, "\n"))
 
 	return bundle.String(), nil
@@ -211,7 +211,7 @@ func (g *Generator) processCertificate(cert config.Certificate, vendorID string)
 	}
 
 	pemBlock := EncodePEM(x509Cert)
-	header := buildCertificateHeader(x509Cert, cert.Name, vendorID)
+	header := BuildCertificateHeader(x509Cert, cert.Name, vendorID)
 
 	return fmt.Sprintf("%s%s", header, pemBlock), nil
 }
@@ -225,10 +225,10 @@ func EncodePEM(cert *x509.Certificate) []byte {
 	return pem.EncodeToMemory(block)
 }
 
-// buildCertificateHeader creates a comment header with certificate details.
+// BuildCertificateHeader creates a comment header with certificate details.
 //
 // Note: see section 2. from docs/specifications/04-tpm-trust-bundle-format.md for format details.
-func buildCertificateHeader(cert *x509.Certificate, name string, vendorID string) string {
+func BuildCertificateHeader(cert *x509.Certificate, name string, vendorID string) string {
 	sha256Hash := sha256.Sum256(cert.Raw)
 	sha1Hash := sha1.Sum(cert.Raw)
 
@@ -263,10 +263,10 @@ func formatFingerprint(hash []byte) string {
 	return formatted.String()
 }
 
-// buildBundleHeader creates the header for the certificate bundle.
+// BuildBundleHeader creates the header for the certificate bundle.
 //
 // Note: see section 1. from docs/specifications/04-tpm-trust-bundle-format.md for format details.
-func buildBundleHeader(outputPath, date, commit string, bundleType BundleType) string {
+func BuildBundleHeader(outputPath, date, commit string, bundleType BundleType) string {
 	var header strings.Builder
 	header.WriteString("##\n")
 
