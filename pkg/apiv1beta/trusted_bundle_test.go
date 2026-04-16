@@ -1,12 +1,23 @@
 package apiv1beta
 
 import (
+	"bytes"
 	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
 	"crypto/x509"
+	"crypto/x509/pkix"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
+	"github.com/loicsikidi/go-tpm-kit/tpmcert/ekca"
+	"github.com/loicsikidi/go-tpm-kit/tpmcert/x509ext"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/config/vendors"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/testutil"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
 )
@@ -413,218 +424,78 @@ func Test_getVerifyOptions(t *testing.T) {
 	})
 }
 
-func TestVerifyCertificate(t *testing.T) {
-	t.Run("verifies valid Nuvoton EK certificate", func(t *testing.T) {
-		// Skip test if TPM_EK_CERT_PATH is not set
-		certPath := os.Getenv("TPM_EK_CERT_PATH")
-		if certPath == "" {
-			t.Skip("Skipping test: TPM_EK_CERT_PATH environment variable not set")
-		}
+func TestVerify(t *testing.T) {
+	t.Run("verifies valid EK certificate with complete chain", func(t *testing.T) {
+		setup := setupVerifyTest(t, vendors.GOOG, true /* includeIntermediate */)
 
-		// Load bundle with Nuvoton vendor
-		cfg := GetConfig{
-			CachePath:  t.TempDir(),
-			SkipVerify: true,
-			VendorIDs:  []VendorID{NTC},
-			AutoUpdate: AutoUpdateConfig{
-				DisableAutoUpdate: true,
-			},
-		}
-
-		tb, err := GetTrustedBundle(t.Context(), cfg)
+		err := setup.trustedBundle.Verify(setup.ekCert)
 		if err != nil {
-			t.Fatalf("Failed to get trusted bundle: %v", err)
-		}
-		defer tb.Stop()
-
-		// Load test certificate from external file
-		certPEM, err := utils.ReadFile(certPath)
-		if err != nil {
-			t.Fatalf("Failed to read EK certificate from %s: %v", certPath, err)
-		}
-
-		cert, err := testutil.ParseCertificate(certPEM)
-		if err != nil {
-			t.Fatalf("Failed to parse test certificate: %v", err)
-		}
-
-		// Verify the certificate
-		if err := tb.Verify(cert); err != nil {
 			t.Fatalf("Failed to verify certificate: %v", err)
 		}
 	})
 
-	t.Run("verifies valid Nuvoton EK certificate without intermediates", func(t *testing.T) {
-		// Skip test if TPM_EK_CERT_PATH is not set
-		certPath := os.Getenv("TPM_EK_CERT_PATH")
-		if certPath == "" {
-			t.Skip("Skipping test: TPM_EK_CERT_PATH environment variable not set")
-		}
+	t.Run("verifies valid EK certificate with root-only bundle", func(t *testing.T) {
+		setup := setupVerifyTest(t, vendors.GOOG, false /* includeIntermediate */)
 
-		// Load bundle with Nuvoton vendor
-		cfg := GetConfig{
-			Date:       testutil.BundleVersion,
-			CachePath:  t.TempDir(),
-			SkipVerify: true,
-			VendorIDs:  []VendorID{NTC},
-			AutoUpdate: AutoUpdateConfig{
-				DisableAutoUpdate: true,
-			},
-		}
-
-		tb, err := GetTrustedBundle(t.Context(), cfg)
+		err := setup.trustedBundle.Verify(setup.ekCert, []*x509.Certificate{setup.ca.Intermediate})
 		if err != nil {
-			t.Fatalf("Failed to get trusted bundle: %v", err)
-		}
-		defer tb.Stop()
-
-		// Load test certificate from external file
-		certPEM, err := utils.ReadFile(certPath)
-		if err != nil {
-			t.Fatalf("Failed to read EK certificate from %s: %v", certPath, err)
-		}
-
-		cert, err := testutil.ParseCertificate(certPEM)
-		if err != nil {
-			t.Fatalf("Failed to parse test certificate: %v", err)
-		}
-
-		// Verify the certificate
-		if err := tb.Verify(cert); err != nil {
-			t.Fatalf("Failed to verify certificate: %v", err)
+			t.Fatalf("Failed to verify certificate with optional chain: %v", err)
 		}
 	})
 
-	t.Run("fails to verify certificate from untrusted vendor", func(t *testing.T) {
-		// Skip test if TPM_EK_CERT_PATH is not set
-		certPath := os.Getenv("TPM_EK_CERT_PATH")
-		if certPath == "" {
-			t.Skip("Skipping test: TPM_EK_CERT_PATH environment variable not set")
-		}
+	t.Run("verifies it's not possible to add root cert in optional chain", func(t *testing.T) {
+		setup := setupVerifyTest(t, vendors.GOOG, true /* includeIntermediate */)
+		setup2 := setupVerifyTest(t, vendors.SNS, true /* includeIntermediate */)
 
-		// Load bundle without Nuvoton vendor
-		cfg := GetConfig{
-			SkipVerify: true,
-			VendorIDs:  []VendorID{IFX}, // Only Infineon
-			AutoUpdate: AutoUpdateConfig{
-				DisableAutoUpdate: true,
-			},
-			CachePath: t.TempDir(),
+		chain := []*x509.Certificate{setup.ca.Intermediate, setup2.ca.Root}
+		err := setup.trustedBundle.Verify(setup2.ekCert, chain)
+		if err == nil {
+			t.Fatalf("Expected verification to fail when adding root cert in optional chain")
 		}
+	})
 
-		tb, err := GetTrustedBundle(t.Context(), cfg)
-		if err != nil {
-			t.Fatalf("Failed to get trusted bundle: %v", err)
-		}
-		defer tb.Stop()
+	t.Run("fails to verify certificate from untrusted CA", func(t *testing.T) {
+		setup1 := setupVerifyTest(t, vendors.GOOG, true /* includeIntermediate */)
+		setup2 := setupVerifyTest(t, vendors.SNS, true /* includeIntermediate */)
 
-		// Load Nuvoton test certificate from external file
-		certPEM, err := utils.ReadFile(certPath)
-		if err != nil {
-			t.Fatalf("Failed to read EK certificate from %s: %v", certPath, err)
-		}
-
-		cert, err := testutil.ParseCertificate(certPEM)
-		if err != nil {
-			t.Fatalf("Failed to parse test certificate: %v", err)
-		}
-
-		// Verification should fail
-		if err := tb.Verify(cert); err == nil {
-			t.Fatal("Expected verification to fail for certificate from untrusted vendor")
+		err := setup1.trustedBundle.Verify(setup2.ekCert)
+		if err == nil {
+			t.Fatal("Expected verification to fail for certificate from untrusted CA")
 		}
 	})
 }
 
 func TestContains(t *testing.T) {
-	t.Run("returns true for certificate in root catalog", func(t *testing.T) {
-		bundleData, err := testutil.ReadTestFile(testutil.RootBundleFile)
-		if err != nil {
-			t.Fatalf("Failed to read test bundle: %v", err)
+	t.Run("returns true when certificate is in the bundle", func(t *testing.T) {
+		setup := setupVerifyTest(t, vendors.GOOG, true /* includeIntermediate */)
+
+		if !setup.trustedBundle.Contains(setup.ca.Intermediate) {
+			t.Fatal("Expected Contains to return true for certificate in the bundle")
 		}
 
-		tb, err := newTrustedBundle(t.Context(), bundleData)
-		if err != nil {
-			t.Fatalf("Failed to create trusted bundle: %v", err)
-		}
-
-		tbImpl := tb.(*trustedBundle)
-
-		// Get a certificate from the root catalog
-		var testCert *x509.Certificate
-		for _, certs := range tbImpl.rootCatalog {
-			if len(certs) > 0 {
-				testCert = certs[0]
-				break
-			}
-		}
-
-		if testCert == nil {
-			t.Fatal("No certificates found in root catalog")
-		}
-
-		if !tb.Contains(testCert) {
-			t.Fatal("Expected Contains to return true for certificate in root catalog")
+		if !setup.trustedBundle.Contains(setup.ca.Root) {
+			t.Fatal("Expected Contains to return true for root certificate in the bundle")
 		}
 	})
 
 	t.Run("returns false for certificate not in bundle", func(t *testing.T) {
-		// Skip test if TPM_EK_CERT_PATH is not set
-		certPath := os.Getenv("TPM_EK_CERT_PATH")
-		if certPath == "" {
-			t.Skip("Skipping test: TPM_EK_CERT_PATH environment variable not set")
-		}
+		setup := setupVerifyTest(t, vendors.GOOG, true /* includeIntermediate */)
+		missingCert := setupVerifyTest(t, vendors.SNS, false /* includeIntermediate */).ca.Root
 
-		bundleData, err := testutil.ReadTestFile(testutil.RootBundleFile)
-		if err != nil {
-			t.Fatalf("Failed to read test bundle: %v", err)
-		}
-
-		tb, err := newTrustedBundle(t.Context(), bundleData)
-		if err != nil {
-			t.Fatalf("Failed to create trusted bundle: %v", err)
-		}
-
-		// Load a certificate that's not in the bundle
-		certPEM, err := utils.ReadFile(certPath)
-		if err != nil {
-			t.Fatalf("Failed to read EK certificate from %s: %v", certPath, err)
-		}
-
-		cert, err := testutil.ParseCertificate(certPEM)
-		if err != nil {
-			t.Fatalf("Failed to parse test certificate: %v", err)
-		}
-
-		// This EK certificate should not be in the bundle (it's a leaf cert, not a root)
-		if tb.Contains(cert) {
+		if setup.trustedBundle.Contains(missingCert) {
 			t.Fatal("Expected Contains to return false for certificate not in bundle")
 		}
 	})
 
 	t.Run("returns false for empty bundle", func(t *testing.T) {
-		// Skip test if TPM_EK_CERT_PATH is not set
-		certPath := os.Getenv("TPM_EK_CERT_PATH")
-		if certPath == "" {
-			t.Skip("Skipping test: TPM_EK_CERT_PATH environment variable not set")
-		}
-
 		tb := &trustedBundle{
 			rootCatalog:         make(map[VendorID][]*x509.Certificate),
 			intermediateCatalog: make(map[VendorID][]*x509.Certificate),
 		}
 
-		certPEM, err := utils.ReadFile(certPath)
-		if err != nil {
-			t.Fatalf("Failed to read EK certificate from %s: %v", certPath, err)
-		}
+		setup := setupVerifyTest(t, vendors.GOOG, false /* includeIntermediate */)
 
-		cert, err := testutil.ParseCertificate(certPEM)
-		if err != nil {
-			t.Fatalf("Failed to parse test certificate: %v", err)
-		}
-
-		if tb.Contains(cert) {
+		if tb.Contains(setup.ca.Intermediate) {
 			t.Fatal("Expected Contains to return false for empty bundle")
 		}
 	})
@@ -739,91 +610,6 @@ func TestContains(t *testing.T) {
 		}
 	})
 }
-
-// func setupTrustedBundleWithRootCert(t *testing.T, selfSignedOnly bool) (TrustedBundle, *x509.Certificate) {
-// 	t.Helper()
-
-// 	bundleData, err := testutil.ReadTestFile(testutil.RootBundleFile)
-// 	if err != nil {
-// 		t.Fatalf("Failed to read test bundle: %v", err)
-// 	}
-
-// 	tb, err := newTrustedBundle(t.Context(), bundleData)
-// 	if err != nil {
-// 		t.Fatalf("Failed to create trusted bundle: %v", err)
-// 	}
-
-// 	tbImpl := tb.(*trustedBundle)
-// 	var rootCert *x509.Certificate
-
-// 	for _, certs := range tbImpl.rootCatalog {
-// 		if len(certs) > 0 {
-// 			if selfSignedOnly {
-// 				for _, cert := range certs {
-// 					if cert.Issuer.String() == cert.Subject.String() {
-// 						rootCert = cert
-// 						break
-// 					}
-// 				}
-// 			} else {
-// 				rootCert = certs[0]
-// 			}
-// 			if rootCert != nil {
-// 				break
-// 			}
-// 		}
-// 	}
-
-// 	if rootCert == nil {
-// 		if selfSignedOnly {
-// 			t.Skip("No self-signed root certificates found in catalog")
-// 		}
-// 		t.Skip("No certificates found in root catalog")
-// 	}
-
-// 	return tb, rootCert
-// }
-
-// func TestVerifyWithOptionalChain(t *testing.T) {
-// 	t.Run("verifies certificate with empty optional chain", func(t *testing.T) {
-// 		tb, rootCert := setupTrustedBundleWithRootCert(t, true)
-
-// 		errWithoutChain := tb.Verify(rootCert)
-// 		errWithEmptyChain := tb.Verify(rootCert, []*x509.Certificate{})
-
-// 		// Both should produce the same result
-// 		if (errWithoutChain == nil) != (errWithEmptyChain == nil) {
-// 			t.Fatalf("Expected same behavior with and without empty chain: without=%v, with=%v",
-// 				errWithoutChain, errWithEmptyChain)
-// 		}
-// 	})
-
-// 	t.Run("filters out root certificates from optional chain", func(t *testing.T) {
-// 		tb, rootCert := setupTrustedBundleWithRootCert(t, true)
-
-// 		errWithoutChain := tb.Verify(rootCert)
-// 		errWithRootInChain := tb.Verify(rootCert, []*x509.Certificate{rootCert})
-
-// 		// Self-signed certs should be filtered, so results should be identical
-// 		if (errWithoutChain == nil) != (errWithRootInChain == nil) {
-// 			t.Fatalf("Expected same behavior when self-signed cert is in optional chain: without=%v, with=%v",
-// 				errWithoutChain, errWithRootInChain)
-// 		}
-// 	})
-
-// 	t.Run("filters out certificates already in bundle from optional chain", func(t *testing.T) {
-// 		tb, rootCert := setupTrustedBundleWithRootCert(t, false)
-
-// 		errWithoutChain := tb.Verify(rootCert)
-// 		errWithDuplicateInChain := tb.Verify(rootCert, []*x509.Certificate{rootCert})
-
-// 		// Certs already in bundle should be filtered, so results should be identical
-// 		if (errWithoutChain == nil) != (errWithDuplicateInChain == nil) {
-// 			t.Fatalf("Expected same behavior when cert already in bundle is in optional chain: without=%v, with=%v",
-// 				errWithoutChain, errWithDuplicateInChain)
-// 		}
-// 	})
-// }
 
 func TestContainsFunc(t *testing.T) {
 	bundleData, err := testutil.ReadTestFile(testutil.RootBundleFile)
@@ -1031,4 +817,133 @@ func TestContainsFunc(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Helper functions
+
+// testVerifySetup encapsulates common setup for verification tests.
+type testVerifySetup struct {
+	ca              *ekca.CA
+	trustedBundle   TrustedBundle
+	ekCert          *x509.Certificate
+	rootPEM         []byte
+	intermediatePEM []byte
+}
+
+// setupVerifyTest creates a complete test setup with CA, bundle and EK certificate.
+func setupVerifyTest(t *testing.T, vendorID vendors.ID, includeIntermediate bool) *testVerifySetup {
+	t.Helper()
+
+	ca, rootPEM, intermediatePEM := createTestCABundle(t, vendorID)
+
+	var tb TrustedBundle
+	var err error
+	if includeIntermediate {
+		tb, err = newTrustedBundle(t.Context(), rootPEM, intermediatePEM)
+	} else {
+		tb, err = newTrustedBundle(t.Context(), rootPEM)
+	}
+	if err != nil {
+		t.Fatalf("Failed to create trusted bundle: %v", err)
+	}
+
+	ekCert := generateEKCertificate(t, ca, vendorID)
+
+	return &testVerifySetup{
+		ca:              ca,
+		trustedBundle:   tb,
+		ekCert:          ekCert,
+		rootPEM:         rootPEM,
+		intermediatePEM: intermediatePEM,
+	}
+}
+
+// formatBundleWithMetadata formats a certificate as a PEM bundle with vendor metadata.
+func formatBundleWithMetadata(cert *x509.Certificate, vendorID vendors.ID, bundleType bundle.BundleType) []byte {
+	var buf bytes.Buffer
+
+	// Global bundle header
+	date := time.Now().Format("2006-01-02")
+	buf.WriteString(bundle.BuildBundleHeader("", date, "test-commit-hash", bundleType))
+
+	// Certificate metadata
+	certName := fmt.Sprintf("Test %s CA", vendorID)
+	buf.WriteString(bundle.BuildCertificateHeader(cert, certName, string(vendorID)))
+
+	// PEM-encoded certificate
+	buf.Write(bundle.EncodePEM(cert))
+
+	return buf.Bytes()
+}
+
+// createTestCABundle generates a test CA and formats it as PEM bundles with vendor metadata.
+func createTestCABundle(t *testing.T, vendorID vendors.ID) (*ekca.CA, []byte, []byte) {
+	t.Helper()
+
+	ca, err := ekca.New(ekca.CAConfig{
+		Root: &ekca.CertConfig{
+			Subject: &pkix.Name{
+				Organization: []string{"Test TPM Vendor"},
+				CommonName:   fmt.Sprintf("%s Root CA", vendorID),
+			},
+		},
+		Intermediate: &ekca.CertConfig{
+			Subject: &pkix.Name{
+				Organization: []string{"Test TPM Vendor"},
+				CommonName:   fmt.Sprintf("%s Intermediate CA", vendorID),
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("Failed to create CA: %v", err)
+	}
+
+	rootPEM := formatBundleWithMetadata(ca.Root, vendorID, bundle.TypeRoot)
+	intermediatePEM := formatBundleWithMetadata(ca.Intermediate, vendorID, bundle.TypeIntermediate)
+
+	return ca, rootPEM, intermediatePEM
+}
+
+// generateEKCertificate generates an EK certificate signed by the given CA.
+func generateEKCertificate(t *testing.T, ca *ekca.CA, vendorID vendors.ID) *x509.Certificate {
+	t.Helper()
+
+	ecdsaKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("Failed to generate ECDSA key: %v", err)
+	}
+
+	req := ekca.CertificateRequest{
+		PublicKey: &ecdsaKey.PublicKey,
+		NotAfter:  time.Now().Add(5 * time.Minute),
+	}
+
+	switch vendorID {
+	case vendors.GOOG:
+		req.SAN = &x509ext.SubjectAltName{
+			TPMManufacturer: "id:474F4F47", // "GOOG" in hex
+			TPMModel:        "test-model",
+			TPMVersion:      "id:00000001",
+		}
+	case vendors.SNS:
+		req.SAN = &x509ext.SubjectAltName{
+			TPMManufacturer: "id:534E5300", // "SNS" in hex (padded)
+			TPMModel:        "test-model",
+			TPMVersion:      "id:00000001",
+		}
+	default:
+		t.Fatalf("Unknown test vendor ID: %s", vendorID)
+	}
+
+	certDER, err := ca.GenerateCertificate(req)
+	if err != nil {
+		t.Fatalf("Failed to generate certificate: %v", err)
+	}
+
+	cert, err := x509.ParseCertificate(certDER)
+	if err != nil {
+		t.Fatalf("Failed to parse certificate: %v", err)
+	}
+
+	return cert
 }
