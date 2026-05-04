@@ -155,7 +155,7 @@ func main() {
 - `config.json` - Cache configuration
 
 > [!NOTE]
-> All artifacts except `trusted-root.json` can be safely committed to version control for distribution purposes.
+> All artifacts can be safely committed to version control for distribution purposes.
 
 ### Loading Bundle in Offline Mode
 
@@ -272,8 +272,7 @@ tb, err = apiv1beta.LoadTrustedBundle(ctx, apiv1beta.LoadConfig{
 ## Additional Resources 📚
 
 For more details about offline capabilities:
-- 📖 [Local Cache Specification](../../specifications/07-local-cache.md) - Cache system details
-- 📖 [Full Offline Mode Specification](../../specifications/08-full-offline-mode.md) - Complete offline verification
+- 📖 [Local Cache Specification](../../specifications/07-local-cache.md) - Cache system details and offline verification
 - 📖 [Bundle Verification Specification](../../specifications/05-bundle-verification.md) - Verification process
 
 ## Next Steps 🚀

@@ -7,6 +7,7 @@
 | alpha   | 2025-12-15 | Loïc Sikidi | Initial version  |
 | alpha   | 2025-12-23 | Loïc Sikidi | Fix typos        |
 | alpha   | 2025-12-28 | Loïc Sikidi | Use single provenance.json file instead of separate roots/intermediates files |
+| alpha   | 2026-05-04 | Loïc Sikidi | Enrich required assets and offline mode sections |
 
 ## Overview
 
@@ -25,9 +26,10 @@ $HOME/.tpmtb/
 ├── checksums.txt
 ├── checksums.txt.sigstore.json
 ├── tpm-ca-certificates.pem
+├── tpm-intermediate-ca-certificates.pem
 ├── provenance.json
 ├── trusted-root.json
-├── tpm-intermediate-ca-certificates.pem # reserved for future use
+├── config.json
 └── .sigstore/roots/**                   # cache directory used by 'sigstore-go'
 ```
 
@@ -39,29 +41,53 @@ By default, the local cache MUST be located in the `$HOME/.tpmtb` directory.
 
 ### Online Mode
 
-The `GetTrustedRoots()` method MUST first check if a local cache exists for the requested version:
+The `GetTrustedBundle()` method MUST first check if a local cache exists for the requested version:
   * If yes, the local cache MUST be used for the bundle and all resources needed for the verification phase
-  * If no, resources MUST be fetched online, then stored in the local cache for future use (see [TrustedBundle.Persist](#trustdbundlepersist-method))
+  * If no, resources MUST be fetched online, then stored in the local cache for future use (see [TrustedBundle.Persist](#trustedbundlepersist-method))
 
 > [!NOTE]
-> Since the watcher uses the `GetTrustedRoots()` method internally, the local cache will also be used in this context.
+> Since the watcher uses the `GetTrustedBundle()` method internally, the local cache will also be used in this context.
 
 This behavior will reduce the impact of GitHub API rate-limiting while ensuring that resources are always up-to-date.
 
 #### Required Assets
 
-* `tpm-ca-certificates.pem`: The TPM certificate bundle
-* `checksums.txt` and `checksums.txt.sigstore.json`: For TPM bundle integrity and provenance verification
-* `provenance.json`: For TPM bundle provenance verification (contains both root and intermediate certificate provenance information)
+**Root Certificates Bundle** (`tpm-ca-certificates.pem`)
+- Contains trusted TPM Root CA certificates in PEM format
+- Must be a valid PEM-encoded certificate bundle with at least one certificate
+- Required for all verification operations
 
-> [!NOTE]
-> The file `tpm-intermediate-ca-certificates.pem` is reserved for future use.
+**Checksums File** (`checksums.txt`)
+- Contains SHA256 checksums for bundle files
+- Used for integrity verification before bundle loading
+- Must follow standard checksum file format
+
+**Cosign Signature** (`checksums.txt.sigstore.json`)
+- Contains Sigstore signature bundle for keyless verification
+- Enables authenticity verification of the checksums file
+- Must be a valid Sigstore signature bundle
+
+**GitHub Attestation** (`provenance.json`)
+- Contains GitHub SLSA provenance attestation
+- Provides supply chain verification for both root and intermediate bundles
+- Must be a valid GitHub attestation bundle
+
+**Cache Configuration** (`config.json`)
+- Contains cache metadata (bundle date, commit, vendor filters, etc.)
+- Required for proper cache management
+- Automatically created during cache operations
+
+**Intermediate Certificates Bundle** (`tpm-intermediate-ca-certificates.pem`)
+- Contains TPM Intermediate CA certificates in PEM format
+- Required for building complete certificate chains from EK to trusted roots
+- Enables offline verification without Authority Information Access (AIA) fetching
+- Must be a valid PEM-encoded certificate bundle with at least one certificate
 
 #### Special Case: Read-Only Filesystem
 
 When the filesystem is read-only (for example, when using the OCI Docker image), the local cache cannot be used to store resources fetched online.
 
-Rule: `GetTrustedRoots()` MUST return an explicit error indicating to use `DisableLocalCache` in the config. This attribute will indicate to the API that the cache should not be used, avoiding any write attempts to a read-only filesystem.
+Rule: `GetTrustedBundle()` MUST return an explicit error indicating to use `DisableLocalCache` in the config. This attribute will indicate to the API that the cache should not be used, avoiding any write attempts to a read-only filesystem.
 
 > [!NOTE]
 > `DisableLocalCache` will also be propagated to `go-tuf/v2` to disable the local TUF cache.
@@ -70,34 +96,51 @@ Rule: `GetTrustedRoots()` MUST return an explicit error indicating to use `Disab
 
 The API MUST allow offline verification of the TPM bundle using only resources stored in the local cache.
 
-To achieve this, in addition to the assets used in online mode, the TUF trust chains from Rekor are needed (see `trusted-root.json`).
+#### Additional Requirements for Offline Mode
 
-The API will introduce a new method to produce a local cache eligible for offline verification:
+In addition to online mode assets, offline verification requires:
+
+**Sigstore Trust Root** (`trusted-root.json`)
+- Contains trusted keys and certificates from Sigstore TUF repository
+- Enables offline verification of Fulcio certificates and Rekor transparency log entries
+
+> [!WARNING]
+> The `trusted-root.json` may become incompatible with future bundle releases due to TUF key rotation in the Sigstore instance (occurs multiple times per year). Regular cache updates are recommended when network access is available.
+
+#### Offline Mode Behavior
+
+When `OfflineMode: true`:
+- All artifacts must be present in the cache directory (operation fails if any are missing)
+- No network requests are attempted during verification
+- Auto-update is automatically disabled
+- Verification maintains the same security guarantees as online mode
+
+#### API and CLI Usage
+
+Create offline-capable cache:
 
 ```go
 func SaveTrustedBundle(ctx context.Context, cfg SaveConfig) (SaveResponse, error)
 ```
 
-This API will be used by the `tpmtb` CLI tool via a new command:
-
 ```bash
-tpmtb bundle save --output-dir <path> <path-to-bundle> [--local-cache]
+tpmtb bundle save --output-dir <path> [--local-cache]
 ```
 
-Now, to load a TPM bundle in offline mode, the user can use the existing `Load` method:
+Load bundle in offline mode:
 
 ```go
 func LoadTrustedBundle(ctx context.Context, cfg LoadConfig) (TrustedBundle, error)
 ```
 
-However, `LoadConfig` will have a new attribute `OfflineMode bool` that will indicate to the API that the cache has all the necessary resources for offline verification.
+The `LoadConfig` struct includes `OfflineMode bool` to indicate offline verification with cached resources.
 
 ## API Methods
 
-### GetTrustedRoots Method
+### GetTrustedBundle Method
 
 ```go
-func GetTrustedRoots(ctx context.Context, cfg GetTrustedRootsConfig) (TrustedBundle, error)
+func GetTrustedBundle(ctx context.Context, cfg GetConfig) (TrustedBundle, error)
 ```
 
 **Behavior:**
@@ -114,7 +157,7 @@ func GetTrustedRoots(ctx context.Context, cfg GetTrustedRootsConfig) (TrustedBun
 **Configuration:**
 
 ```go
-type GetTrustedRootsConfig struct {
+type GetConfig struct {
     Version           string  // Bundle version (YYYY-MM-DD format or "latest")
     DisableLocalCache bool    // Disable local cache usage
     // ... other fields
