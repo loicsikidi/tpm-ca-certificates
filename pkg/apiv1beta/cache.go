@@ -132,7 +132,6 @@ func persistAllBundleAssets(
 	if err := cache.SaveFile(outputDir, cache.ConfigFilename, cacheConfig); err != nil {
 		return err
 	}
-
 	if err := cache.SaveFile(outputDir, cache.IntermediateBundleFilename, intermediateBundle); err != nil {
 		return err
 	}
