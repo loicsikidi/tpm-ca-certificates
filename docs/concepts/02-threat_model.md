@@ -4,16 +4,16 @@ This document outlines the risk assessment for the `tpm-ca-certificates` project
 
 ## Risks
 
-### 1. Security Vulnerability in the `tpmtb` CLI Binary
+### 1. Security Vulnerability in the `tpmtb` Binary or `apiv1` Library
 
-An attacker could exploit a vulnerability in the CLI binary to compromise system security.
+An attacker could exploit a vulnerability in the CLI binary (`tpmtb`) or the library ([`pkg/apiv1*`](../../pkg/)) to compromise system security.
 
 **Impact: Limited**
 
-- The binary only interacts with the configuration file and TPM trust bundle
-- The binary does not handle sensitive data
-- The binary does not require elevated privileges to operate
-- The binary does not require any forms of authentication
+- Both components only interact with the configuration file and TPM trust bundle
+- Both components do not handle sensitive data
+- Both components do not require elevated privileges to operate
+- Both components do not require any forms of authentication
 
 **Mitigation Measures**
 
@@ -36,23 +36,28 @@ If the TPM trust bundle is compromised, it will primarily impact onboarding serv
 
 [^1]: Hence the importance of implementing other security layers (e.g., measured boot or secure boot) to mitigate this risk.
 
-## Supply Chain Attack Mitigation
+**Mitigation Measures**
+
+- Restrict tag creation to repository administrators only
+- Supply Chain Attack Mitigations
+
+#### Supply Chain Attack Mitigation Details
 
 To minimize this risk, we implement recommendations from the [Geomys Standard of Care](https://words.filippo.io/standard-of-care/), a set of best practices for supply chain security in open source projects:
 
-### 1. Code Review
+##### 1. Code Review
 Every change requires review and approval. Currently, I am the sole approver, but if additional volunteers join, we will extend this to a quorum of 2 reviewers.
 
-### 2. Dependency Management
+##### 2. Dependency Management
 Following the Geomys model: no automated dependency updates (no Dependabot). Dependencies are updated deliberately and reviewed carefully.
 
 > [!NOTE]
 > [go-test.yaml](../../.github/workflows/go-test.yaml) CI workflow includes `govulncheck` to detect vulnerabilities in dependencies at a daily cadence.
 
-### 3. Phishing-Resistant Authentication
+##### 3. Phishing-Resistant Authentication
 All approvers MUST use WebAuthn 2FA on GitHub and on fallback accounts (e.g., domain registrar, Google account).
 
-### 4. Long-Lived Credentials
+##### 4. Long-Lived Credentials
 Regular contributors MUST avoid persistent long-lived credentials, or make them non-extractable when possible. 
 
 Examples:
@@ -60,21 +65,21 @@ Examples:
 - Use hardware-bound SSH keys with [`yubikey-agent`](https://github.com/FiloSottile/yubikey-agent), [`ssh-tpm-agent`](https://github.com/Foxboron/ssh-tpm-agent) or [`Secretive`](https://github.com/maxgoedjen/secretive),  instead of traditional SSH keys for git pushes to GitHub
 - Avoid extractable credentials that could be stolen or leaked
 
-### 6. CI Security
+##### 6. CI Security
 - **Zizmor analysis:** Static analysis of GitHub Actions workflows
 - **No caching:** Disable caching mechanisms that could be poisoned
 - **Least-privileged permissions:** GitHub Actions tokens have minimal required permissions
 
-### 7. Vulnerability Handling
+##### 7. Vulnerability Handling
 We appreciate the work of security researchers and honor embargoes of up to 90 days. Vulnerability details are not shared with people not involved in fixing them until they are made public.
 
 > [!NOTE]
 > Following mitigations are not part of the Geomys Standard of Care but are important additional measures.
 
-### 8. Signatures & Attestations
+##### 8. Signatures & Attestations
 Release signatures are produced using keyless key pairs (via Sigstore/Cosign). This eliminates the complexity and risk of managing long-lived signing keys (secure storage, loss, rotation, compromise, etc.).
 
-### 9. Tooling
+##### 9. Tooling
 We will provide tooling to verify bundles's trustworthiness by checking:
 - Transparency log entries (Rekor)
 - Provenance attestation (SLSA)

@@ -12,7 +12,7 @@ This document describes the trust model and security principles behind the proje
 
 ### 1. Auditability Through Source URLs
 
-Every root CA certificate in this bundle MUST be traceable to its original source via a URL. This is a critical improvement over other projects (e.g., [keylime](https://github.com/keylime/keylime/tree/dc75773679b1862e3b571f513e5aa9904efaf136/tpm_cert_store) or [tpm-key-attestation](https://github.com/cedarcode/tpm-key_attestation/commit/42c78b57726e1abb0167110932a313a51250a7b0)[^1]) where only raw certificate data is visible without provenance.
+Every CA certificate (root or intermediate) in this bundle MUST be traceable to its original source via a URL. This is a critical improvement over other projects (e.g., [keylime](https://github.com/keylime/keylime/tree/dc75773679b1862e3b571f513e5aa9904efaf136/tpm_cert_store) or [tpm-key-attestation](https://github.com/cedarcode/tpm-key_attestation/commit/42c78b57726e1abb0167110932a313a51250a7b0)[^1]) where only raw certificate data is visible without provenance.
 
 > [!NOTE]
 > **Why this matters:**
@@ -38,10 +38,10 @@ While using URLs introduces potential attack vectors, we implement several count
 
 ### 3. Human Review Process
 
-Given that TPM root CA information is scattered across vendor websites, PDFs, and various communication channels, human validation is essential.
+Given that TPM CA information is scattered across vendor websites, PDFs, and various communication channels, human validation is essential.
 
 **Current process:** At least one reviewer must validate that a certificate addition is legitimate by:
-- Verifying the source URL leads to official vendor communication
+- Verifying the source URL points to a domain owned by the vendor, or if hosted elsewhere, that it is documented as an official vendor document
 - Confirming the certificate hash matches vendor-published information (when available)
 - Checking that supporting evidence is archived in the `src/` directory
 
@@ -94,6 +94,9 @@ This continuous monitoring ensures:
 - Proactive management of certificate lifecycle
 - Ongoing validation of the trust bundle's integrity
 - Protection against supply chain attacks on the repository itself
+
+> [!NOTE]
+> [sanity-check.yaml](../../.github/workflows/sanity-check.yaml) CI workflow performs daily sanity checks as described above.
 
 ## The `tpmtb` CLI
 
