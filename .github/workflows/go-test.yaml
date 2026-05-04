@@ -22,13 +22,6 @@ jobs:
         deps:
           - locked
           - latest
-        # Exclude (oldstable, latest) and (go.mod, latest)
-        # root cause: latest version of boulder requires Go 1.25.0
-        exclude:
-          - go: { go-version: oldstable }
-            deps: latest
-          - go: { go-version-file: go.mod }
-            deps: latest
     steps:
       - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
