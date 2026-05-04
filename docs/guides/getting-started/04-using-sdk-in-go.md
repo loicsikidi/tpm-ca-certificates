@@ -384,12 +384,12 @@ if err != nil {
 defer tb.Stop()
 
 // Persist to default location ($HOME/.tpmtb)
-if err := tb.Persist(); err != nil {
+if err := tb.Persist(ctx); err != nil {
 	log.Fatalf("Failed to persist bundle: %v", err)
 }
 
 // Or persist to a custom location
-if err := tb.Persist("/custom/cache/path"); err != nil {
+if err := tb.Persist(ctx, "/custom/cache/path"); err != nil {
 	log.Fatalf("Failed to persist bundle: %v", err)
 }
 ```
@@ -443,7 +443,7 @@ if err != nil {
 	log.Fatal(err)
 }
 
-if err := tb.Persist(); err != nil {
+if err := tb.Persist(ctx); err != nil {
 	log.Fatal(err)
 }
 tb.Stop()

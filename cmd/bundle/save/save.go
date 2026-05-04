@@ -110,7 +110,7 @@ func Run(ctx context.Context, o *Opts) error {
 	if o.LocalCache {
 		targetDir = cache.CacheDir()
 	}
-	if err := resp.Persist(targetDir); err != nil {
+	if err := resp.Persist(ctx, targetDir); err != nil {
 		return fmt.Errorf("failed to persist bundle: %w", err)
 	}
 

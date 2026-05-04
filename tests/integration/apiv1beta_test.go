@@ -891,7 +891,7 @@ func TestSave(t *testing.T) {
 		}
 
 		outputDir := t.TempDir()
-		if err := resp.Persist(outputDir); err != nil {
+		if err := resp.Persist(t.Context(), outputDir); err != nil {
 			t.Fatalf("Persist() error = %v", err)
 		}
 
@@ -945,7 +945,7 @@ func TestSave(t *testing.T) {
 
 		// Persist to cache directory
 		cacheDir := t.TempDir()
-		if err := resp.Persist(cacheDir); err != nil {
+		if err := resp.Persist(t.Context(), cacheDir); err != nil {
 			t.Fatalf("Persist() error = %v", err)
 		}
 
