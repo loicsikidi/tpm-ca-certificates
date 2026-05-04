@@ -15,7 +15,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        bundle-type: [roots, intermediates]
         include:
           - bundle-type: roots
             config-file: .tpm-roots.yaml
@@ -44,8 +43,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        vendor: [ifx, stm]
-        cert-type: [root, intermediate]
         include:
           - vendor: ifx
             vendor-id: IFX
@@ -96,7 +93,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        bundle-type: [root, intermediate]
         include:
           - bundle-type: root
             bundle-file: tpm-ca-certificates.pem

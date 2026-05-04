@@ -390,7 +390,7 @@ func (tb *trustedBundle) Persist(ctx context.Context, optionalCachePath ...strin
 		tb.assets.checksum,
 		tb.assets.checksumSignature,
 		tb.assets.provenance,
-		/* trustedBundle */ nil,
+		/* trustedRoot = */ nil,
 		configData,
 	)
 	if err != nil {
