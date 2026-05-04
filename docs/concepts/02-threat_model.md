@@ -6,7 +6,7 @@ This document outlines the risk assessment for the `tpm-ca-certificates` project
 
 ### 1. Security Vulnerability in the `tpmtb` Binary or `apiv1` Library
 
-An attacker could exploit a vulnerability in the CLI binary (`tpmtb`) or the library (`pkg/apiv1*`) to compromise system security.
+An attacker could exploit a vulnerability in the CLI binary (`tpmtb`) or the library ([`pkg/apiv1*`](../../pkg/)) to compromise system security.
 
 **Impact: Limited**
 
@@ -41,7 +41,7 @@ If the TPM trust bundle is compromised, it will primarily impact onboarding serv
 - Restrict tag creation to repository administrators only
 - Supply Chain Attack Mitigations
 
-#### Supply Chain Attack Mitigation's details
+#### Supply Chain Attack Mitigation Details
 
 To minimize this risk, we implement recommendations from the [Geomys Standard of Care](https://words.filippo.io/standard-of-care/), a set of best practices for supply chain security in open source projects:
 
