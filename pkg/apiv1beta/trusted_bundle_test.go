@@ -819,6 +819,116 @@ func TestContainsFunc(t *testing.T) {
 	}
 }
 
+func TestFindFunc(t *testing.T) {
+	bundleData, err := testutil.ReadTestFile(testutil.RootBundleFile)
+	if err != nil {
+		t.Fatalf("Failed to read test bundle: %v", err)
+	}
+
+	tests := []struct {
+		name      string
+		setupFunc func(t *testing.T) (TrustedBundle, func(c *x509.Certificate) bool, *x509.Certificate)
+	}{
+		{
+			name: "returns certificate when predicate matches certificate in root catalog",
+			setupFunc: func(t *testing.T) (TrustedBundle, func(c *x509.Certificate) bool, *x509.Certificate) {
+				setup := setupVerifyTest(t, vendors.GOOG, false /* includeIntermediate */)
+
+				predicate := func(c *x509.Certificate) bool {
+					return c.Subject.String() == setup.ca.Root.Subject.String()
+				}
+
+				return setup.trustedBundle, predicate, setup.ca.Root
+			},
+		},
+		{
+			name: "returns certificate when predicate matches certificate in intermediate catalog",
+			setupFunc: func(t *testing.T) (TrustedBundle, func(c *x509.Certificate) bool, *x509.Certificate) {
+				setup := setupVerifyTest(t, vendors.GOOG, true /* includeIntermediate */)
+
+				predicate := func(c *x509.Certificate) bool {
+					return c.Subject.String() == setup.ca.Intermediate.Subject.String()
+				}
+
+				return setup.trustedBundle, predicate, setup.ca.Intermediate
+			},
+		},
+		{
+			name: "returns nil when predicate matches no certificates",
+			setupFunc: func(t *testing.T) (TrustedBundle, func(c *x509.Certificate) bool, *x509.Certificate) {
+				setup := setupVerifyTest(t, vendors.GOOG, false /* includeIntermediate */)
+
+				predicate := func(c *x509.Certificate) bool {
+					return c.Subject.CommonName == "NonExistentCertificate"
+				}
+				return setup.trustedBundle, predicate, nil
+			},
+		},
+		{
+			name: "returns nil for empty bundle",
+			setupFunc: func(t *testing.T) (TrustedBundle, func(c *x509.Certificate) bool, *x509.Certificate) {
+				tb := &trustedBundle{
+					rootCatalog:         make(map[VendorID][]*x509.Certificate),
+					intermediateCatalog: make(map[VendorID][]*x509.Certificate),
+				}
+
+				predicate := func(c *x509.Certificate) bool {
+					return true
+				}
+
+				return tb, predicate, nil
+			},
+		},
+		{
+			name: "respects vendor filter - returns certificate for filtered vendor",
+			setupFunc: func(t *testing.T) (TrustedBundle, func(c *x509.Certificate) bool, *x509.Certificate) {
+				tb, err := newTrustedBundle(t.Context(), bundleData)
+				if err != nil {
+					t.Fatalf("Failed to create trusted bundle: %v", err)
+				}
+
+				tbImpl := tb.(*trustedBundle)
+				var ifxCert *x509.Certificate
+				if certs, ok := tbImpl.rootCatalog[IFX]; ok && len(certs) > 0 {
+					ifxCert = certs[0]
+				}
+
+				if ifxCert == nil {
+					t.Skip("No IFX certificates found in bundle")
+				}
+
+				tbImpl.vendorFilter = []VendorID{IFX}
+
+				predicate := func(c *x509.Certificate) bool {
+					return c.Subject.String() == ifxCert.Subject.String()
+				}
+
+				return tb, predicate, ifxCert
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tb, predicate, want := tt.setupFunc(t)
+
+			got := tb.FindFunc(predicate)
+			if want == nil {
+				if got != nil {
+					t.Fatalf("FindFunc() = %v, want nil", got)
+				}
+			} else {
+				if got == nil {
+					t.Fatal("FindFunc() = nil, want non-nil certificate")
+				}
+				if !got.Equal(want) {
+					t.Fatalf("FindFunc() returned certificate with subject %s, want %s", got.Subject.String(), want.Subject.String())
+				}
+			}
+		})
+	}
+}
+
 // Helper functions
 
 // testVerifySetup encapsulates common setup for verification tests.

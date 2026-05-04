@@ -67,16 +67,6 @@ type TrustedBundle interface {
 	// Returns an error if the certificate cannot be verified.
 	Verify(cert *x509.Certificate, optionalChain ...[]*x509.Certificate) error
 
-	// Contains checks if a certificate is stored in the bundle.
-	//
-	// Returns true if the certificate is found in either the root or intermediate catalogs.
-	Contains(cert *x509.Certificate) bool
-
-	// ContainsFunc checks if any certificate in the bundle satisfies the predicate function.
-	//
-	// Returns true if the predicate returns true for any certificate in either the root or intermediate catalogs.
-	ContainsFunc(fn func(c *x509.Certificate) bool) bool
-
 	// Persist marshals bundle and its verification assets to disk at the specified cache path.
 	//
 	// Notes:
@@ -90,6 +80,26 @@ type TrustedBundle interface {
 	// This method blocks until the watcher is fully stopped or the timeout (5 seconds) is reached.
 	// It is safe to call Stop multiple times.
 	Stop() error
+
+	/*** EXPERIMENTAL functions
+
+	Note: could be removed without notice in future versions
+	***/
+
+	// Contains checks if a certificate is stored in the bundle.
+	//
+	// Returns true if the certificate is found in either the root or intermediate catalogs.
+	Contains(cert *x509.Certificate) bool
+
+	// ContainsFunc checks if any certificate in the bundle satisfies the predicate function.
+	//
+	// Returns true if the predicate returns true for any certificate in either the root or intermediate catalogs.
+	ContainsFunc(fn func(c *x509.Certificate) bool) bool
+
+	// FindFunc returns the first certificate in the bundle that satisfies the predicate function.
+	//
+	// Returns the first matching certificate from either the root or intermediate catalogs, or nil if no match is found.
+	FindFunc(fn func(c *x509.Certificate) bool) *x509.Certificate
 }
 
 // trustedBundle is the internal implementation of [TrustedBundle].
@@ -287,23 +297,9 @@ func (tb *trustedBundle) Verify(cert *x509.Certificate, optionalChain ...[]*x509
 // If the bundle was created with VendorIDs filter, only certificates from those vendors are checked.
 // Otherwise, all certificates from the bundle are checked.
 func (tb *trustedBundle) Contains(cert *x509.Certificate) bool {
-	tb.mu.RLock()
-	defer tb.mu.RUnlock()
-
-	return tb.containsInCatalog(cert, tb.rootCatalog) || tb.containsInCatalog(cert, tb.intermediateCatalog)
-}
-
-// containsInCatalog checks if a certificate is in the given catalog, applying vendor filters if configured.
-func (tb *trustedBundle) containsInCatalog(cert *x509.Certificate, catalog map[vendors.ID][]*x509.Certificate) bool {
-	found := false
-	tb.forEachCert(catalog, func(c *x509.Certificate) bool {
-		if c.Equal(cert) {
-			found = true
-			return false // Stop iteration
-		}
-		return true // Continue iteration
+	return tb.ContainsFunc(func(c *x509.Certificate) bool {
+		return c.Equal(cert)
 	})
-	return found
 }
 
 // ContainsFunc checks if any certificate in the bundle satisfies the predicate function.
@@ -311,23 +307,37 @@ func (tb *trustedBundle) containsInCatalog(cert *x509.Certificate, catalog map[v
 // If the bundle was created with VendorIDs filter, only certificates from those vendors are checked.
 // Otherwise, all certificates from the bundle are checked.
 func (tb *trustedBundle) ContainsFunc(fn func(c *x509.Certificate) bool) bool {
+	return tb.FindFunc(fn) != nil
+}
+
+// FindFunc returns the first certificate in the bundle that satisfies the predicate function.
+//
+// If the bundle was created with VendorIDs filter, only certificates from those vendors are checked.
+// Otherwise, all certificates from the bundle are checked.
+// Returns nil if no matching certificate is found.
+func (tb *trustedBundle) FindFunc(fn func(c *x509.Certificate) bool) *x509.Certificate {
 	tb.mu.RLock()
 	defer tb.mu.RUnlock()
 
-	return tb.containsFuncInCatalog(fn, tb.rootCatalog) || tb.containsFuncInCatalog(fn, tb.intermediateCatalog)
+	if cert := tb.findFuncInCatalog(fn, tb.rootCatalog); cert != nil {
+		return cert
+	}
+	return tb.findFuncInCatalog(fn, tb.intermediateCatalog)
 }
 
-// containsFuncInCatalog checks if any certificate in the given catalog satisfies the predicate, applying vendor filters if configured.
-func (tb *trustedBundle) containsFuncInCatalog(fn func(c *x509.Certificate) bool, catalog map[vendors.ID][]*x509.Certificate) bool {
-	found := false
+// findFuncInCatalog returns the first certificate in the given catalog that satisfies the predicate, applying vendor filters if configured.
+func (tb *trustedBundle) findFuncInCatalog(fn func(c *x509.Certificate) bool, catalog map[vendors.ID][]*x509.Certificate) *x509.Certificate {
+	var result *x509.Certificate
 	tb.forEachCert(catalog, func(c *x509.Certificate) bool {
 		if fn(c) {
-			found = true
+			// Return a copy to prevent external modifications
+			certCopy := *c
+			result = &certCopy
 			return false // Stop iteration
 		}
 		return true // Continue iteration
 	})
-	return found
+	return result
 }
 
 // Persist writes the bundle and its configuration to disk.
