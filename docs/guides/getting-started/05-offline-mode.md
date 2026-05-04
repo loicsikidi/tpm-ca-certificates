@@ -137,7 +137,7 @@ func main() {
 	}
 
 	// Save all artifacts for offline use
-	if err := resp.Persist("/path/to/cache"); err != nil {
+	if err := resp.Persist(ctx, "/path/to/cache"); err != nil {
 		log.Fatalf("Failed to persist cache: %v", err)
 	}
 
@@ -224,7 +224,7 @@ if err != nil {
 }
 defer tb.Stop()
 
-if err := tb.Persist("/path/to/cache"); err != nil {
+if err := tb.Persist(ctx, "/path/to/cache"); err != nil {
 	log.Fatal(err)
 }
 ```
@@ -247,7 +247,7 @@ if err != nil {
 defer tb.Stop()
 
 // Persist filtered bundle
-if err := tb.Persist("/path/to/cache"); err != nil {
+if err := tb.Persist(ctx, "/path/to/cache"); err != nil {
 	log.Fatal(err)
 }
 

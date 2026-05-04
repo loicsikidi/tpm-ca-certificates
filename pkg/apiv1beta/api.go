@@ -296,21 +296,18 @@ type SaveResponse struct {
 // Persist writes all assets to the specified output directory.
 //
 // If outputDir is empty, the default cache directory ($HOME/.tpmtb) is used.
-func (sr *SaveResponse) Persist(outputDir string) error {
-	if outputDir == "" {
-		outputDir = cache.CacheDir()
-	}
+func (sr *SaveResponse) Persist(ctx context.Context, optionalOutputDir ...string) error {
+	outputDir := utils.OptionalArgWithDefault(optionalOutputDir, cache.CacheDir())
+	cleanOutputDir := filepath.Clean(outputDir)
 
-	outputDir = filepath.Clean(outputDir)
-
-	if !utils.DirExists(outputDir) {
-		if err := os.MkdirAll(outputDir, 0700); err != nil {
+	if !utils.DirExists(cleanOutputDir) {
+		if err := os.MkdirAll(cleanOutputDir, 0700); err != nil {
 			return fmt.Errorf("failed to create output directory: %w", err)
 		}
 	}
 
 	return persistAllBundleAssets(
-		outputDir,
+		cleanOutputDir,
 		sr.RootBundle,
 		sr.IntermediateBundle,
 		sr.Checksum,
@@ -338,7 +335,7 @@ func (sr *SaveResponse) Persist(outputDir string) error {
 //	}
 //
 //	// Persist to default cache directory ($HOME/.tpmtb)
-//	if err := resp.Persist(); err != nil {
+//	if err := resp.Persist(ctx); err != nil {
 //	    log.Fatal(err)
 //	}
 //
