@@ -194,7 +194,7 @@ Microsoft maintains an archive with a number of TPM root and intermediate certif
 Here's a comparative overview:
 
 | Feature | Microsoft TPM Root Certificates | tpm-ca-certificates |
-|---------|--------------------------------|---------------------|
+|---------|:-------------------------------:|:-------------------:|
 | **Completeness** | Mature for supported vendors | Growing<br/><br/> *Note: contributions are welcome!* |
 | **Intermediate Certificates Support** | Yes | Yes |
 | **Open Source** | No | Yes<br>• Auditable code and build process<br>• Community can contribute |
