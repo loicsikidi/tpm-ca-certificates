@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
+	"github.com/loicsikidi/go-utils/system/fsutil"
 	"go.yaml.in/yaml/v4"
 )
 
@@ -188,7 +188,7 @@ func (f *Fingerprint) GetFingerprintValue() (fingerprint string, hashAlg string)
 //	    log.Fatal(err)
 //	}
 func LoadConfig(path string) (*TPMRootsConfig, error) {
-	data, err := utils.ReadFile(path)
+	data, err := fsutil.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config file: %w", err)
 	}

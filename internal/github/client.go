@@ -10,6 +10,8 @@ import (
 	"regexp"
 	"slices"
 
+	goutils "github.com/loicsikidi/go-utils"
+	"github.com/loicsikidi/go-utils/net/httputil"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
 	"github.com/sigstore/sigstore-go/pkg/bundle"
 )
@@ -37,7 +39,7 @@ type HTTPClient struct {
 // The client uses the provided http.Client for making requests.
 // If nil is provided, http.DefaultClient is used.
 func NewHTTPClient(optionalClient ...utils.HTTPClient) *HTTPClient {
-	client := utils.OptionalArgWithDefault[utils.HTTPClient](optionalClient, http.DefaultClient)
+	client := goutils.OptionalArgWithDefault[utils.HTTPClient](optionalClient, http.DefaultClient)
 	return &HTTPClient{
 		client: client,
 		token:  os.Getenv("GITHUB_TOKEN"),
@@ -115,7 +117,7 @@ func (c *HTTPClient) GetAttestations(ctx context.Context, repo Repo, digest stri
 // GitHub stores bundles as snappy-compressed protobuf JSON at bundle_url.
 // However, for inline bundles in the API response, no decompression is needed.
 func (c *HTTPClient) fetchBundle(ctx context.Context, bundleURL string) (*bundle.Bundle, error) {
-	bundleBytes, err := utils.HttpGET(ctx, c.client, bundleURL)
+	bundleBytes, err := httputil.HttpGET(ctx, c.client, bundleURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch bundle: %w", err)
 	}
@@ -319,7 +321,7 @@ func (c *HTTPClient) DownloadReleaseAsset(ctx context.Context, repo Repo, tag, a
 		return nil, fmt.Errorf("asset %q not found in release %q", assetName, tag)
 	}
 
-	data, err := utils.HttpGET(ctx, c.client, assetURL)
+	data, err := httputil.HttpGET(ctx, c.client, assetURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to download file: %w", err)
 	}

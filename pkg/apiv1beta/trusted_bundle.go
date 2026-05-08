@@ -12,6 +12,8 @@ import (
 	"sync"
 	"time"
 
+	goutils "github.com/loicsikidi/go-utils"
+	"github.com/loicsikidi/go-utils/system/fsutil"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/cache"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config/vendors"
@@ -273,7 +275,7 @@ func (tb *trustedBundle) Verify(cert *x509.Certificate, optionalChain ...[]*x509
 
 	opts := tb.getVerifyOptions()
 
-	chain := utils.OptionalArg(optionalChain)
+	chain := goutils.OptionalArg(optionalChain)
 	for _, chainCert := range chain {
 		// Skip root certificates
 		if isSelfSigned(chainCert) {
@@ -355,10 +357,10 @@ func (tb *trustedBundle) Persist(ctx context.Context, optionalCachePath ...strin
 	}
 
 	cachePath := filepath.Clean(
-		utils.OptionalArgWithDefault(optionalCachePath, cache.CacheDir()),
+		goutils.OptionalArgWithDefault(optionalCachePath, cache.CacheDir()),
 	)
 
-	if !utils.DirExists(cachePath) {
+	if !fsutil.DirExists(cachePath) {
 		if err := os.MkdirAll(cachePath, 0700); err != nil {
 			observability.RecordError(span, err)
 			return fmt.Errorf("failed to create cache directory: %w", err)

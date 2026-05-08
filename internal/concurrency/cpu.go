@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
+	"github.com/loicsikidi/go-utils/system/fsutil"
 )
 
 // MaxWorkers defines the maximum number of concurrent workers allowed.
@@ -48,7 +48,7 @@ func detectCgroupCPUQuota() int {
 
 // readCgroupV2Quota reads CPU quota from cgroup v2.
 func readCgroupV2Quota() int {
-	data, err := utils.ReadFile("/sys/fs/cgroup/cpu.max")
+	data, err := fsutil.ReadFile("/sys/fs/cgroup/cpu.max")
 	if err != nil {
 		return 0
 	}
@@ -89,12 +89,12 @@ func readCgroupV2Quota() int {
 
 // readCgroupV1Quota reads CPU quota from cgroup v1.
 func readCgroupV1Quota() int {
-	quotaData, err := utils.ReadFile("/sys/fs/cgroup/cpu/cpu.cfs_quota_us")
+	quotaData, err := fsutil.ReadFile("/sys/fs/cgroup/cpu/cpu.cfs_quota_us")
 	if err != nil {
 		return 0
 	}
 
-	periodData, err := utils.ReadFile("/sys/fs/cgroup/cpu/cpu.cfs_period_us")
+	periodData, err := fsutil.ReadFile("/sys/fs/cgroup/cpu/cpu.cfs_period_us")
 	if err != nil {
 		return 0
 	}

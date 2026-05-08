@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/loicsikidi/go-utils/system/fsutil"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/cache"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/cli"
-	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
 	"github.com/loicsikidi/tpm-ca-certificates/pkg/apiv1beta"
 	"github.com/spf13/cobra"
 )
@@ -69,7 +69,7 @@ verification without network access.`,
 
 // Run executes the save command with the given options.
 func Run(ctx context.Context, o *Opts) error {
-	if !utils.DirExists(o.OutputDir) {
+	if !fsutil.DirExists(o.OutputDir) {
 		return fmt.Errorf("output directory %s does not exist", o.OutputDir)
 	}
 
@@ -134,7 +134,7 @@ func checkExistingFiles(outputDir string) error {
 	var existingFiles []string
 	for _, filename := range apiv1beta.CacheFilenames {
 		filePath := filepath.Join(outputDir, filename)
-		if utils.FileExists(filePath) {
+		if fsutil.FileExists(filePath) {
 			existingFiles = append(existingFiles, filename)
 		}
 	}

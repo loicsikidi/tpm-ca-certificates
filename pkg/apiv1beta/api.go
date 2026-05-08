@@ -11,13 +11,14 @@ import (
 	"sync"
 	"time"
 
+	goutils "github.com/loicsikidi/go-utils"
+	"github.com/loicsikidi/go-utils/system/fsutil"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle/verifier"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/cache"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/github"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/observability"
 	verifierutils "github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/verifier"
-	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
 )
 
 type VerifyResult = verifier.VerifyResult
@@ -297,10 +298,10 @@ type SaveResponse struct {
 //
 // If outputDir is empty, the default cache directory ($HOME/.tpmtb) is used.
 func (sr *SaveResponse) Persist(ctx context.Context, optionalOutputDir ...string) error {
-	outputDir := utils.OptionalArgWithDefault(optionalOutputDir, cache.CacheDir())
+	outputDir := goutils.OptionalArgWithDefault(optionalOutputDir, cache.CacheDir())
 	cleanOutputDir := filepath.Clean(outputDir)
 
-	if !utils.DirExists(cleanOutputDir) {
+	if !fsutil.DirExists(cleanOutputDir) {
 		if err := os.MkdirAll(cleanOutputDir, 0700); err != nil {
 			return fmt.Errorf("failed to create output directory: %w", err)
 		}

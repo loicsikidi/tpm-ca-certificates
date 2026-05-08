@@ -7,9 +7,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/loicsikidi/go-utils/system/fsutil"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/cli"
-	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
 	"github.com/loicsikidi/tpm-ca-certificates/pkg/apiv1beta"
 	"github.com/spf13/cobra"
 )
@@ -86,7 +86,7 @@ type bundleInfo struct {
 
 // Run executes the download command.
 func Run(ctx context.Context, o *Opts) error {
-	if o.OutputDir != "-" && !utils.DirExists(o.OutputDir) {
+	if o.OutputDir != "-" && !fsutil.DirExists(o.OutputDir) {
 		return fmt.Errorf("output directory %s does not exist", o.OutputDir)
 	}
 
@@ -177,7 +177,7 @@ func Run(ctx context.Context, o *Opts) error {
 	if !o.Force {
 		for _, info := range bundleInfos {
 			bundlePath := filepath.Join(o.OutputDir, info.filename)
-			if utils.FileExists(bundlePath) {
+			if fsutil.FileExists(bundlePath) {
 				cli.DisplayWarning("File %s already exists.", bundlePath)
 				if !cli.PromptConfirmation("Override?") {
 					fmt.Println()

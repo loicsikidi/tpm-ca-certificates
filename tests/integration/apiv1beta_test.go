@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/loicsikidi/go-utils/system/fsutil"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/testutil"
-	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
 	"github.com/loicsikidi/tpm-ca-certificates/pkg/apiv1beta"
 )
 
@@ -766,7 +766,7 @@ func TestLoad(t *testing.T) {
 			t.Error("Expected commit to change after update")
 		}
 
-		newConfigData, err := utils.ReadFile(filepath.Join(tmpDir, apiv1beta.CacheConfigFilename))
+		newConfigData, err := fsutil.ReadFile(filepath.Join(tmpDir, apiv1beta.CacheConfigFilename))
 		if err != nil {
 			t.Fatalf("Failed to read updated config: %v", err)
 		}

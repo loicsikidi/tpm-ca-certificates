@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
+	"github.com/loicsikidi/go-utils/system/fsutil"
 )
 
 const (
@@ -21,8 +21,8 @@ func FindChecksumFiles(bundleDirPath string) (checksumPath, signaturePath string
 	checksumPath = filepath.Join(bundleDirPath, checksumsFilename)
 	signaturePath = filepath.Join(bundleDirPath, signatureFilename)
 
-	checksumExists := utils.FileExists(checksumPath)
-	signatureExists := utils.FileExists(signaturePath)
+	checksumExists := fsutil.FileExists(checksumPath)
+	signatureExists := fsutil.FileExists(signaturePath)
 
 	if checksumExists && signatureExists {
 		return checksumPath, signaturePath, true
@@ -36,10 +36,10 @@ func FindChecksumFiles(bundleDirPath string) (checksumPath, signaturePath string
 //
 // This is a helper function to verify that user-provided paths are valid.
 func ValidateChecksumFilesExist(checksumPath, signaturePath string) error {
-	if !utils.FileExists(checksumPath) {
+	if !fsutil.FileExists(checksumPath) {
 		return fmt.Errorf("checksums file not found: %s", checksumPath)
 	}
-	if !utils.FileExists(signaturePath) {
+	if !fsutil.FileExists(signaturePath) {
 		return fmt.Errorf("signature file not found: %s", signaturePath)
 	}
 	return nil

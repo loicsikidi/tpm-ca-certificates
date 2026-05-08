@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
+	goutils "github.com/loicsikidi/go-utils"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -64,7 +64,7 @@ var (
 //	defer shutdown(context.Background())
 func Initialize(ctx context.Context, optionalCfg ...Config) (ShutdownFunc, error) {
 	initOnce.Do(func() {
-		cfg := utils.OptionalArg(optionalCfg)
+		cfg := goutils.OptionalArg(optionalCfg)
 		initShutdown, initErr = initialize(ctx, cfg)
 	})
 
