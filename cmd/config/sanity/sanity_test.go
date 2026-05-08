@@ -209,7 +209,7 @@ vendors:
 
 func TestSanityCommand_ConfigNotFound(t *testing.T) {
 	opts := &Opts{
-		ConfigPath: "/tmp/nonexistent-config.yaml",
+		ConfigPath: filepath.Join(t.TempDir(), "nonexistent-config.yaml"),
 		Quiet:      false,
 		Threshold:  90,
 		Workers:    1,
