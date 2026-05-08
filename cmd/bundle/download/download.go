@@ -24,6 +24,24 @@ type Opts struct {
 	CacheDir   string
 }
 
+// Check validates the download command options.
+func (o *Opts) Check() error {
+	if o.OutputDir != "-" && !fsutil.DirExists(o.OutputDir) {
+		return fmt.Errorf("output directory %s does not exist", o.OutputDir)
+	}
+
+	bundleType := bundle.BundleType(o.Type)
+	if err := bundleType.Validate(); err != nil {
+		return err
+	}
+
+	if o.OutputDir == "-" && o.Type == "" {
+		return fmt.Errorf("when using stdout (--output-dir -), you must specify --type (root or intermediate)")
+	}
+
+	return nil
+}
+
 // NewCommand creates the download command.
 func NewCommand() *cobra.Command {
 	opts := &Opts{}
@@ -86,19 +104,8 @@ type bundleInfo struct {
 
 // Run executes the download command.
 func Run(ctx context.Context, o *Opts) error {
-	if o.OutputDir != "-" && !fsutil.DirExists(o.OutputDir) {
-		return fmt.Errorf("output directory %s does not exist", o.OutputDir)
-	}
-
-	// Validate and parse bundle type
-	bundleType := bundle.BundleType(o.Type)
-	if err := bundleType.Validate(); err != nil {
+	if err := o.Check(); err != nil {
 		return err
-	}
-
-	// Validate stdout usage
-	if o.OutputDir == "-" && bundleType == bundle.TypeUnspecified {
-		return fmt.Errorf("when using stdout (--output-dir -), you must specify --type (root or intermediate)")
 	}
 
 	if o.Date == "" {
@@ -128,7 +135,7 @@ func Run(ctx context.Context, o *Opts) error {
 	}
 
 	var bundleInfos []bundleInfo
-	switch bundleType {
+	switch bundle.BundleType(o.Type) {
 	case bundle.TypeRoot:
 		bundleInfos = []bundleInfo{
 			{

@@ -17,16 +17,30 @@ const (
 )
 
 var (
-	configPath    string
-	quiet         bool
-	workers       int
-	threshold     int
 	osExit        = os.Exit // Allow mocking in tests
 	checkerGetter = sanity.NewChecker
 )
 
+// Opts represents the configuration options for the sanity command.
+type Opts struct {
+	ConfigPath string
+	Quiet      bool
+	Workers    int
+	Threshold  int
+}
+
+// Check validates the sanity command options.
+func (o *Opts) Check() error {
+	if o.Workers > concurrency.MaxWorkers {
+		return fmt.Errorf("concurrency value %d exceeds maximum allowed (%d)", o.Workers, concurrency.MaxWorkers)
+	}
+	return nil
+}
+
 // NewCommand creates the sanity command.
 func NewCommand() *cobra.Command {
+	o := &Opts{}
+
 	cmd := &cobra.Command{
 		Use:   "sanity",
 		Short: "perform sanity checks on the configuration file",
@@ -51,45 +65,47 @@ Shows up to 10 validation errors and 10 expiration warnings.`,
   # Quiet mode (only return exit code)
   tpmtb config sanity --quiet`,
 		SilenceUsage: true,
-		RunE:         run,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return run(cmd, args, o)
+		},
 	}
 
-	cmd.Flags().StringVarP(&configPath, "config", "c", ".tpm-roots.yaml",
+	cmd.Flags().StringVarP(&o.ConfigPath, "config", "c", ".tpm-roots.yaml",
 		"Path to TPM roots configuration file")
-	cmd.Flags().BoolVarP(&quiet, "quiet", "q", false,
+	cmd.Flags().BoolVarP(&o.Quiet, "quiet", "q", false,
 		"Suppress output, only return exit code")
-	cmd.Flags().IntVarP(&workers, "workers", "j", 0,
+	cmd.Flags().IntVarP(&o.Workers, "workers", "j", 0,
 		fmt.Sprintf("Number of workers to use (0=auto-detect, max=%d)", concurrency.MaxWorkers))
-	cmd.Flags().IntVarP(&threshold, "threshold", "t", defaultThreshold,
+	cmd.Flags().IntVarP(&o.Threshold, "threshold", "t", defaultThreshold,
 		"Days threshold for expiration warnings (default: 365 days)")
 
 	return cmd
 }
 
-func run(cmd *cobra.Command, args []string) error {
-	cfg, err := config.LoadConfig(configPath)
+func run(_ *cobra.Command, _ []string, o *Opts) error {
+	if err := o.Check(); err != nil {
+		return err
+	}
+
+	cfg, err := config.LoadConfig(o.ConfigPath)
 	if err != nil {
 		return fmt.Errorf("failed to load configuration: %w", err)
 	}
 
-	if workers > concurrency.MaxWorkers {
-		return fmt.Errorf("concurrency value %d exceeds maximum allowed (%d)", workers, concurrency.MaxWorkers)
-	}
-
 	checker := checkerGetter()
-	result, err := checker.Check(cfg, workers, threshold)
+	result, err := checker.Check(cfg, o.Workers, o.Threshold)
 	if err != nil {
 		return fmt.Errorf("sanity check failed: %w", err)
 	}
 
 	if !result.HasIssues() {
-		if !quiet {
+		if !o.Quiet {
 			cli.DisplaySuccess("✅ All certificates passed sanity checks.")
 		}
 		return nil
 	}
 
-	if !quiet {
+	if !o.Quiet {
 		displayResults(result)
 	}
 

@@ -24,6 +24,14 @@ type Opts struct {
 	Offline            bool
 }
 
+// Check validates the verify command options.
+func (o *Opts) Check() error {
+	if o.CacheDir != "" && !fsutil.DirExists(o.CacheDir) {
+		return fmt.Errorf("cache directory does not exist: %s", o.CacheDir)
+	}
+	return nil
+}
+
 // NewCommand creates the verify command.
 //
 // The verify command validates the authenticity and integrity of a TPM trust bundle
@@ -82,11 +90,11 @@ Both verifications must succeed for the bundle to be considered valid.`,
 }
 
 func run(cmd *cobra.Command, args []string, o *Opts) error {
-	bundlePath := args[0]
-
-	if o.CacheDir != "" && !fsutil.DirExists(o.CacheDir) {
-		return fmt.Errorf("cache directory does not exist: %s", o.CacheDir)
+	if err := o.Check(); err != nil {
+		return err
 	}
+
+	bundlePath := args[0]
 
 	var bundleDir, bundleFilename string
 	if bundlePath == "-" {

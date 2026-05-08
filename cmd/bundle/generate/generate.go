@@ -23,6 +23,31 @@ type Opts struct {
 	Type       string
 }
 
+// Check validates the generate command options.
+func (o *Opts) Check() error {
+	if o.Workers > concurrency.MaxWorkers {
+		return fmt.Errorf("concurrency value %d exceeds maximum allowed (%d)", o.Workers, concurrency.MaxWorkers)
+	}
+
+	if (o.Date != "" && o.Commit == "") || (o.Date == "" && o.Commit != "") {
+		return fmt.Errorf("both --date and --commit flags must be provided together")
+	}
+
+	if o.Date != "" {
+		if err := bundle.ValidateDate(o.Date); err != nil {
+			return fmt.Errorf("invalid --date flag: %w", err)
+		}
+	}
+
+	if o.Commit != "" {
+		if err := bundle.ValidateCommit(o.Commit); err != nil {
+			return fmt.Errorf("invalid --commit flag: %w", err)
+		}
+	}
+
+	return nil
+}
+
 // NewCommand creates the generate command.
 func NewCommand() *cobra.Command {
 	o := &Opts{}
@@ -70,13 +95,13 @@ By default, output is written to stdout. Use --output to write to a file instead
 }
 
 func Run(ctx context.Context, o *Opts) error {
+	if err := o.Check(); err != nil {
+		return err
+	}
+
 	cfg, err := config.LoadConfig(o.ConfigPath)
 	if err != nil {
 		return fmt.Errorf("failed to load configuration: %w", err)
-	}
-
-	if o.Workers > concurrency.MaxWorkers {
-		return fmt.Errorf("concurrency value %d exceeds maximum allowed (%d)", o.Workers, concurrency.MaxWorkers)
 	}
 
 	bundleType, err := resolveBundleType(o.Type, o.ConfigPath)
@@ -84,19 +109,9 @@ func Run(ctx context.Context, o *Opts) error {
 		return fmt.Errorf("failed to resolve bundle type: %w", err)
 	}
 
-	if (o.Date != "" && o.Commit == "") || (o.Date == "" && o.Commit != "") {
-		return fmt.Errorf("both --date and --commit flags must be provided together")
-	}
-
 	var bundleDate, bundleCommit string
 
 	if o.Date != "" && o.Commit != "" {
-		if err := bundle.ValidateDate(o.Date); err != nil {
-			return fmt.Errorf("invalid --date flag: %w", err)
-		}
-		if err := bundle.ValidateCommit(o.Commit); err != nil {
-			return fmt.Errorf("invalid --commit flag: %w", err)
-		}
 		bundleDate = o.Date
 		bundleCommit = o.Commit
 	} else {

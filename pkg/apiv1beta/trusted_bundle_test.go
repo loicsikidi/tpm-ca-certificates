@@ -121,12 +121,18 @@ func TestPersist(t *testing.T) {
 		}
 
 		// Verify files were overwritten
-		bundleContent, _ := fsutil.ReadFile(bundlePath)
+		bundleContent, err := fsutil.ReadFile(bundlePath)
+		if err != nil {
+			t.Fatalf("Failed to read bundle file: %v", err)
+		}
 		if string(bundleContent) == "old bundle" {
 			t.Fatal("Bundle file was not overwritten")
 		}
 
-		configContent, _ := fsutil.ReadFile(configPath)
+		configContent, err := fsutil.ReadFile(configPath)
+		if err != nil {
+			t.Fatalf("Failed to read config file: %v", err)
+		}
 		if string(configContent) == "old config" {
 			t.Fatal("Config file was not overwritten")
 		}
