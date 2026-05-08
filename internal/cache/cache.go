@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
+	"github.com/loicsikidi/go-utils/system/fsutil"
 )
 
 const (
@@ -77,7 +77,7 @@ func ValidateCacheFiles(cacheDir string) error {
 			continue
 		}
 		filePath := filepath.Join(cacheDir, filename)
-		if !utils.FileExists(filePath) {
+		if !fsutil.FileExists(filePath) {
 			missingFiles = append(missingFiles, filename)
 		}
 	}
@@ -92,7 +92,7 @@ func ValidateCacheFiles(cacheDir string) error {
 // LoadFile reads a specified file from the cache directory.
 func LoadFile(cacheDir string, filename string) ([]byte, error) {
 	filePath := filepath.Join(cacheDir, filename)
-	data, err := utils.ReadFile(filePath)
+	data, err := fsutil.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read %s from cache: %w", filename, err)
 	}

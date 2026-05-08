@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/loicsikidi/go-utils/system/fsutil"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/cache"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/github"
@@ -304,7 +305,7 @@ func (c *LoadConfig) CheckAndSetDefaults() error {
 	if c.CachePath == "" {
 		c.CachePath = cache.CacheDir()
 	}
-	if !utils.DirExists(c.CachePath) {
+	if !fsutil.DirExists(c.CachePath) {
 		return fmt.Errorf("cache directory does not exist: %s", c.CachePath)
 	}
 	if c.OfflineMode && c.DisableLocalCache {

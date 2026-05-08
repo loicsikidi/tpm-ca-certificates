@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/loicsikidi/go-utils/encoding/jsonutil"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/cache"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/github"
@@ -334,7 +335,7 @@ func downloadProvenance(ctx context.Context, client *github.HTTPClient, cfg asse
 		return nil, fmt.Errorf("failed to marshal provenance: %w", err)
 	}
 
-	compactJSON, _ := utils.JsonCompact(provenanceJSON) // should never fail
+	compactJSON := jsonutil.MustJsonCompact(provenanceJSON) // should never fail
 	return compactJSON, nil
 }
 

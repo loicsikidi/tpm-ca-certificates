@@ -16,10 +16,10 @@ import (
 
 	"github.com/loicsikidi/go-tpm-kit/tpmcert/ekca"
 	"github.com/loicsikidi/go-tpm-kit/tpmcert/x509ext"
+	"github.com/loicsikidi/go-utils/system/fsutil"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config/vendors"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/testutil"
-	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
 )
 
 func TestGetTrustedBundle(t *testing.T) {
@@ -62,18 +62,18 @@ func TestPersist(t *testing.T) {
 
 		// Verify bundle.pem exists
 		bundlePath := filepath.Join(tmpDir, CacheRootBundleFilename)
-		if !utils.FileExists(bundlePath) {
+		if !fsutil.FileExists(bundlePath) {
 			t.Fatalf("Bundle file not found at %s", bundlePath)
 		}
 
 		// Verify config.json exists
 		configPath := filepath.Join(tmpDir, CacheConfigFilename)
-		if !utils.FileExists(configPath) {
+		if !fsutil.FileExists(configPath) {
 			t.Fatalf("Config file not found at %s", configPath)
 		}
 
 		// Read and verify bundle content
-		persistedBundle, err := utils.ReadFile(bundlePath)
+		persistedBundle, err := fsutil.ReadFile(bundlePath)
 		if err != nil {
 			t.Fatalf("Failed to read bundle file: %v", err)
 		}
@@ -82,7 +82,7 @@ func TestPersist(t *testing.T) {
 		}
 
 		// Read and verify config content
-		configData, err := utils.ReadFile(configPath)
+		configData, err := fsutil.ReadFile(configPath)
 		if err != nil {
 			t.Fatalf("Failed to read config file: %v", err)
 		}
@@ -121,12 +121,12 @@ func TestPersist(t *testing.T) {
 		}
 
 		// Verify files were overwritten
-		bundleContent, _ := utils.ReadFile(bundlePath)
+		bundleContent, _ := fsutil.ReadFile(bundlePath)
 		if string(bundleContent) == "old bundle" {
 			t.Fatal("Bundle file was not overwritten")
 		}
 
-		configContent, _ := utils.ReadFile(configPath)
+		configContent, _ := fsutil.ReadFile(configPath)
 		if string(configContent) == "old config" {
 			t.Fatal("Config file was not overwritten")
 		}

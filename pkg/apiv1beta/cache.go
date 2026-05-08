@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/loicsikidi/go-utils/system/fsutil"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/cache"
-	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
 )
 
 // Aliases for backward compatibility - these constants are now defined in internal/cache
@@ -72,14 +72,14 @@ func checkCacheExists(cachePath string, version string) bool {
 		return false
 	}
 
-	if !utils.FileExists(filepath.Join(cachePath, CacheRootBundleFilename)) {
+	if !fsutil.FileExists(filepath.Join(cachePath, CacheRootBundleFilename)) {
 		return false
 	}
 
 	if !cfg.SkipVerify {
-		if !utils.FileExists(filepath.Join(cachePath, CacheProvenanceFilename)) ||
-			!utils.FileExists(filepath.Join(cachePath, CacheChecksumsFilename)) ||
-			!utils.FileExists(filepath.Join(cachePath, CacheChecksumsSigFilename)) {
+		if !fsutil.FileExists(filepath.Join(cachePath, CacheProvenanceFilename)) ||
+			!fsutil.FileExists(filepath.Join(cachePath, CacheChecksumsFilename)) ||
+			!fsutil.FileExists(filepath.Join(cachePath, CacheChecksumsSigFilename)) {
 			return false
 		}
 	}

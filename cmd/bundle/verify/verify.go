@@ -6,12 +6,12 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/loicsikidi/go-utils/system/fsutil"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/bundle"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/cache"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/cli"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/cosign"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/digest"
-	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
 	"github.com/loicsikidi/tpm-ca-certificates/pkg/apiv1beta"
 	"github.com/spf13/cobra"
 )
@@ -84,7 +84,7 @@ Both verifications must succeed for the bundle to be considered valid.`,
 func run(cmd *cobra.Command, args []string, o *Opts) error {
 	bundlePath := args[0]
 
-	if o.CacheDir != "" && !utils.DirExists(o.CacheDir) {
+	if o.CacheDir != "" && !fsutil.DirExists(o.CacheDir) {
 		return fmt.Errorf("cache directory does not exist: %s", o.CacheDir)
 	}
 
@@ -101,7 +101,7 @@ func run(cmd *cobra.Command, args []string, o *Opts) error {
 		bundleFilename = filepath.Base(bundlePath)
 	}
 
-	bundleData, err := utils.ReadFile(bundlePath)
+	bundleData, err := fsutil.ReadFile(bundlePath)
 	if err != nil {
 		return fmt.Errorf("failed to read bundle file: %w", err)
 	}
@@ -154,14 +154,14 @@ func readChecksumsData(checksumsFile, checksumsSignature string) (*checksumsData
 	var err error
 
 	if checksumsFile != "" {
-		data.checksumData, err = utils.ReadFile(checksumsFile)
+		data.checksumData, err = fsutil.ReadFile(checksumsFile)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read checksums file: %w", err)
 		}
 	}
 
 	if checksumsSignature != "" {
-		data.checksumSigData, err = utils.ReadFile(checksumsSignature)
+		data.checksumSigData, err = fsutil.ReadFile(checksumsSignature)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read checksums signature file: %w", err)
 		}

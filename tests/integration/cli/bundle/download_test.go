@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/loicsikidi/go-utils/system/fsutil"
 	"github.com/loicsikidi/tpm-ca-certificates/cmd/bundle/download"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/testutil"
-	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
 	"github.com/loicsikidi/tpm-ca-certificates/pkg/apiv1beta"
 )
 
@@ -124,18 +124,18 @@ func TestDownloadCommand_BothBundles(t *testing.T) {
 
 	// Verify root bundle exists
 	rootBundlePath := filepath.Join(tmpDir, apiv1beta.CacheRootBundleFilename)
-	if !utils.FileExists(rootBundlePath) {
+	if !fsutil.FileExists(rootBundlePath) {
 		t.Fatalf("root bundle not found at %s", rootBundlePath)
 	}
 
 	// Verify intermediate bundle exists (2025-12-27 has intermediate bundle)
 	intermediateBundlePath := filepath.Join(tmpDir, apiv1beta.CacheIntermediateBundleFilename)
-	if !utils.FileExists(intermediateBundlePath) {
+	if !fsutil.FileExists(intermediateBundlePath) {
 		t.Fatalf("intermediate bundle not found at %s", intermediateBundlePath)
 	}
 
 	// Read and verify root bundle is not empty
-	rootData, err := utils.ReadFile(rootBundlePath)
+	rootData, err := fsutil.ReadFile(rootBundlePath)
 	if err != nil {
 		t.Fatalf("failed to read root bundle: %v", err)
 	}
@@ -144,7 +144,7 @@ func TestDownloadCommand_BothBundles(t *testing.T) {
 	}
 
 	// Read and verify intermediate bundle is not empty
-	intermediateData, err := utils.ReadFile(intermediateBundlePath)
+	intermediateData, err := fsutil.ReadFile(intermediateBundlePath)
 	if err != nil {
 		t.Fatalf("failed to read intermediate bundle: %v", err)
 	}
@@ -180,18 +180,18 @@ func TestDownloadCommand_RootOnly(t *testing.T) {
 
 	// Verify root bundle exists
 	rootBundlePath := filepath.Join(tmpDir, apiv1beta.CacheRootBundleFilename)
-	if !utils.FileExists(rootBundlePath) {
+	if !fsutil.FileExists(rootBundlePath) {
 		t.Fatalf("root bundle not found at %s", rootBundlePath)
 	}
 
 	// Verify intermediate bundle does NOT exist (2025-12-05 doesn't have intermediate bundle)
 	intermediateBundlePath := filepath.Join(tmpDir, apiv1beta.CacheIntermediateBundleFilename)
-	if utils.FileExists(intermediateBundlePath) {
+	if fsutil.FileExists(intermediateBundlePath) {
 		t.Fatalf("intermediate bundle should not exist for 2025-12-05, but found at %s", intermediateBundlePath)
 	}
 
 	// Read and verify root bundle is not empty
-	rootData, err := utils.ReadFile(rootBundlePath)
+	rootData, err := fsutil.ReadFile(rootBundlePath)
 	if err != nil {
 		t.Fatalf("failed to read root bundle: %v", err)
 	}
@@ -257,13 +257,13 @@ func TestDownloadCommand_TypeRoot(t *testing.T) {
 
 	// Verify root bundle exists
 	rootBundlePath := filepath.Join(tmpDir, apiv1beta.CacheRootBundleFilename)
-	if !utils.FileExists(rootBundlePath) {
+	if !fsutil.FileExists(rootBundlePath) {
 		t.Fatalf("root bundle not found at %s", rootBundlePath)
 	}
 
 	// Verify intermediate bundle does NOT exist (explicitly requested only root)
 	intermediateBundlePath := filepath.Join(tmpDir, apiv1beta.CacheIntermediateBundleFilename)
-	if utils.FileExists(intermediateBundlePath) {
+	if fsutil.FileExists(intermediateBundlePath) {
 		t.Fatalf("intermediate bundle should not exist when --type root, but found at %s", intermediateBundlePath)
 	}
 
@@ -293,13 +293,13 @@ func TestDownloadCommand_TypeIntermediate(t *testing.T) {
 
 	// Verify intermediate bundle exists
 	intermediateBundlePath := filepath.Join(tmpDir, apiv1beta.CacheIntermediateBundleFilename)
-	if !utils.FileExists(intermediateBundlePath) {
+	if !fsutil.FileExists(intermediateBundlePath) {
 		t.Fatalf("intermediate bundle not found at %s", intermediateBundlePath)
 	}
 
 	// Verify root bundle does NOT exist (explicitly requested only intermediate)
 	rootBundlePath := filepath.Join(tmpDir, apiv1beta.CacheRootBundleFilename)
-	if utils.FileExists(rootBundlePath) {
+	if fsutil.FileExists(rootBundlePath) {
 		t.Fatalf("root bundle should not exist when --type intermediate, but found at %s", rootBundlePath)
 	}
 

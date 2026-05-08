@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"time"
 
+	goutils "github.com/loicsikidi/go-utils"
+	"github.com/loicsikidi/go-utils/net/httputil"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
 )
 
@@ -22,7 +24,7 @@ var defaultClient = &http.Client{
 
 // NewClient creates a new download client with sensible defaults.
 func NewClient(optionalClient ...utils.HTTPClient) *Client {
-	client := utils.OptionalArgWithDefault[utils.HTTPClient](optionalClient, defaultClient)
+	client := goutils.OptionalArgWithDefault[utils.HTTPClient](optionalClient, defaultClient)
 	return &Client{
 		HTTPClient: client,
 	}
@@ -41,7 +43,7 @@ func NewClient(optionalClient ...utils.HTTPClient) *Client {
 //	    log.Fatal(err)
 //	}
 func (c *Client) DownloadCertificate(ctx context.Context, url string) (*x509.Certificate, error) {
-	data, err := utils.HttpGET(ctx, c.HTTPClient, url)
+	data, err := httputil.HttpGET(ctx, c.HTTPClient, url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to download certificate from %s: %w", url, err)
 	}

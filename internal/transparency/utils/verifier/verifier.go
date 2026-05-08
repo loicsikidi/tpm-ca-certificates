@@ -6,6 +6,9 @@ import (
 	"sync"
 
 	"github.com/cenkalti/backoff/v5"
+	goutils "github.com/loicsikidi/go-utils"
+	"github.com/loicsikidi/go-utils/encoding/jsonutil"
+	"github.com/loicsikidi/go-utils/system/fsutil"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/cache"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
 	"github.com/sigstore/sigstore-go/pkg/root"
@@ -67,7 +70,7 @@ func NewDefaultRoot(optionalClient ...utils.HTTPClient) (root.TrustedMaterial, e
 
 // GetDefaultTUFOptions returns TUF options with sane defaults for Sigstore usage.
 func GetDefaultTUFOptions(optionalClient ...utils.HTTPClient) *tuf.Options {
-	client := utils.OptionalArg(optionalClient)
+	client := goutils.OptionalArg(optionalClient)
 	opts := tuf.DefaultOptions()
 
 	// Store TUF cache in a directory owned by tpmtb for better isolation
@@ -76,8 +79,8 @@ func GetDefaultTUFOptions(optionalClient ...utils.HTTPClient) *tuf.Options {
 	// Attempt to load the trusted root from the local cache if it exists
 	// Note: it can happen that the `root.json` included in `tuf` package is outdated
 	rootPath := filepath.Join(opts.CachePath, tuf.URLToPath("https://tuf-repo-cdn.sigstore.dev"), "root.json")
-	if utils.FileExists(rootPath) {
-		if b, err := utils.ReadFile(rootPath); err == nil {
+	if fsutil.FileExists(rootPath) {
+		if b, err := fsutil.ReadFile(rootPath); err == nil {
 			opts.Root = b
 		}
 	}
@@ -110,7 +113,7 @@ func GetDefaultTUFOptions(optionalClient ...utils.HTTPClient) *tuf.Options {
 //	}
 //	os.WriteFile("trusted-root.json", trustedRootJSON, 0644)
 func FetchTrustedRoot(optionalClient ...utils.HTTPClient) ([]byte, error) {
-	client := utils.OptionalArg(optionalClient)
+	client := goutils.OptionalArg(optionalClient)
 	opts := GetDefaultTUFOptions(client)
 	opts.DisableLocalCache = true
 
@@ -124,7 +127,7 @@ func FetchTrustedRoot(optionalClient ...utils.HTTPClient) ([]byte, error) {
 		return nil, fmt.Errorf("failed to retrieve trusted_root.json via TUF: %w", err)
 	}
 
-	output, err := utils.JsonCompact(target)
+	output, err := jsonutil.JsonCompact(target)
 	if err != nil {
 		return nil, err
 	}
