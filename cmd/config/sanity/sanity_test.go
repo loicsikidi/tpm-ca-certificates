@@ -108,7 +108,7 @@ func TestSanityCommand(t *testing.T) {
 
 			// Create temporary config file
 			tmpDir := t.TempDir()
-			configPath = filepath.Join(tmpDir, ".tpm-roots.yaml")
+			configPath := filepath.Join(tmpDir, ".tpm-roots.yaml")
 
 			configContent := `---
 version: "test"
@@ -126,10 +126,13 @@ vendors:
 				t.Fatalf("failed to create test config: %v", err)
 			}
 
-			// Set flags
-			quiet = tt.quiet
-			threshold = tt.threshold
-			workers = 1
+			// Create opts
+			opts := &Opts{
+				ConfigPath: configPath,
+				Quiet:      tt.quiet,
+				Threshold:  tt.threshold,
+				Workers:    1,
+			}
 
 			// Mock checker with server's HTTP client
 			checkerGetter = func() *sanity.Checker {
@@ -154,7 +157,7 @@ vendors:
 			}
 
 			// Run the command
-			err := run(nil, nil)
+			err := run(nil, nil, opts)
 
 			// Restore stdout/stderr
 			wOut.Close()
@@ -205,12 +208,14 @@ vendors:
 }
 
 func TestSanityCommand_ConfigNotFound(t *testing.T) {
-	configPath = "/tmp/nonexistent-config.yaml"
-	quiet = false
-	threshold = 90
-	workers = 1
+	opts := &Opts{
+		ConfigPath: "/tmp/nonexistent-config.yaml",
+		Quiet:      false,
+		Threshold:  90,
+		Workers:    1,
+	}
 
-	err := run(nil, nil)
+	err := run(nil, nil, opts)
 	if err == nil {
 		t.Error("expected error for missing config file")
 	}
@@ -221,7 +226,7 @@ func TestSanityCommand_ConfigNotFound(t *testing.T) {
 
 func TestSanityCommand_InvalidWorkers(t *testing.T) {
 	tmpDir := t.TempDir()
-	configPath = filepath.Join(tmpDir, ".tpm-roots.yaml")
+	configPath := filepath.Join(tmpDir, ".tpm-roots.yaml")
 
 	configContent := `---
 version: "test"
@@ -239,11 +244,14 @@ vendors:
 		t.Fatalf("failed to create test config: %v", err)
 	}
 
-	quiet = false
-	threshold = 90
-	workers = 1000 // Exceeds MaxWorkers
+	opts := &Opts{
+		ConfigPath: configPath,
+		Quiet:      false,
+		Threshold:  90,
+		Workers:    1000, // Exceeds MaxWorkers
+	}
 
-	err := run(nil, nil)
+	err := run(nil, nil, opts)
 	if err == nil {
 		t.Error("expected error for invalid workers count")
 	}

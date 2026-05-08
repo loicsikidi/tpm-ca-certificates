@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	goutils "github.com/loicsikidi/go-utils"
 	"github.com/loicsikidi/go-utils/system/fsutil"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/cache"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/cli"
@@ -19,6 +20,27 @@ type Opts struct {
 	OutputDir  string
 	Force      bool
 	LocalCache bool
+}
+
+func (o *Opts) Check() error {
+	for _, vid := range o.VendorIDs {
+		vendorID := apiv1beta.VendorID(vid)
+		if err := vendorID.Validate(); err != nil {
+			return fmt.Errorf("invalid vendor ID %q: %w", vid, err)
+		}
+	}
+
+	if !o.LocalCache && !fsutil.DirExists(o.OutputDir) {
+		return fmt.Errorf("output directory %s does not exist", o.OutputDir)
+	}
+
+	if !o.Force && !o.LocalCache {
+		if err := checkExistingFiles(o.OutputDir); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // NewCommand creates the save command.
@@ -69,23 +91,8 @@ verification without network access.`,
 
 // Run executes the save command with the given options.
 func Run(ctx context.Context, o *Opts) error {
-	if !fsutil.DirExists(o.OutputDir) {
-		return fmt.Errorf("output directory %s does not exist", o.OutputDir)
-	}
-
-	var parsedVendorIDs []apiv1beta.VendorID
-	for _, vid := range o.VendorIDs {
-		vendorID := apiv1beta.VendorID(vid)
-		if err := vendorID.Validate(); err != nil {
-			return fmt.Errorf("invalid vendor ID %q: %w", vid, err)
-		}
-		parsedVendorIDs = append(parsedVendorIDs, vendorID)
-	}
-
-	if !o.Force && !o.LocalCache {
-		if err := checkExistingFiles(o.OutputDir); err != nil {
-			return err
-		}
+	if err := o.Check(); err != nil {
+		return err
 	}
 
 	if o.Date == "" {
@@ -95,8 +102,10 @@ func Run(ctx context.Context, o *Opts) error {
 	}
 
 	cfg := apiv1beta.SaveConfig{
-		Date:      o.Date,
-		VendorIDs: parsedVendorIDs,
+		Date: o.Date,
+		VendorIDs: goutils.Map(o.VendorIDs, func(id string) apiv1beta.VendorID {
+			return apiv1beta.VendorID(id)
+		}),
 	}
 
 	resp, err := apiv1beta.SaveTrustedBundle(ctx, cfg)
