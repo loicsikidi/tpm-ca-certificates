@@ -8,6 +8,7 @@
 | alpha   | 2025-12-10 | Loïc Sikidi | Add duplicate validation rules                |
 | alpha   | 2025-12-15 | Loïc Sikidi | Add support for two configuration files       |
 | alpha   | 2026-04-11 | Loïc Sikidi | Add optional description field to Certificate |
+| alpha   | 2026-05-10 | Loïc Sikidi | Add URI support with file:// scheme           |
 
 The TPM Trust Bundle is generated from two human-readable YAML configuration files:
 
@@ -32,7 +33,7 @@ vendors:
       certificates:
         - name: "Certificate Name"
           description: "Optional description of this certificate"
-          url: "https://vendor.com/path/to/certificate.cer"
+          uri: "https://vendor.com/path/to/certificate.cer"
           validation:
             fingerprint:
                 sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
@@ -52,7 +53,8 @@ vendors:
 | `vendors[].certificates` | array | No | List of root certificates for this vendor (can be empty) | - |
 | `vendors[].certificates[].name` | string | Yes | Human-readable certificate name | `"Nuvoton TPM Root CA 1110"` |
 | `vendors[].certificates[].description` | string | No | Optional human-readable description of the certificate | `"This certificate is used for TPM 2.0 devices"` |
-| `vendors[].certificates[].url` | string | Yes | Public URL where the certificate can be downloaded | `"https://www.nuvoton.com/..."` |
+| `vendors[].certificates[].uri` | string | Yes* | URI where the certificate can be accessed. Supports `https://` (nominal case for publicly available certificates) or `file:///` (exceptional case for archived certificates). File URIs must use the `/{local}` placeholder pattern: `file:///{local}/relative/path`. | `"https://www.nuvoton.com/..."` or `"file:///{local}/certs/archived.cer"` |
+| `vendors[].certificates[].url` | string | Yes* | **Deprecated**: Use `uri` instead. This field will be removed in `beta` version. Public URL where the certificate can be downloaded. | `"https://www.nuvoton.com/..."` |
 | `vendors[].certificates[].validation` | object | Yes | Validation information for the certificate | - |
 | `vendors[].certificates[].validation.fingerprint` | object | Yes | Hash fingerprints of the certificate | - |
 | `vendors[].certificates[].validation.fingerprint.sha1` | string | No | SHA-1 fingerprint | `"65:5E:44:5E:96:54:..."` |
@@ -60,6 +62,8 @@ vendors:
 | `vendors[].certificates[].validation.fingerprint.sha384` | string | No | SHA-384 fingerprint | `"AA:BB:CC:..."` |
 | `vendors[].certificates[].validation.fingerprint.sha512` | string | No | SHA-512 fingerprint | `"AA:BB:CC:..."` |
 
+> [!IMPORTANT]
+> Either `uri` or `url` must be provided. The `uri` field is preferred as `url` is deprecated and will be removed in `beta` version.
 > [!IMPORTANT]
 > At least one hash algorithm (sha1, sha256, sha384, or sha512) must be defined for each certificate's fingerprint validation.
 >
@@ -144,7 +148,7 @@ vendors:
 Within each vendor, certificates must be unique. A certificate is considered a duplicate if any of the following match:
 
 - **Name**: Certificate name must be unique within the vendor
-- **URL**: Certificate URL must be unique within the vendor
+- **URI**: Certificate URI must be unique within the vendor
 - **Fingerprint**: Certificate fingerprint must be unique within the vendor
 
 ```yaml
@@ -154,12 +158,12 @@ vendors:
       name: "Nuvoton Technology"
       certificates:
         - name: "NuvotonTPMRootCA1110"
-          url: "https://example.com/cert1.cer"
+          uri: "https://example.com/cert1.cer"
           validation:
             fingerprint:
               sha256: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99"
         - name: "NuvotonTPMRootCA1111"
-          url: "https://example.com/cert2.cer"
+          uri: "https://example.com/cert2.cer"
           validation:
             fingerprint:
               sha256: "11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF"
@@ -169,27 +173,27 @@ vendors:
     - id: "NTC"
       certificates:
         - name: "NuvotonTPMRootCA1110"
-          url: "https://example.com/cert1.cer"
+          uri: "https://example.com/cert1.cer"
           validation:
             fingerprint:
               sha256: "AA:BB:..."
         - name: "NuvotonTPMRootCA1110"  # Duplicate name
-          url: "https://example.com/cert2.cer"
+          uri: "https://example.com/cert2.cer"
           validation:
             fingerprint:
               sha256: "11:22:..."
 
-# ✗ Incorrect - duplicate URL
+# ✗ Incorrect - duplicate URI
 vendors:
     - id: "NTC"
       certificates:
         - name: "Cert A"
-          url: "https://example.com/cert.cer"
+          uri: "https://example.com/cert.cer"
           validation:
             fingerprint:
               sha256: "AA:BB:..."
         - name: "Cert B"
-          url: "https://example.com/cert.cer"  # Duplicate URL
+          uri: "https://example.com/cert.cer"  # Duplicate URI
           validation:
             fingerprint:
               sha256: "11:22:..."
@@ -199,12 +203,12 @@ vendors:
     - id: "NTC"
       certificates:
         - name: "Cert A"
-          url: "https://example.com/cert1.cer"
+          uri: "https://example.com/cert1.cer"
           validation:
             fingerprint:
               sha256: "AA:BB:CC:DD:..."
         - name: "Cert B"
-          url: "https://example.com/cert2.cer"
+          uri: "https://example.com/cert2.cer"
           validation:
             fingerprint:
               sha256: "AA:BB:CC:DD:..."  # Duplicate fingerprint
@@ -212,6 +216,37 @@ vendors:
 
 > [!IMPORTANT]
 > The `validate` and `certificates add` commands will reject duplicate certificates within a vendor.
+
+### 5. File URI Placeholder Requirement
+
+File URIs must use the `/{local}` placeholder to ensure portability across different filesystems. Absolute paths are not allowed.
+
+```yaml
+# ✓ Correct - uses {local} placeholder
+vendors:
+    - id: "NTC"
+      certificates:
+        - name: "Archived Certificate"
+          uri: "file:///{local}/certs/archived.cer"
+          validation:
+            fingerprint:
+              sha256: "AA:BB:..."
+
+# ✗ Incorrect - absolute path
+vendors:
+    - id: "NTC"
+      certificates:
+        - name: "Archived Certificate"
+          uri: "file:///home/user/certs/archived.cer"
+          validation:
+            fingerprint:
+              sha256: "AA:BB:..."
+```
+
+> [!IMPORTANT]
+> The `validate` and `certificates add` commands will reject file URIs that do not use the `/{local}` placeholder.
+>
+> The `/{local}` placeholder is dynamically replaced by the CLI with the absolute path of the configuration file's parent directory.
 
 ## Formatting Rules
 
@@ -243,22 +278,49 @@ certificates:
     - name: "NuvotonTPMRootCA1111"         # Third
 ```
 
-### 4. URL Encoding
-P
-All certificate URLs must:
+### 4. URI Format
+
+Certificate URIs must follow these rules based on their scheme:
+
+#### HTTPS URIs (Nominal Case)
+
+HTTPS URIs are used for publicly available certificates and must:
 - Use the **HTTPS scheme** (HTTP is not allowed)
-- Be properly **URL-encoded** (special characters like spaces must be encoded)
+- Be properly **URI-encoded** (special characters like spaces must be encoded)
 
 ```yaml
 # ✓ Correct
-url: "https://www.nuvoton.com/security/NTC-TPM-EK-Cert/Nuvoton%20TPM%20Root%20CA%201110.cer"
+uri: "https://www.nuvoton.com/security/NTC-TPM-EK-Cert/Nuvoton%20TPM%20Root%20CA%201110.cer"
 
 # ✗ Incorrect - HTTP not allowed
-url: "http://www.nuvoton.com/security/NTC-TPM-EK-Cert/certificate.cer"
+uri: "http://www.nuvoton.com/security/NTC-TPM-EK-Cert/certificate.cer"
 
-# ✗ Incorrect - not URL-encoded
-url: "https://www.nuvoton.com/security/NTC-TPM-EK-Cert/Nuvoton TPM Root CA 1110.cer"
+# ✗ Incorrect - not URI-encoded
+uri: "https://www.nuvoton.com/security/NTC-TPM-EK-Cert/Nuvoton TPM Root CA 1110.cer"
 ```
+
+#### File URIs (Exceptional Case)
+
+File URIs are used for archived certificates that are no longer publicly available and must:
+- Use the **file:// scheme**
+- Include the **/{local} placeholder** (absolute paths are not allowed)
+- Use **relative paths** from the configuration file’s parent directory
+
+```yaml
+# ✓ Correct - uses {local} placeholder with relative path
+uri: "file:///{local}/certs/archived/certificate.cer"
+
+# ✗ Incorrect - absolute path
+uri: "file:///home/user/certs/certificate.cer"
+
+# ✗ Incorrect - missing {local} placeholder
+uri: "file://certs/certificate.cer"
+```
+
+> [!IMPORTANT]
+> File URIs should only be used for exceptional cases where certificates are no longer publicly available and need to be archived in the repository. HTTPS URIs are the nominal case for publicly available certificates.
+>
+> The `/{local}` placeholder is dynamically replaced by the CLI with the absolute path of the configuration file's parent directory.
 
 ### 5. Fingerprint Format
 
@@ -332,9 +394,10 @@ Example output:
   Line 4: duplicate vendor ID "NTC" (first defined at vendors[0])
   Line 7: vendors not sorted by ID: expected "INTEL" at position 0, got "NTC"
   Line 10: duplicate certificate "NuvotonTPMRootCA1110" in vendor "NTC"
-  Line 15: URL must use HTTPS scheme: got "http"
-  Line 18: URL not properly encoded: got "https://example.com/cert with spaces.cer", expected "https://example.com/cert%20with%20spaces.cer"
+  Line 15: URI must use HTTPS or file scheme: got "http"
+  Line 18: URI not properly encoded: got "https://example.com/cert with spaces.cer", expected "https://example.com/cert%20with%20spaces.cer"
   Line 21: fingerprint not in uppercase with colons: got "aa:bb:cc:dd"
+  Line 24: file URI must use {local} placeholder: got "file:///home/user/cert.cer"
 
 (showing first 10 errors)
 ```

@@ -108,7 +108,10 @@ func (f *Formatter) applyFormatting(cfg *config.TPMRootsConfig) {
 
 		for j := range cfg.Vendors[i].Certificates {
 			cert := &cfg.Vendors[i].Certificates[j]
+			//lint:ignore SA1019 transitioning from deprecated URL field to URI field
+			//nolint:staticcheck // SA1019: transitioning from deprecated URL field to URI field
 			cert.URL = f.encodeURL(cert.URL)
+			cert.URI = f.encodeURI(cert.URI)
 
 			fp := &cert.Validation.Fingerprint
 			fp.SHA1 = f.formatFingerprint(fp.SHA1)
@@ -117,6 +120,20 @@ func (f *Formatter) applyFormatting(cfg *config.TPMRootsConfig) {
 			fp.SHA512 = f.formatFingerprint(fp.SHA512)
 		}
 	}
+}
+
+func (f *Formatter) encodeURI(rawURI string) string {
+	if rawURI == "" {
+		return rawURI
+	}
+	parsedURI, err := url.Parse(rawURI)
+	if err != nil {
+		return rawURI
+	}
+	if parsedURI.Scheme == "https" {
+		return f.encodeURL(rawURI)
+	}
+	return rawURI
 }
 
 // encodeURL ensures the URL is properly URL-encoded.

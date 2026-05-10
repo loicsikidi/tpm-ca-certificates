@@ -3,7 +3,10 @@ package config
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
+	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/loicsikidi/go-utils/system/fsutil"
@@ -17,7 +20,11 @@ const (
 	SHA512 = "sha512"
 )
 
-// TPMRootsConfig represents the root configuration from .tpm-roots.yaml file.
+const repoPlaceholder = "{repo}"
+
+var ErrMissingRepoPlaceholder = errors.New("invalid uri: missing repo placeholder in file URI")
+
+// TPMRootsConfig represents a configuration file listing TPM vendors certificates.
 type TPMRootsConfig struct {
 	Version string   `yaml:"version"`
 	Vendors []Vendor `yaml:"vendors"`
@@ -46,6 +53,50 @@ func (c *TPMRootsConfig) CheckAndSetDefault() error {
 	}
 
 	return nil
+}
+
+// transformFileURIPlaceholders applies a transformation to file URIs across all certificates.
+func (c *TPMRootsConfig) transformFileURIPlaceholders(sourceDir string, isMarshal bool) error {
+	absSourceDir, err := filepath.Abs(sourceDir)
+	if err != nil {
+		return err
+	}
+
+	for _, vendor := range c.Vendors {
+		for idx, cert := range vendor.Certificates {
+			if !cert.IsRemoteSource() {
+				u, err := url.Parse(cert.URI)
+				if err != nil {
+					return err
+				}
+
+				var p string
+				pattern := "/" + repoPlaceholder
+				if isMarshal {
+					p = strings.ReplaceAll(u.Path, absSourceDir, pattern)
+				} else {
+					p = strings.ReplaceAll(u.Path, pattern, absSourceDir)
+				}
+				cert.URI = u.Scheme + "://" + p
+				vendor.Certificates[idx] = cert
+			}
+		}
+	}
+	return nil
+}
+
+// ResolveFileURLPlaceholders replaces placeholders in file URLs with actual paths.
+//
+// Note: {repo} is replaced with the absolute path of the source directory.
+func (c *TPMRootsConfig) resolveFileURIPlaceholders(sourceDir string) error {
+	return c.transformFileURIPlaceholders(sourceDir /* isMarshal= */, false)
+}
+
+// createFileURIPlaceholders replaces actual paths in file URIs with placeholders.
+//
+// Note: the absolute path of the source directory is replaced with {repo}.
+func (c *TPMRootsConfig) createFileURIPlaceholders(sourceDir string) error {
+	return c.transformFileURIPlaceholders(sourceDir /* isMarshal= */, true)
 }
 
 // TotalCertificates returns the total number of certificates defined across all vendors.
@@ -87,10 +138,12 @@ func (v *Vendor) CheckAndSetDefault() error {
 
 // Certificate represents a single certificate with its download URL and validation rules.
 type Certificate struct {
-	Name        string     `yaml:"name"`
-	Description string     `yaml:"description,omitempty"`
-	URL         string     `yaml:"url"`
-	Validation  Validation `yaml:"validation"`
+	Name        string `yaml:"name"`
+	Description string `yaml:"description,omitempty"`
+	// Deprecated: Use URI instead.
+	URL        string     `yaml:"url,omitempty"`
+	URI        string     `yaml:"uri,omitempty"`
+	Validation Validation `yaml:"validation"`
 }
 
 // CheckAndSetDefault validates a Certificate.
@@ -99,8 +152,21 @@ func (c *Certificate) CheckAndSetDefault() error {
 		return errors.New("invalid input: 'name' cannot be empty")
 	}
 
-	if c.URL == "" {
-		return errors.New("invalid input: 'url' cannot be empty")
+	if c.URL == "" && c.URI == "" {
+		return errors.New("invalid input: either 'url' or 'uri' must be provided")
+	}
+
+	if c.URI != "" {
+		parsedURI, err := url.Parse(c.URI)
+		if err != nil {
+			return fmt.Errorf("invalid uri: %w", err)
+		}
+		if !slices.Contains([]string{"https", "file"}, parsedURI.Scheme) {
+			return fmt.Errorf("invalid uri scheme '%s': must be 'https' or 'file'", parsedURI.Scheme)
+		}
+		if parsedURI.Scheme == "file" && !strings.Contains(c.URI, repoPlaceholder) {
+			return ErrMissingRepoPlaceholder
+		}
 	}
 
 	if err := c.Validation.Fingerprint.CheckAndSetDefault(); err != nil {
@@ -110,7 +176,22 @@ func (c *Certificate) CheckAndSetDefault() error {
 	return nil
 }
 
-// Equal checks if two certificates are considered equal based on Name, URL, or Fingerprint.
+// GetSourceLocation returns URI if present, otherwise URL (for backward compatibility).
+//
+// Experimental: This method will be removed once support for URL is fully deprecated.
+func (c *Certificate) GetSourceLocation() string {
+	if c.URI != "" {
+		return c.URI
+	}
+	return c.URL
+}
+
+// IsRemoteSource returns true if the certificate source location is remote
+func (c *Certificate) IsRemoteSource() bool {
+	return strings.HasPrefix(c.GetSourceLocation(), "https://")
+}
+
+// Equal checks if two certificates are considered equal based on Name, source location, or Fingerprint.
 func (c *Certificate) Equal(other *Certificate) bool {
 	if c == nil || other == nil {
 		return false
@@ -119,7 +200,7 @@ func (c *Certificate) Equal(other *Certificate) bool {
 	fp, _ := c.Validation.Fingerprint.GetFingerprintValue()
 	otherFP, _ := other.Validation.Fingerprint.GetFingerprintValue()
 
-	return c.Name == other.Name || c.URL == other.URL ||
+	return c.Name == other.Name || c.GetSourceLocation() == other.GetSourceLocation() ||
 		fp == otherFP
 }
 
@@ -179,15 +260,7 @@ func (f *Fingerprint) GetFingerprintValue() (fingerprint string, hashAlg string)
 	return f.SHA1, SHA1
 }
 
-// LoadConfig reads and parses the TPM roots configuration from a YAML file.
-//
-// Example:
-//
-//	cfg, err := config.LoadConfig(".tpm-roots.yaml")
-//	if err != nil {
-//	    log.Fatal(err)
-//	}
-func LoadConfig(path string) (*TPMRootsConfig, error) {
+func loadConfig(path string) (*TPMRootsConfig, error) {
 	data, err := fsutil.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config file: %w", err)
@@ -205,6 +278,27 @@ func LoadConfig(path string) (*TPMRootsConfig, error) {
 	return &cfg, nil
 }
 
+// LoadConfig reads and parses the TPM roots configuration from a YAML file.
+//
+// Example:
+//
+//	cfg, err := config.LoadConfig(".tpm-roots.yaml")
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+func LoadConfig(path string) (*TPMRootsConfig, error) {
+	cfg, err := loadConfig(path)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := cfg.resolveFileURIPlaceholders(filepath.Dir(path)); err != nil {
+		return nil, fmt.Errorf("failed to resolve file URL placeholders: %w", err)
+	}
+
+	return cfg, nil
+}
+
 // SaveConfig writes the TPM roots configuration to a YAML file.
 //
 // Example:
@@ -216,6 +310,10 @@ func LoadConfig(path string) (*TPMRootsConfig, error) {
 func SaveConfig(path string, cfg *TPMRootsConfig) error {
 	if err := cfg.CheckAndSetDefault(); err != nil {
 		return fmt.Errorf("invalid configuration: %w", err)
+	}
+
+	if err := cfg.createFileURIPlaceholders(filepath.Dir(path)); err != nil {
+		return fmt.Errorf("failed to create file URL placeholders: %w", err)
 	}
 
 	data, err := yaml.Marshal(cfg)

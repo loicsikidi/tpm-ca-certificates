@@ -72,6 +72,8 @@ func runList(opts *listOptions) error {
 
 		for _, cert := range vendor.Certificates {
 			fmt.Printf("  Certificate: %s\n", cert.Name)
+			//lint:ignore SA1019 transitioning from deprecated URL field to URI field
+			//nolint:staticcheck // SA1019: transitioning from deprecated URL field to URI field
 			fmt.Printf("    URL: %s\n", cert.URL)
 
 			fp := cert.Validation.Fingerprint
