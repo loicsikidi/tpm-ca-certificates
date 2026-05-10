@@ -53,7 +53,7 @@ vendors:
 | `vendors[].certificates` | array | No | List of root certificates for this vendor (can be empty) | - |
 | `vendors[].certificates[].name` | string | Yes | Human-readable certificate name | `"Nuvoton TPM Root CA 1110"` |
 | `vendors[].certificates[].description` | string | No | Optional human-readable description of the certificate | `"This certificate is used for TPM 2.0 devices"` |
-| `vendors[].certificates[].uri` | string | Yes* | URI where the certificate can be accessed. Supports `https://` (nominal case for publicly available certificates) or `file://` (exceptional case for archived certificates). File URIs must use the `{repo}` placeholder pattern. | `"https://www.nuvoton.com/..."` or `"file://{repo}/certs/archived.cer"` |
+| `vendors[].certificates[].uri` | string | Yes* | URI where the certificate can be accessed. Supports `https://` (nominal case for publicly available certificates) or `file:///` (exceptional case for archived certificates). File URIs must use the `/{local}` placeholder pattern: `file:///{local}/relative/path`. | `"https://www.nuvoton.com/..."` or `"file:///{local}/certs/archived.cer"` |
 | `vendors[].certificates[].url` | string | Yes* | **Deprecated**: Use `uri` instead. This field will be removed in `beta` version. Public URL where the certificate can be downloaded. | `"https://www.nuvoton.com/..."` |
 | `vendors[].certificates[].validation` | object | Yes | Validation information for the certificate | - |
 | `vendors[].certificates[].validation.fingerprint` | object | Yes | Hash fingerprints of the certificate | - |
@@ -220,15 +220,15 @@ vendors:
 
 ### 5. File URI Placeholder Requirement
 
-File URIs must use the `{repo}` placeholder to ensure portability across different filesystems. Absolute paths are not allowed.
+File URIs must use the `/{local}` placeholder to ensure portability across different filesystems. Absolute paths are not allowed.
 
 ```yaml
-# ✓ Correct - uses {repo} placeholder
+# ✓ Correct - uses {local} placeholder
 vendors:
     - id: "NTC"
       certificates:
         - name: "Archived Certificate"
-          uri: "file://{repo}/certs/archived.cer"
+          uri: "file:///{local}/certs/archived.cer"
           validation:
             fingerprint:
               sha256: "AA:BB:..."
@@ -245,9 +245,9 @@ vendors:
 ```
 
 > [!IMPORTANT]
-> The `validate` and `certificates add` commands will reject file URIs that do not use the `{repo}` placeholder.
+> The `validate` and `certificates add` commands will reject file URIs that do not use the `/{local}` placeholder.
 >
-> The `{repo}` placeholder is dynamically replaced by the CLI with the absolute path of the configuration file's parent directory.
+> The `/{local}` placeholder is dynamically replaced by the CLI with the absolute path of the configuration file's parent directory.
 
 ## Formatting Rules
 
@@ -304,22 +304,24 @@ uri: "https://www.nuvoton.com/security/NTC-TPM-EK-Cert/Nuvoton TPM Root CA 1110.
 
 File URIs are used for archived certificates that are no longer publicly available and must:
 - Use the **file:// scheme**
-- Include the **{repo} placeholder** (absolute paths are not allowed)
+- Include the **/{local} placeholder** (absolute paths are not allowed)
 - Use **relative paths** from the repository root
 
 ```yaml
-# ✓ Correct - uses {repo} placeholder with relative path
-uri: "file://{repo}/certs/archived/certificate.cer"
+# ✓ Correct - uses {local} placeholder with relative path
+uri: "file:///{local}/certs/archived/certificate.cer"
 
 # ✗ Incorrect - absolute path
 uri: "file:///home/user/certs/certificate.cer"
 
-# ✗ Incorrect - missing {repo} placeholder
+# ✗ Incorrect - missing {local} placeholder
 uri: "file://certs/certificate.cer"
 ```
 
 > [!IMPORTANT]
 > File URIs should only be used for exceptional cases where certificates are no longer publicly available and need to be archived in the repository. HTTPS URIs are the nominal case for publicly available certificates.
+>
+> The `/{local}` placeholder is dynamically replaced by the CLI with the absolute path of the configuration file's parent directory.
 
 ### 5. Fingerprint Format
 
@@ -396,7 +398,7 @@ Example output:
   Line 15: URI must use HTTPS or file scheme: got "http"
   Line 18: URI not properly encoded: got "https://example.com/cert with spaces.cer", expected "https://example.com/cert%20with%20spaces.cer"
   Line 21: fingerprint not in uppercase with colons: got "aa:bb:cc:dd"
-  Line 24: file URI must use {repo} placeholder: got "file:///home/user/cert.cer"
+  Line 24: file URI must use {local} placeholder: got "file:///home/user/cert.cer"
 
 (showing first 10 errors)
 ```

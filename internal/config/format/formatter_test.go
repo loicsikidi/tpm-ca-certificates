@@ -128,7 +128,7 @@ func TestEncodeURI(t *testing.T) {
 			want:  "https://example.com/cert.cer",
 		},
 		{
-			name:  "file uro",
+			name:  "file uri",
 			input: "file:///{repo}/path/to/cert.cer",
 			want:  "file:///{repo}/path/to/cert.cer",
 		},

@@ -164,6 +164,9 @@ func (c *Certificate) CheckAndSetDefault() error {
 		if !slices.Contains([]string{"https", "file"}, parsedURI.Scheme) {
 			return fmt.Errorf("invalid uri scheme '%s': must be 'https' or 'file'", parsedURI.Scheme)
 		}
+		if parsedURI.Scheme == "file" && !strings.Contains(c.URI, repoPlaceholder) {
+			return ErrMissingRepoPlaceholder
+		}
 	}
 
 	if err := c.Validation.Fingerprint.CheckAndSetDefault(); err != nil {

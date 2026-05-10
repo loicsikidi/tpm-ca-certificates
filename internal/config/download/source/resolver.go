@@ -81,8 +81,6 @@ func (r *FileResolver) Fetch(ctx context.Context) ([]byte, error) {
 //   - https:// - Uses [HTTPSResolver]
 //   - file:// - Uses [FileResolver]
 //
-// The repoRoot parameter is used to resolve relative file:// paths.
-//
 // Example:
 //
 //	// HTTPS resolver
