@@ -108,7 +108,8 @@ func (f *Formatter) applyFormatting(cfg *config.TPMRootsConfig) {
 
 		for j := range cfg.Vendors[i].Certificates {
 			cert := &cfg.Vendors[i].Certificates[j]
-			//nolint:staticcheck // SA1019: need to transition from URL to URI
+			//lint:ignore SA1019 transitioning from deprecated URL field to URI field
+			//nolint:staticcheck // SA1019: transitioning from deprecated URL field to URI field
 			cert.URL = f.encodeURL(cert.URL)
 			cert.URI = f.encodeURI(cert.URI)
 

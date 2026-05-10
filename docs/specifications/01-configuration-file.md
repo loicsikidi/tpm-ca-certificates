@@ -63,8 +63,7 @@ vendors:
 | `vendors[].certificates[].validation.fingerprint.sha512` | string | No | SHA-512 fingerprint | `"AA:BB:CC:..."` |
 
 > [!IMPORTANT]
-> \* Either `uri` or `url` must be provided. The `uri` field is preferred as `url` is deprecated and will be removed in `beta` version.
-
+> Either `uri` or `url` must be provided. The `uri` field is preferred as `url` is deprecated and will be removed in `beta` version.
 > [!IMPORTANT]
 > At least one hash algorithm (sha1, sha256, sha384, or sha512) must be defined for each certificate's fingerprint validation.
 >
@@ -305,7 +304,7 @@ uri: "https://www.nuvoton.com/security/NTC-TPM-EK-Cert/Nuvoton TPM Root CA 1110.
 File URIs are used for archived certificates that are no longer publicly available and must:
 - Use the **file:// scheme**
 - Include the **/{local} placeholder** (absolute paths are not allowed)
-- Use **relative paths** from the repository root
+- Use **relative paths** from the configuration file’s parent directory
 
 ```yaml
 # ✓ Correct - uses {local} placeholder with relative path
