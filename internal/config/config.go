@@ -20,9 +20,9 @@ const (
 	SHA512 = "sha512"
 )
 
-const repoPlaceholder = "{repo}"
+const localPlaceholder = "{local}"
 
-var ErrMissingRepoPlaceholder = errors.New("invalid uri: missing repo placeholder in file URI")
+var ErrMissingLocalPlaceholder = errors.New("invalid uri: missing local placeholder in file URI")
 
 // TPMRootsConfig represents a configuration file listing TPM vendors certificates.
 type TPMRootsConfig struct {
@@ -71,7 +71,7 @@ func (c *TPMRootsConfig) transformFileURIPlaceholders(sourceDir string, isMarsha
 				}
 
 				var p string
-				pattern := "/" + repoPlaceholder
+				pattern := "/" + localPlaceholder
 				if isMarshal {
 					p = strings.ReplaceAll(u.Path, absSourceDir, pattern)
 				} else {
@@ -87,14 +87,14 @@ func (c *TPMRootsConfig) transformFileURIPlaceholders(sourceDir string, isMarsha
 
 // ResolveFileURLPlaceholders replaces placeholders in file URLs with actual paths.
 //
-// Note: {repo} is replaced with the absolute path of the source directory.
+// Note: {local} is replaced with the absolute path of the source directory.
 func (c *TPMRootsConfig) resolveFileURIPlaceholders(sourceDir string) error {
 	return c.transformFileURIPlaceholders(sourceDir /* isMarshal= */, false)
 }
 
 // createFileURIPlaceholders replaces actual paths in file URIs with placeholders.
 //
-// Note: the absolute path of the source directory is replaced with {repo}.
+// Note: the absolute path of the source directory is replaced with {local}.
 func (c *TPMRootsConfig) createFileURIPlaceholders(sourceDir string) error {
 	return c.transformFileURIPlaceholders(sourceDir /* isMarshal= */, true)
 }
@@ -164,8 +164,8 @@ func (c *Certificate) CheckAndSetDefault() error {
 		if !slices.Contains([]string{"https", "file"}, parsedURI.Scheme) {
 			return fmt.Errorf("invalid uri scheme '%s': must be 'https' or 'file'", parsedURI.Scheme)
 		}
-		if parsedURI.Scheme == "file" && !strings.Contains(c.URI, repoPlaceholder) {
-			return ErrMissingRepoPlaceholder
+		if parsedURI.Scheme == "file" && !strings.Contains(c.URI, localPlaceholder) {
+			return ErrMissingLocalPlaceholder
 		}
 	}
 

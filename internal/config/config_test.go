@@ -180,7 +180,7 @@ func TestTPMRootsConfig_CheckAndSetDefault(t *testing.T) {
 						Certificates: []Certificate{
 							{
 								Name: "Test Cert",
-								URI:  "file:///{repo}/certs/root.pem",
+								URI:  "file:///{local}/certs/root.pem",
 								Validation: Validation{
 									Fingerprint: Fingerprint{SHA1: "AA:BB:CC"},
 								},
@@ -202,7 +202,7 @@ func TestTPMRootsConfig_CheckAndSetDefault(t *testing.T) {
 							{
 								Name: "Test Cert",
 								URL:  "https://example.com/cert.cer",
-								URI:  "file:///{repo}/certs/root.pem",
+								URI:  "file:///{local}/certs/root.pem",
 								Validation: Validation{
 									Fingerprint: Fingerprint{SHA1: "AA:BB:CC"},
 								},
