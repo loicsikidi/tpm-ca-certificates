@@ -164,7 +164,7 @@ func (c *Certificate) CheckAndSetDefault() error {
 		if !slices.Contains([]string{"https", "file"}, parsedURI.Scheme) {
 			return fmt.Errorf("invalid uri scheme '%s': must be 'https' or 'file'", parsedURI.Scheme)
 		}
-		if parsedURI.Scheme == "file" && !strings.Contains(c.URI, localPlaceholder) {
+		if parsedURI.Scheme == "file" && !strings.Contains(parsedURI.Path, localPlaceholder) {
 			return ErrMissingLocalPlaceholder
 		}
 	}
@@ -308,12 +308,12 @@ func LoadConfig(path string) (*TPMRootsConfig, error) {
 //	    log.Fatal(err)
 //	}
 func SaveConfig(path string, cfg *TPMRootsConfig) error {
-	if err := cfg.CheckAndSetDefault(); err != nil {
-		return fmt.Errorf("invalid configuration: %w", err)
-	}
-
 	if err := cfg.createFileURIPlaceholders(filepath.Dir(path)); err != nil {
 		return fmt.Errorf("failed to create file URL placeholders: %w", err)
+	}
+
+	if err := cfg.CheckAndSetDefault(); err != nil {
+		return fmt.Errorf("invalid configuration: %w", err)
 	}
 
 	data, err := yaml.Marshal(cfg)

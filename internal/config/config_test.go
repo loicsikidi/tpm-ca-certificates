@@ -1,8 +1,10 @@
 package config
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -470,6 +472,185 @@ func TestCertificate_Equal(t *testing.T) {
 			got := tt.cert1.Equal(tt.cert2)
 			if got != tt.want {
 				t.Errorf("Equal() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// TestLoadSaveConfig_FileURIPlaceholder tests the loading and saving of a config file containing file URI placeholders.
+//
+// Things work that way:
+// 1. LoadConfig: resolves {local} to absolute path
+// 2. SaveConfig: creates {local} placeholders before saving
+func TestLoadSaveConfig_FileURIPlaceholder(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, ".tpm-roots.yaml")
+
+	validYAML := `version: alpha
+vendors:
+- id: "TV"
+  name: "Test Vendor"
+  certificates:
+    - name: "Test Cert"
+      uri: "file:///{local}/certs/root.pem"
+      validation:
+        fingerprint:
+          sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
+`
+
+	if err := os.WriteFile(configPath, []byte(validYAML), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Load config - this resolves {local} to absolute path
+	cfg, err := LoadConfig(configPath)
+	if err != nil {
+		t.Fatalf("LoadConfig() error = %v", err)
+	}
+
+	// Verify that {local} has been resolved to absolute path after LoadConfig
+	certURI := cfg.Vendors[0].Certificates[0].URI
+	if strings.Contains(certURI, "{local}") {
+		t.Errorf("LoadConfig should resolve {local} placeholder, got: %s", certURI)
+	}
+	if !strings.HasPrefix(certURI, "file://") {
+		t.Errorf("Expected file:// URI, got: %s", certURI)
+	}
+
+	// SaveConfig must create placeholders before validation
+	if err := SaveConfig(configPath, cfg); err != nil {
+		t.Fatalf("SaveConfig() error = %v, this validates that placeholders are created before validation", err)
+	}
+
+	// Verify that saved file contains {local} placeholder
+	savedData, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(savedData, []byte("{local}")) {
+		t.Error("Saved file should contain {local} placeholder, not absolute path")
+	}
+}
+
+func TestCertificate_CheckAndSetDefault(t *testing.T) {
+	tests := []struct {
+		name    string
+		cert    Certificate
+		wantErr bool
+	}{
+		{
+			name: "valid certificate with https URI",
+			cert: Certificate{
+				Name: "Test",
+				URI:  "https://example.com/cert.pem",
+				Validation: Validation{
+					Fingerprint: Fingerprint{SHA1: "AA:BB:CC"},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid certificate with file URI and {local} placeholder",
+			cert: Certificate{
+				Name: "Test",
+				URI:  "file:///{local}/certs/root.pem",
+				Validation: Validation{
+					Fingerprint: Fingerprint{SHA1: "AA:BB:CC"},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid certificate with URL (deprecated)",
+			cert: Certificate{
+				Name: "Test",
+				URL:  "https://example.com/cert.pem",
+				Validation: Validation{
+					Fingerprint: Fingerprint{SHA1: "AA:BB:CC"},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "missing name",
+			cert: Certificate{
+				URI: "https://example.com/cert.pem",
+				Validation: Validation{
+					Fingerprint: Fingerprint{SHA1: "AA:BB:CC"},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "missing URL and URI",
+			cert: Certificate{
+				Name: "Test",
+				Validation: Validation{
+					Fingerprint: Fingerprint{SHA1: "AA:BB:CC"},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid URI parse error",
+			cert: Certificate{
+				Name: "Test",
+				URI:  "://invalid",
+				Validation: Validation{
+					Fingerprint: Fingerprint{SHA1: "AA:BB:CC"},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid URI scheme",
+			cert: Certificate{
+				Name: "Test",
+				URI:  "ftp://example.com/cert.pem",
+				Validation: Validation{
+					Fingerprint: Fingerprint{SHA1: "AA:BB:CC"},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "file URI without {local} placeholder",
+			cert: Certificate{
+				Name: "Test",
+				URI:  "file:///absolute/path/cert.pem",
+				Validation: Validation{
+					Fingerprint: Fingerprint{SHA1: "AA:BB:CC"},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "file URI with {local} in query parameter (not in path)",
+			cert: Certificate{
+				Name: "Test",
+				URI:  "file:///absolute/path/cert.pem?param={local}",
+				Validation: Validation{
+					Fingerprint: Fingerprint{SHA1: "AA:BB:CC"},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "missing fingerprint",
+			cert: Certificate{
+				Name:       "Test",
+				URI:        "https://example.com/cert.pem",
+				Validation: Validation{},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.cert.CheckAndSetDefault()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CheckAndSetDefault() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
