@@ -3,6 +3,7 @@ package validate
 import (
 	"fmt"
 	"net/url"
+	"slices"
 	"sort"
 	"strings"
 
@@ -82,7 +83,7 @@ func (v *YAMLValidator) ValidateFile(path string) ([]ValidationError, error) {
 	v.validateVendorsSorting(cfg)
 	v.validateCertificatesSorting(cfg)
 	v.validateDuplicateCertificates(cfg)
-	v.validateURLEncoding(cfg)
+	v.validateURIEncoding(cfg)
 	v.validateFingerprintFormat(cfg)
 	v.validateQuotes(data)
 
@@ -254,33 +255,42 @@ func (v *YAMLValidator) validateDuplicateCertificates(cfg *config.TPMRootsConfig
 	}
 }
 
-// validateURLEncoding checks that URLs are properly encoded.
-func (v *YAMLValidator) validateURLEncoding(cfg *config.TPMRootsConfig) {
+// validateURIEncoding checks that URLs/URIs are properly encoded.
+func (v *YAMLValidator) validateURIEncoding(cfg *config.TPMRootsConfig) {
 	for i, vendor := range cfg.Vendors {
 		for j, cert := range vendor.Certificates {
-			//lint:ignore SA1019 transitioning from deprecated URL field to URI field
-			//nolint:staticcheck // SA1019: transitioning from deprecated URL field to URI field
-			parsedURL, err := url.Parse(cert.URL)
+			sourceLocation := cert.GetSourceLocation()
+			var fieldName string
+			if cert.URI != "" {
+				fieldName = "uri"
+			} else {
+				fieldName = "url"
+			}
+
+			parsedURL, err := url.Parse(sourceLocation)
 			if err != nil {
-				path := fmt.Sprintf("vendors[%d].certificates[%d].url", i, j)
-				v.addError(path, fmt.Sprintf("invalid URL: %v", err))
+				path := fmt.Sprintf("vendors[%d].certificates[%d].%s", i, j, fieldName)
+				v.addError(path, fmt.Sprintf("invalid %s: %v", fieldName, err))
 				continue
 			}
 
-			if parsedURL.Scheme != "https" {
-				path := fmt.Sprintf("vendors[%d].certificates[%d].url", i, j)
-				v.addError(path, fmt.Sprintf("URL must use HTTPS scheme: got %q", parsedURL.Scheme))
+			if fieldName == "uri" && !slices.Contains([]string{"https", "file"}, parsedURL.Scheme) {
+				path := fmt.Sprintf("vendors[%d].certificates[%d].%s", i, j, fieldName)
+				v.addError(path, fmt.Sprintf("%s must use HTTPS or file scheme: got %q", fieldName, parsedURL.Scheme))
+				continue
+			}
+
+			// For retrocompatibility with deprecated URL field
+			if fieldName == "url" && parsedURL.Scheme != "https" {
+				path := fmt.Sprintf("vendors[%d].certificates[%d].%s", i, j, fieldName)
+				v.addError(path, fmt.Sprintf("%s must use HTTPS scheme: got %q", fieldName, parsedURL.Scheme))
 				continue
 			}
 
 			encoded := parsedURL.String()
-			//lint:ignore SA1019 transitioning from deprecated URL field to URI field
-			//nolint:staticcheck // SA1019: transitioning from deprecated URL field to URI field
-			if encoded != cert.URL {
-				path := fmt.Sprintf("vendors[%d].certificates[%d].url", i, j)
-				//lint:ignore SA1019 transitioning from deprecated URL field to URI field
-				//nolint:staticcheck // SA1019: transitioning from deprecated URL field to URI field
-				v.addError(path, fmt.Sprintf("URL not properly encoded: got %q, expected %q", cert.URL, encoded))
+			if encoded != sourceLocation {
+				path := fmt.Sprintf("vendors[%d].certificates[%d].%s", i, j, fieldName)
+				v.addError(path, fmt.Sprintf("%s not properly encoded: got %q, expected %q", fieldName, sourceLocation, encoded))
 			}
 		}
 	}
