@@ -21,7 +21,14 @@ vendors:
           validation:
             fingerprint:
                 sha256: "14:AA:C9:FD:58:47:1A:61:2A:FD:75:D8:C0:95:5D:AF:99:F0:91:B1:86:37:02:F9:E0:D4:11:3F:AF:23:4F:9D"
+        - name: "AMDTPM RSA"
+          description: "This legacy certificate is no longer publicly available and has been superseded by the modern AMDTPM RSA certificate"
+          uri: "file:///{local}/certificates/AMD/amdtpm_rsa.der"
+          validation:
+            fingerprint:
+                sha256: "B7:3F:14:DE:A3:BD:AA:0B:E8:74:40:DE:3F:C7:18:C7:71:F2:CB:F8:B7:B2:23:1C:6E:A2:28:D3:B2:08:60:EF"
         - name: "AMDTPM RSA (modern version)"
+          description: "Identical to AMDTPM RSA (same key pair, validity, etc.) with modern encoding. See https://github.com/loicsikidi/tpm-ca-certificates/issues/128 for details"
           url: "https://ftpm.amd.com/pki/aia/264D39A23CEB5D5B49D610044EEBD121"
           validation:
             fingerprint:
