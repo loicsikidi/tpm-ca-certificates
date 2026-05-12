@@ -2,13 +2,14 @@
 
 ## Document History
 
-| Version |    Date    |   Author    |   Description                                 |
-|---------|------------|-------------|-----------------------------------------------|
-| alpha   | 2025-11-26 | Loïc Sikidi | Initial version                               |
-| alpha   | 2025-12-10 | Loïc Sikidi | Add duplicate validation rules                |
-| alpha   | 2025-12-15 | Loïc Sikidi | Add support for two configuration files       |
-| alpha   | 2026-04-11 | Loïc Sikidi | Add optional description field to Certificate |
-| alpha   | 2026-05-10 | Loïc Sikidi | Add URI support with file:// scheme           |
+|    Date    |   Author    |   Description                                 |
+|------------|-------------|-----------------------------------------------|
+| 2025-11-26 | Loïc Sikidi | Initial version                               |
+| 2025-12-10 | Loïc Sikidi | Add duplicate validation rules                |
+| 2025-12-15 | Loïc Sikidi | Add support for two configuration files       |
+| 2026-04-11 | Loïc Sikidi | Add optional description field to Certificate |
+| 2026-05-10 | Loïc Sikidi | Add URI support with file:// scheme           |
+| 2026-05-13 | Loïc Sikidi | Promote to beta, remove url field             |
 
 The TPM Trust Bundle is generated from two human-readable YAML configuration files:
 
@@ -17,8 +18,15 @@ The TPM Trust Bundle is generated from two human-readable YAML configuration fil
 
 Both files must follow strict formatting and validation rules to ensure consistency and integrity.
 
+## Version History
+
+| Version | Description                                                                                      |
+|---------|--------------------------------------------------------------------------------------------------|
+| alpha   | Initial iteration with support for HTTPS URLs and basic certificate validation                   |
+| beta    | Renamed `url` field to `uri` to support multiple URI schemes (https://, file://). Current version. |
+
 > [!IMPORTANT]
-> The configuration specification is currently in `alpha` version. Once stabilized, it will be promoted to `v1`.
+> The configuration specification is currently in `beta` version. Once stabilized, it will be promoted to `v1`.
 
 ## File Structure
 
@@ -26,7 +34,7 @@ The configuration file must start with the YAML document marker `---` on the fir
 
 ```yaml
 ---
-version: "alpha"
+version: "beta"
 vendors:
     - name: "Vendor Name"
       id: "VENDOR_ID"
@@ -46,15 +54,14 @@ vendors:
 
 | Field | Type | Required | Description | Example |
 |-------|------|----------|-------------|---------|
-| `version` | string | Yes | Configuration file format version. Before v1 (stable API), uses `alpha`, `beta`, `gamma`. Starting from v1, uses incrementing integers: `1`, `2`, `3`, etc. | `"alpha"` |
+| `version` | string | Yes | Configuration file format version. Before v1 (stable API), uses `alpha`, `beta`, `gamma`. Starting from v1, uses incrementing integers: `1`, `2`, `3`, etc. | `"beta"` |
 | `vendors` | array | Yes | List of TPM vendors | - |
 | `vendors[].name` | string | Yes | Full vendor name | `"Nuvoton Technology"` |
 | `vendors[].id` | string | Yes | Short vendor identifier (must be from [TCG TPM Vendor ID Registry](https://trustedcomputinggroup.org/wp-content/uploads/TCG-TPM-Vendor-ID-Registry-Family-1.2-and-2.0-Version-1.07-Revision-0.02_pub.pdf)) | `"NTC"` |
 | `vendors[].certificates` | array | No | List of root certificates for this vendor (can be empty) | - |
 | `vendors[].certificates[].name` | string | Yes | Human-readable certificate name | `"Nuvoton TPM Root CA 1110"` |
 | `vendors[].certificates[].description` | string | No | Optional human-readable description of the certificate | `"This certificate is used for TPM 2.0 devices"` |
-| `vendors[].certificates[].uri` | string | Yes* | URI where the certificate can be accessed. Supports `https://` (nominal case for publicly available certificates) or `file:///` (exceptional case for archived certificates). File URIs must use the `/{local}` placeholder pattern: `file:///{local}/relative/path`. | `"https://www.nuvoton.com/..."` or `"file:///{local}/certs/archived.cer"` |
-| `vendors[].certificates[].url` | string | Yes* | **Deprecated**: Use `uri` instead. This field will be removed in `beta` version. Public URL where the certificate can be downloaded. | `"https://www.nuvoton.com/..."` |
+| `vendors[].certificates[].uri` | string | Yes | URI where the certificate can be accessed. Supports `https://` (nominal case for publicly available certificates) or `file:///` (exceptional case for archived certificates). File URIs must use the `/{local}` placeholder pattern: `file:///{local}/relative/path`. | `"https://www.nuvoton.com/..."` or `"file:///{local}/certs/archived.cer"` |
 | `vendors[].certificates[].validation` | object | Yes | Validation information for the certificate | - |
 | `vendors[].certificates[].validation.fingerprint` | object | Yes | Hash fingerprints of the certificate | - |
 | `vendors[].certificates[].validation.fingerprint.sha1` | string | No | SHA-1 fingerprint | `"65:5E:44:5E:96:54:..."` |
@@ -62,8 +69,6 @@ vendors:
 | `vendors[].certificates[].validation.fingerprint.sha384` | string | No | SHA-384 fingerprint | `"AA:BB:CC:..."` |
 | `vendors[].certificates[].validation.fingerprint.sha512` | string | No | SHA-512 fingerprint | `"AA:BB:CC:..."` |
 
-> [!IMPORTANT]
-> Either `uri` or `url` must be provided. The `uri` field is preferred as `url` is deprecated and will be removed in `beta` version.
 > [!IMPORTANT]
 > At least one hash algorithm (sha1, sha256, sha384, or sha512) must be defined for each certificate's fingerprint validation.
 >
@@ -80,17 +85,17 @@ The file must start with the YAML document marker `---` on the first line.
 ```yaml
 # ✓ Correct
 ---
-version: "alpha"
+version: "beta"
 vendors: []
 
 # ✗ Incorrect - missing document marker
-version: "alpha"
+version: "beta"
 vendors: []
 
 # ✗ Incorrect - comment before document marker
 # This is a comment
 ---
-version: "alpha"
+version: "beta"
 ```
 
 > [!IMPORTANT]
@@ -346,12 +351,12 @@ All string values must be enclosed in **double quotes**:
 # ✓ Correct
 name: "Nuvoton Technology"
 id: "NTC"
-version: "alpha"
+version: "beta"
 
 # ✗ Incorrect
 name: Nuvoton Technology
 id: NTC
-version: alpha
+version: beta
 ```
 
 ## CLI Commands
