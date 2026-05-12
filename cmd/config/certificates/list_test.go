@@ -48,7 +48,7 @@ vendors:
 			expectedOutput: []string{
 				"Vendor: Vendor A (ID: VDA)",
 				"Certificate: Cert A1",
-				"URL: https://example.com/a1.crt",
+				"Source: https://example.com/a1.crt",
 				"SHA1:",
 				"Certificate: Cert A2",
 				"SHA256:",
