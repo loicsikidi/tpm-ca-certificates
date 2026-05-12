@@ -92,10 +92,10 @@ func (c *TPMRootsConfig) resolveFileURIPlaceholders(sourceDir string) error {
 	return c.transformFileURIPlaceholders(sourceDir /* isMarshal= */, false)
 }
 
-// createFileURIPlaceholders replaces actual paths in file URIs with placeholders.
+// CreateFileURIPlaceholders replaces actual paths in file URIs with placeholders.
 //
 // Note: the absolute path of the source directory is replaced with {local}.
-func (c *TPMRootsConfig) createFileURIPlaceholders(sourceDir string) error {
+func (c *TPMRootsConfig) CreateFileURIPlaceholders(sourceDir string) error {
 	return c.transformFileURIPlaceholders(sourceDir /* isMarshal= */, true)
 }
 
@@ -312,7 +312,7 @@ func LoadConfig(path string) (*TPMRootsConfig, error) {
 //	    log.Fatal(err)
 //	}
 func SaveConfig(path string, cfg *TPMRootsConfig) error {
-	if err := cfg.createFileURIPlaceholders(filepath.Dir(path)); err != nil {
+	if err := cfg.CreateFileURIPlaceholders(filepath.Dir(path)); err != nil {
 		return fmt.Errorf("failed to create file URL placeholders: %w", err)
 	}
 
