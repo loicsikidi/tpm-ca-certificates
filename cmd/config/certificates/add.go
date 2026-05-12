@@ -313,7 +313,7 @@ func processDownloadResults(results []certDownloadResult, existingCerts []config
 		fingerprintValidation := config.NewFingerprint(hashAlgo, result.fingerprint)
 		newCert := config.Certificate{
 			Name: certName,
-			URL:  result.url,
+			URI:  result.url,
 			Validation: config.Validation{
 				Fingerprint: *fingerprintValidation,
 			},
