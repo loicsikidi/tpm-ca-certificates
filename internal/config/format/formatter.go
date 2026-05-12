@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -41,6 +42,15 @@ func (f *Formatter) NeedsFormatting(inputPath string) (bool, error) {
 	}
 
 	f.applyFormatting(cfg)
+
+	sourceDir, err := filepath.Abs(filepath.Dir(inputPath))
+	if err != nil {
+		return false, fmt.Errorf("failed to get absolute path: %w", err)
+	}
+
+	if err := cfg.CreateFileURIPlaceholders(sourceDir); err != nil {
+		return false, fmt.Errorf("failed to create file URI placeholders: %w", err)
+	}
 
 	formattedData, err := f.marshalWithQuotes(cfg)
 	if err != nil {
@@ -80,6 +90,15 @@ func (f *Formatter) FormatFile(inputPath, outputPath string) error {
 	}
 
 	f.applyFormatting(cfg)
+
+	sourceDir, err := filepath.Abs(filepath.Dir(outputPath))
+	if err != nil {
+		return fmt.Errorf("failed to get absolute path: %w", err)
+	}
+
+	if err := cfg.CreateFileURIPlaceholders(sourceDir); err != nil {
+		return fmt.Errorf("failed to create file URI placeholders: %w", err)
+	}
 
 	yamlData, err := f.marshalWithQuotes(cfg)
 	if err != nil {
