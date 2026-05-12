@@ -188,7 +188,11 @@ func (c *Certificate) GetSourceLocation() string {
 
 // IsRemoteSource returns true if the certificate source location is remote
 func (c *Certificate) IsRemoteSource() bool {
-	return strings.HasPrefix(c.GetSourceLocation(), "https://")
+	parsedURI, err := url.Parse(c.GetSourceLocation())
+	if err != nil {
+		return false
+	}
+	return slices.Contains([]string{"https", "http"}, parsedURI.Scheme)
 }
 
 // Equal checks if two certificates are considered equal based on Name, source location, or Fingerprint.

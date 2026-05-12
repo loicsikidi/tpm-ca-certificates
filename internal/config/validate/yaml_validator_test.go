@@ -123,7 +123,7 @@ vendors:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
 `,
 			wantErrors:  1,
-			errorChecks: []string{"URL not properly encoded"},
+			errorChecks: []string{"url not properly encoded"},
 		},
 		{
 			name: "http URL",
@@ -140,7 +140,7 @@ vendors:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
 `,
 			wantErrors:  1,
-			errorChecks: []string{"URL must use HTTPS scheme"},
+			errorChecks: []string{"url must use HTTPS scheme"},
 		},
 		{
 			name: "lowercase fingerprint",
@@ -283,6 +283,114 @@ vendors:
 `,
 			wantErrors:  1,
 			errorChecks: []string{"duplicate certificate", "Cert B"},
+		},
+		{
+			name: "valid URI with https scheme",
+			yaml: `---
+version: "alpha"
+vendors:
+  - id: "STM"
+    name: "STMicroelectronics"
+    certificates:
+      - name: "Cert A"
+        uri: "https://example.com/cert.cer"
+        validation:
+          fingerprint:
+            sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
+`,
+			wantErrors: 0,
+		},
+		{
+			name: "valid URI with file scheme",
+			yaml: `---
+version: "alpha"
+vendors:
+  - id: "STM"
+    name: "STMicroelectronics"
+    certificates:
+      - name: "Cert A"
+        uri: "file:///{local}/certs/cert.der"
+        validation:
+          fingerprint:
+            sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
+`,
+			wantErrors: 0,
+		},
+		{
+			name: "unencoded URI",
+			yaml: `---
+version: "alpha"
+vendors:
+  - id: "STM"
+    name: "STMicroelectronics"
+    certificates:
+      - name: "Cert A"
+        uri: "https://example.com/cert with space.cer"
+        validation:
+          fingerprint:
+            sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
+`,
+			wantErrors:  1,
+			errorChecks: []string{"uri not properly encoded"},
+		},
+		{
+			name: "unencoded URI reports correct line number",
+			yaml: `---
+version: "alpha"
+vendors:
+  - id: "AMD"
+    name: "AMD"
+    certificates:
+      - name: "AMDTPM ECC"
+        description: "test certificate"
+        uri: "https://example.com/cert with space.der"
+        validation:
+          fingerprint:
+            sha256: "C2:CB:57:BF:72:3C:17:4F:16:6C:5A:A1:DC:64:16:09:81:05:4B:EE:18:C7:0E:B1:DE:BF:C1:51:8A:FA:92:D2"
+`,
+			wantErrors:  1,
+			errorChecks: []string{"uri not properly encoded"},
+		},
+		{
+			name: "unencoded URL reports correct line number",
+			yaml: `---
+version: "alpha"
+vendors:
+  - id: "AMD"
+    name: "AMD"
+    certificates:
+      - name: "AMDTPM ECC"
+        description: "test certificate"
+        url: "https://example.com/cert with space.der"
+        validation:
+          fingerprint:
+            sha256: "C2:CB:57:BF:72:3C:17:4F:16:6C:5A:A1:DC:64:16:09:81:05:4B:EE:18:C7:0E:B1:DE:BF:C1:51:8A:FA:92:D2"
+`,
+			wantErrors:  1,
+			errorChecks: []string{"url not properly encoded"},
+		},
+		{
+			name: "multiple unencoded URIs report correct line numbers",
+			yaml: `---
+version: "alpha"
+vendors:
+  - id: "AMD"
+    name: "AMD"
+    certificates:
+      - name: "Cert A"
+        uri: "https://valid.com/cert.der"
+        validation:
+          fingerprint:
+            sha256: "C2:CB:57:BF:72:3C:17:4F:16:6C:5A:A1:DC:64:16:09:81:05:4B:EE:18:C7:0E:B1:DE:BF:C1:51:8A:FA:92:D2"
+      - name: "Cert B"
+        description: "note: unencoded URI"
+        uri: "https://example.com/cert with space.der"
+        validation:
+          fingerprint:
+            sha256: "B7:3F:14:DE:A3:BD:AA:0B:E8:74:40:DE:3F:C7:18:C7:71:F2:CB:F8:B7:B2:23:1C:6E:A2:28:D3:B2:08:60:EF"
+`,
+			wantErrors:  1,
+			errorChecks: []string{"uri not properly encoded"},
 		},
 	}
 
