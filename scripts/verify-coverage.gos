@@ -31,7 +31,7 @@ type Vendor struct {
 
 type Certificate struct {
 	Name       string     `yaml:"name"`
-	URL        string     `yaml:"url"`
+	URL        string     `yaml:"uri"`
 	Validation Validation `yaml:"validation"`
 }
 
@@ -131,6 +131,9 @@ func loadConfigURLs(configFile, vendorID string) ([]string, error) {
 		if vendor.ID == vendorID {
 			urls := make([]string, 0, len(vendor.Certificates))
 			for _, cert := range vendor.Certificates {
+				if strings.HasPrefix(cert.URL, "file://") {
+					continue
+				}
 				urls = append(urls, cert.URL)
 			}
 			sort.Strings(urls)
