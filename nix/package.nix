@@ -9,7 +9,7 @@
   version =
     if src != null
     then "unstable"
-    else "0.8.0";
+    else "0.10.0";
 in
   buildGo125Module {
     pname = "tpmtb";
@@ -23,10 +23,10 @@ in
           owner = "loicsikidi";
           repo = "tpm-ca-certificates";
           tag = "v${version}";
-          hash = "sha256-RSxA8VolERxwVc+/aMdvIuQGp8KZ0cLhhmfvCjkpQTo=";
+          hash = "sha256-lJpBrgplGcSiFbpRmz8WSmVRI00KdVnrqczJPf0WO/Q=";
         };
 
-    vendorHash = "sha256-LMG4bAvifEO4YGZSOzbuxmoJp4x7BvPCv4nAgcicUds=";
+    vendorHash = "sha256-r/voLNx6gd0OngKK40Z0jaqupZu4/ZyhajC6vyip6xY=";
 
     # Build the main package (at the root)
     # subPackages defaults to [ "." ] if not specified
