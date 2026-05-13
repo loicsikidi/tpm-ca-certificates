@@ -535,6 +535,11 @@ vendors:
     - id: "INTC"
       name: "Intel"
       certificates:
+        - name: "ODCA 2 CSME P_ADL 00002820"
+          uri: "https://tsci.intel.com/content/OnDieCA/certs/ADL_00002820_ODCA_CA2.cer"
+          validation:
+            fingerprint:
+                sha256: "4D:59:BE:D8:AE:47:3D:11:60:DD:D3:D1:9C:D5:45:CE:C1:1B:93:73:51:6C:C9:1C:44:ED:82:6F:D8:83:B4:2C"
         - name: "ODCA CA2 CSME"
           uri: "https://tsci.intel.com/content/OnDieCA/certs/ODCA_CA2_CSME_Intermediate.cer"
           validation:
