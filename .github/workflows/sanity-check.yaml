@@ -37,7 +37,9 @@ jobs:
   vendor-coverage:
     name: Verify ${{ matrix.vendor }} ${{ matrix.cert-type }} Certificates Coverage
     runs-on: ubuntu-latest
-    continue-on-error: true
+    # Accept fail for IFX vendor because discovered certificates are not publicly listed
+    # in IFX's catalog.
+    continue-on-error: ${{ matrix.vendor == 'ifx' }}
     permissions:
       contents: read
     strategy:
