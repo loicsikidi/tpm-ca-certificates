@@ -140,10 +140,11 @@ func (v *Vendor) CheckAndSetDefault() error {
 type Certificate struct {
 	Name        string `yaml:"name"`
 	Description string `yaml:"description,omitempty"`
+	URI         string `yaml:"uri,omitempty"`
 	// Deprecated: Use URI instead.
-	URL        string     `yaml:"url,omitempty"`
-	URI        string     `yaml:"uri,omitempty"`
-	Validation Validation `yaml:"validation"`
+	URL               string     `yaml:"url,omitempty"`
+	AllowHttpFallback bool       `yaml:"allowHttpFallback,omitempty"`
+	Validation        Validation `yaml:"validation"`
 }
 
 // CheckAndSetDefault validates a Certificate.

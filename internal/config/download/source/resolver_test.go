@@ -19,7 +19,7 @@ func TestHTTPSResolver_Fetch(t *testing.T) {
 		}))
 		defer server.Close()
 
-		resolver := NewHTTPSResolver(server.URL, server.Client())
+		resolver := NewHTTPSResolver(server.URL, server.Client(), false)
 		data, err := resolver.Fetch(context.Background())
 
 		if err != nil {
@@ -37,7 +37,7 @@ func TestHTTPSResolver_Fetch(t *testing.T) {
 		}))
 		defer server.Close()
 
-		resolver := NewHTTPSResolver(server.URL, server.Client())
+		resolver := NewHTTPSResolver(server.URL, server.Client(), false)
 		_, err := resolver.Fetch(context.Background())
 
 		if err == nil {
@@ -55,7 +55,7 @@ func TestHTTPSResolver_Fetch(t *testing.T) {
 		}))
 		defer server.Close()
 
-		resolver := NewHTTPSResolver(server.URL, server.Client())
+		resolver := NewHTTPSResolver(server.URL, server.Client(), false)
 		_, err := resolver.Fetch(context.Background())
 
 		if err == nil {
@@ -76,7 +76,7 @@ func TestHTTPSResolver_Fetch(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
 
-		resolver := NewHTTPSResolver(server.URL, server.Client())
+		resolver := NewHTTPSResolver(server.URL, server.Client(), false)
 		_, err := resolver.Fetch(ctx)
 
 		if err == nil {
@@ -92,7 +92,7 @@ func TestHTTPSResolver_Fetch(t *testing.T) {
 		}))
 		defer server.Close()
 
-		resolver := NewHTTPSResolver(server.URL, server.Client())
+		resolver := NewHTTPSResolver(server.URL, server.Client(), false)
 		data, err := resolver.Fetch(context.Background())
 
 		if err != nil {
@@ -266,7 +266,7 @@ func TestNewResolver(t *testing.T) {
 	t.Run("creates HTTPS resolver", func(t *testing.T) {
 		uri := "https://example.com/cert.cer"
 
-		resolver, err := NewResolver(uri)
+		resolver, err := NewResolver(Config{URI: uri})
 
 		if err != nil {
 			t.Fatalf("NewResolver() error = %v, want nil", err)
@@ -282,7 +282,7 @@ func TestNewResolver(t *testing.T) {
 		uri := "https://example.com/cert.cer"
 		customClient := &http.Client{}
 
-		resolver, err := NewResolver(uri, customClient)
+		resolver, err := NewResolver(Config{URI: uri, HttpClient: customClient})
 
 		if err != nil {
 			t.Fatalf("NewResolver() error = %v, want nil", err)
@@ -301,7 +301,7 @@ func TestNewResolver(t *testing.T) {
 	t.Run("creates file resolver with absolute path", func(t *testing.T) {
 		uri := "file:///home/user/cert.pem"
 
-		resolver, err := NewResolver(uri)
+		resolver, err := NewResolver(Config{URI: uri})
 
 		if err != nil {
 			t.Fatalf("NewResolver() error = %v, want nil", err)
@@ -316,7 +316,7 @@ func TestNewResolver(t *testing.T) {
 	t.Run("rejects http scheme", func(t *testing.T) {
 		uri := "http://example.com/cert.cer"
 
-		_, err := NewResolver(uri)
+		_, err := NewResolver(Config{URI: uri})
 
 		if err == nil {
 			t.Fatal("NewResolver() error = nil, want error for http scheme")
@@ -330,7 +330,7 @@ func TestNewResolver(t *testing.T) {
 	t.Run("rejects ftp scheme", func(t *testing.T) {
 		uri := "ftp://example.com/cert.cer"
 
-		_, err := NewResolver(uri)
+		_, err := NewResolver(Config{URI: uri})
 
 		if err == nil {
 			t.Fatal("NewResolver() error = nil, want error for ftp scheme")
@@ -344,7 +344,7 @@ func TestNewResolver(t *testing.T) {
 	t.Run("rejects empty scheme", func(t *testing.T) {
 		uri := "example.com/cert.cer"
 
-		_, err := NewResolver(uri)
+		_, err := NewResolver(Config{URI: uri})
 
 		if err == nil {
 			t.Fatal("NewResolver() error = nil, want error for missing scheme")
@@ -358,7 +358,7 @@ func TestNewResolver(t *testing.T) {
 	t.Run("handles invalid URI", func(t *testing.T) {
 		uri := "://invalid"
 
-		_, err := NewResolver(uri)
+		_, err := NewResolver(Config{URI: uri})
 
 		if err == nil {
 			t.Fatal("NewResolver() error = nil, want error for invalid URI")
@@ -372,7 +372,7 @@ func TestNewResolver(t *testing.T) {
 	t.Run("rejects file resolver with relative path", func(t *testing.T) {
 		uri := "file://certs/cert.pem"
 
-		_, err := NewResolver(uri)
+		_, err := NewResolver(Config{URI: uri})
 
 		if err == nil {
 			t.Fatal("NewResolver() error = nil, want error for relative path")
@@ -386,7 +386,7 @@ func TestNewResolver(t *testing.T) {
 	t.Run("uses default HTTP client when none provided", func(t *testing.T) {
 		uri := "https://example.com/cert.cer"
 
-		resolver, err := NewResolver(uri)
+		resolver, err := NewResolver(Config{URI: uri})
 
 		if err != nil {
 			t.Fatalf("NewResolver() error = %v, want nil", err)
@@ -402,12 +402,11 @@ func TestNewResolver(t *testing.T) {
 		}
 	})
 
-	t.Run("ignores additional HTTP client parameters", func(t *testing.T) {
+	t.Run("uses provided HTTP client", func(t *testing.T) {
 		uri := "https://example.com/cert.cer"
 		client1 := &http.Client{}
-		client2 := &http.Client{}
 
-		resolver, err := NewResolver(uri, client1, client2)
+		resolver, err := NewResolver(Config{URI: uri, HttpClient: client1})
 
 		if err != nil {
 			t.Fatalf("NewResolver() error = %v, want nil", err)
@@ -419,7 +418,7 @@ func TestNewResolver(t *testing.T) {
 		}
 
 		if httpsResolver.httpClient != client1 {
-			t.Error("NewResolver() should use first HTTP client only")
+			t.Error("NewResolver() should use provided HTTP client")
 		}
 	})
 }
@@ -433,7 +432,7 @@ func TestResolver_Integration(t *testing.T) {
 		}))
 		defer server.Close()
 
-		resolver, err := NewResolver(server.URL, server.Client())
+		resolver, err := NewResolver(Config{URI: server.URL, HttpClient: server.Client()})
 		if err != nil {
 			t.Fatalf("NewResolver() error = %v, want nil", err)
 		}
@@ -458,7 +457,7 @@ func TestResolver_Integration(t *testing.T) {
 		}
 
 		uri := "file://" + testFile
-		resolver, err := NewResolver(uri)
+		resolver, err := NewResolver(Config{URI: uri})
 		if err != nil {
 			t.Fatalf("NewResolver() error = %v, want nil", err)
 		}

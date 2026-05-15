@@ -10,6 +10,7 @@ import (
 
 	goutils "github.com/loicsikidi/go-utils"
 	"github.com/loicsikidi/go-utils/net/httputil"
+	"github.com/loicsikidi/tpm-ca-certificates/internal/config"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config/download/source"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/utils"
 )
@@ -59,17 +60,22 @@ func (c *Client) DownloadCertificate(ctx context.Context, url string) (*x509.Cer
 	return cert, nil
 }
 
-// FetchCertificate retrieves a certificate from a URI (supports https:// and file:// schemes).
+// FetchCertificate retrieves a certificate from a [config.Certificate].
 //
 // Example:
 //
 //	client := download.NewClient()
-//	cert, err := client.FetchCertificate(ctx, "file:///home/user/repo/certs/root.pem")
+//	cert := config.Certificate{
+//	    URI:               "file:///home/user/repo/certs/root.pem",
+//	    AllowHttpFallback: false,
+//	}
+//	x509Cert, err := client.FetchCertificate(ctx, cert)
 //	if err != nil {
 //	    log.Fatal(err)
 //	}
-func (c *Client) FetchCertificate(ctx context.Context, uri string) (*x509.Certificate, error) {
-	resolver, err := source.NewResolver(uri, c.HTTPClient)
+func (c *Client) FetchCertificate(ctx context.Context, cert config.Certificate) (*x509.Certificate, error) {
+	uri := cert.GetSourceLocation()
+	resolver, err := source.NewResolver(source.Config{URI: uri, HttpClient: c.HTTPClient, AllowHttpFallback: cert.AllowHttpFallback})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create resolver for %s: %w", uri, err)
 	}
@@ -79,12 +85,12 @@ func (c *Client) FetchCertificate(ctx context.Context, uri string) (*x509.Certif
 		return nil, fmt.Errorf("failed to fetch certificate from %s: %w", uri, err)
 	}
 
-	cert, err := ParseCertificate(data)
+	x509Cert, err := ParseCertificate(data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse certificate from %s: %w", uri, err)
 	}
 
-	return cert, nil
+	return x509Cert, nil
 }
 
 // ParseCertificate attempts to parse a certificate from DER or PEM format.

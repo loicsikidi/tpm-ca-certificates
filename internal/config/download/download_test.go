@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/loicsikidi/tpm-ca-certificates/internal/config"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config/download"
 	"github.com/loicsikidi/tpm-ca-certificates/internal/testutil"
 )
@@ -123,7 +124,8 @@ func TestFetchCertificate(t *testing.T) {
 		defer server.Close()
 
 		client := download.NewClient(server.Client())
-		_, err := client.FetchCertificate(t.Context(), server.URL)
+		cert := config.Certificate{URI: server.URL}
+		_, err := client.FetchCertificate(t.Context(), cert)
 		if err != nil {
 			t.Fatalf("FetchCertificate() error = %v", err)
 		}
@@ -145,7 +147,8 @@ func TestFetchCertificate(t *testing.T) {
 
 		client := download.NewClient()
 		uri := "file://" + certPath
-		_, err := client.FetchCertificate(t.Context(), uri)
+		cert := config.Certificate{URI: uri}
+		_, err := client.FetchCertificate(t.Context(), cert)
 		if err != nil {
 			t.Fatalf("FetchCertificate() error = %v", err)
 		}
@@ -153,7 +156,8 @@ func TestFetchCertificate(t *testing.T) {
 
 	t.Run("returns error for unsupported scheme", func(t *testing.T) {
 		client := download.NewClient()
-		_, err := client.FetchCertificate(t.Context(), "ftp://example.com/cert.cer")
+		cert := config.Certificate{URI: "ftp://example.com/cert.cer"}
+		_, err := client.FetchCertificate(t.Context(), cert)
 		if err == nil {
 			t.Error("FetchCertificate() expected error for unsupported scheme")
 		}
@@ -164,7 +168,8 @@ func TestFetchCertificate(t *testing.T) {
 
 	t.Run("returns error for non-existent file", func(t *testing.T) {
 		client := download.NewClient()
-		_, err := client.FetchCertificate(t.Context(), "file:///non/existent/cert.pem")
+		cert := config.Certificate{URI: "file:///non/existent/cert.pem"}
+		_, err := client.FetchCertificate(t.Context(), cert)
 		if err == nil {
 			t.Error("FetchCertificate() expected error for non-existent file")
 		}
@@ -180,7 +185,8 @@ func TestFetchCertificate(t *testing.T) {
 
 		client := download.NewClient()
 		uri := "file://" + certPath
-		_, err := client.FetchCertificate(t.Context(), uri)
+		cert := config.Certificate{URI: uri}
+		_, err := client.FetchCertificate(t.Context(), cert)
 		if err == nil {
 			t.Error("FetchCertificate() expected error for invalid certificate")
 		}

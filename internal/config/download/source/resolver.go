@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	goutils "github.com/loicsikidi/go-utils"
 	"github.com/loicsikidi/go-utils/net/httputil"
 	"github.com/loicsikidi/go-utils/system/fsutil"
 
@@ -28,22 +27,33 @@ type Resolver interface {
 
 // HTTPSResolver downloads certificates from HTTPS URLs.
 type HTTPSResolver struct {
-	url        string
-	httpClient utils.HTTPClient
+	url               string
+	httpClient        utils.HTTPClient
+	allowHttpFallback bool
 }
 
 // NewHTTPSResolver creates a new HTTPS resolver.
-func NewHTTPSResolver(url string, httpClient utils.HTTPClient) *HTTPSResolver {
+func NewHTTPSResolver(url string, httpClient utils.HTTPClient, allowHttpFallback bool) *HTTPSResolver {
 	return &HTTPSResolver{
-		url:        url,
-		httpClient: httpClient,
+		url:               url,
+		httpClient:        httpClient,
+		allowHttpFallback: allowHttpFallback,
 	}
 }
 
 // Fetch downloads the certificate from the HTTPS URL.
+// If HTTPS fails and allowHttpFallback is true, attempts HTTP as fallback.
 func (r *HTTPSResolver) Fetch(ctx context.Context) ([]byte, error) {
 	data, err := httputil.HttpGET(ctx, r.httpClient, r.url)
 	if err != nil {
+		if r.allowHttpFallback {
+			httpURL := strings.Replace(r.url, "https://", "http://", 1)
+			data, httpErr := httputil.HttpGET(ctx, r.httpClient, httpURL)
+			if httpErr != nil {
+				return nil, fmt.Errorf("failed to download from %s (HTTPS error: %w) and HTTP fallback from %s failed: %v", r.url, err, httpURL, httpErr)
+			}
+			return data, nil
+		}
 		return nil, fmt.Errorf("failed to download from %s: %w", r.url, err)
 	}
 	return data, nil
@@ -75,6 +85,22 @@ func (r *FileResolver) Fetch(ctx context.Context) ([]byte, error) {
 	return data, nil
 }
 
+type Config struct {
+	URI               string
+	HttpClient        utils.HTTPClient
+	AllowHttpFallback bool
+}
+
+func (c *Config) CheckAndSetDefaults() error {
+	if c.HttpClient == nil {
+		c.HttpClient = defaultClient
+	}
+	if c.URI == "" {
+		return fmt.Errorf("uri must be provided")
+	}
+	return nil
+}
+
 // NewResolver creates the appropriate resolver based on the URI scheme.
 //
 // Supported schemes:
@@ -84,22 +110,25 @@ func (r *FileResolver) Fetch(ctx context.Context) ([]byte, error) {
 // Example:
 //
 //	// HTTPS resolver
-//	resolver, err := NewResolver("https://example.com/cert.cer", httpClient)
+//	resolver, err := NewResolver(Config{URI: "https://example.com/cert.cer"})
 //
 //	// File resolver (absolute)
-//	resolver, err := NewResolver("file:///home/user/repo/certs/root.pem")
-func NewResolver(uri string, optionalHttpClient ...utils.HTTPClient) (Resolver, error) {
-	parsedURI, err := url.Parse(uri)
+//	resolver, err := NewResolver(Config{URI: "file:///home/user/repo/certs/root.pem"})
+func NewResolver(config Config) (Resolver, error) {
+	if err := config.CheckAndSetDefaults(); err != nil {
+		return nil, err
+	}
+
+	parsedURI, err := url.Parse(config.URI)
 	if err != nil {
 		return nil, fmt.Errorf("invalid URI: %w", err)
 	}
 
 	switch parsedURI.Scheme {
 	case "https":
-		httpClient := goutils.OptionalArgWithDefault[utils.HTTPClient](optionalHttpClient, defaultClient)
-		return NewHTTPSResolver(uri, httpClient), nil
+		return NewHTTPSResolver(config.URI, config.HttpClient, config.AllowHttpFallback), nil
 	case "file":
-		return NewFileResolver(uri)
+		return NewFileResolver(config.URI)
 	default:
 		return nil, fmt.Errorf("unsupported URI scheme '%s': must be 'https' or 'file'", parsedURI.Scheme)
 	}
