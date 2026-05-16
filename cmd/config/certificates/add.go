@@ -400,7 +400,10 @@ func downloadCertificatesParallel(ctx context.Context, urls []string, fingerprin
 
 		// Download certificate
 		client := download.NewClient()
-		cert, err := client.FetchCertificate(ctx, input.url)
+		tempCert := config.Certificate{
+			URI: input.url,
+		}
+		cert, err := client.FetchCertificate(ctx, tempCert)
 		if err != nil {
 			result.err = err
 			return result

@@ -10,6 +10,7 @@
 | 2026-04-11 | Loïc Sikidi | Add optional description field to Certificate |
 | 2026-05-10 | Loïc Sikidi | Add URI support with file:// scheme           |
 | 2026-05-13 | Loïc Sikidi | Promote to beta, remove url field             |
+| 2026-05-15 | Loïc Sikidi | Add allowHttpFallback field to Certificate    |
 
 The TPM Trust Bundle is generated from two human-readable YAML configuration files:
 
@@ -42,6 +43,7 @@ vendors:
         - name: "Certificate Name"
           description: "Optional description of this certificate"
           uri: "https://vendor.com/path/to/certificate.cer"
+          allowHttpFallback: false  # Optional, defaults to false
           validation:
             fingerprint:
                 sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
@@ -62,6 +64,7 @@ vendors:
 | `vendors[].certificates[].name` | string | Yes | Human-readable certificate name | `"Nuvoton TPM Root CA 1110"` |
 | `vendors[].certificates[].description` | string | No | Optional human-readable description of the certificate | `"This certificate is used for TPM 2.0 devices"` |
 | `vendors[].certificates[].uri` | string | Yes | URI where the certificate can be accessed. Supports `https://` (nominal case for publicly available certificates) or `file:///` (exceptional case for archived certificates). File URIs must use the `/{local}` placeholder pattern: `file:///{local}/relative/path`. | `"https://www.nuvoton.com/..."` or `"file:///{local}/certs/archived.cer"` |
+| `vendors[].certificates[].allowHttpFallback` | boolean | No | Allow fallback to HTTP if HTTPS fails (defaults to `false`). Use with extreme caution - should only be enabled for servers with broken HTTPS configurations. Security is maintained through fingerprint validation. | `true` |
 | `vendors[].certificates[].validation` | object | Yes | Validation information for the certificate | - |
 | `vendors[].certificates[].validation.fingerprint` | object | Yes | Hash fingerprints of the certificate | - |
 | `vendors[].certificates[].validation.fingerprint.sha1` | string | No | SHA-1 fingerprint | `"65:5E:44:5E:96:54:..."` |
@@ -326,6 +329,24 @@ uri: "file://certs/certificate.cer"
 > File URIs should only be used for exceptional cases where certificates are no longer publicly available and need to be archived in the repository. HTTPS URIs are the nominal case for publicly available certificates.
 >
 > The `/{local}` placeholder is dynamically replaced by the CLI with the absolute path of the configuration file's parent directory.
+
+#### HTTP Fallback (Security Consideration)
+
+The `allowHttpFallback` field controls whether the certificate downloader should attempt HTTP retrieval if HTTPS fails. This field exists to handle servers with broken HTTPS configurations (e.g., TLS certificate hostname mismatch).
+
+```yaml
+# ✓ Acceptable use case - server with broken HTTPS
+certificates:
+  - name: "Certificate from problematic server"
+    uri: "https://pki.example.com/cert.cer"
+    allowHttpFallback: true
+    validation:
+      fingerprint:
+        sha256: "AA:BB:CC:..."
+```
+
+> [!WARNING]
+> Use `allowHttpFallback: true` sparingly and only when absolutely necessary. While certificate integrity is guaranteed through fingerprint validation, HTTP fallback reduces transport security guarantees. This field should only be enabled for servers with known HTTPS configuration issues that cannot be resolved.
 
 ### 5. Fingerprint Format
 

@@ -6,7 +6,7 @@ require (
 	github.com/caarlos0/go-version v0.2.2
 	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/loicsikidi/go-tpm-kit v0.6.1
-	github.com/loicsikidi/go-utils v0.1.3
+	github.com/loicsikidi/go-utils v0.3.0
 	github.com/sigstore/sigstore-go v1.1.5-0.20260202082308-3f2ee9eda9b2
 	github.com/spf13/cobra v1.10.2
 	github.com/theupdateframework/go-tuf/v2 v2.4.1
