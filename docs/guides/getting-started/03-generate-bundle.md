@@ -71,6 +71,7 @@ certificates:
 
 > [!INFO]
 > See the [certificates](../../../certificates) directory for more details.
+
 > [!TIP]
 > See the [Configuration File Specification](../../specifications/01-configuration-file.md) for complete format details.
 
