@@ -44,14 +44,14 @@ vendors:
 
 Both files are designed to be:
 - ✅ **Human-readable:** Anyone can understand what certificates are included
-- ✅ **Verifiable:** Clear provenance for every certificate URL
+- ✅ **Verifiable:** Clear provenance for every certificate URI
 - ✅ **Auditable:** Git history tracks every change
 
-**Key principle:** Every certificate must have a publicly accessible URL.
+**Key principle:** Certificate source URIs must use HTTPS by default, with a documented exception for local certificates using `file:///{local}/`.
 
-#### Exception: Local Certificates
+#### Exception: Local Certificates (`file:///{local}/`)
 
-In some cases, certificates may no longer be publicly available from the vendor's website. If a certificate was previously included in the bundle and the manufacturer has not made an official announcement that it is no longer trusted, it can be included using a local reference:
+The `file:///{local}/` scheme allows referencing certificates stored in the repository when they are no longer publicly available:
 
 ```yaml
 certificates:
@@ -62,17 +62,21 @@ certificates:
         sha256: "AB:CD:EF:..."
 ```
 
-**Security note:** Fingerprint validation remains mandatory for local certificates. Only the source location changes - the cryptographic verification is identical.
+**When to use this exception:**
+- The certificate was previously available via HTTPS and included in the bundle
+- The vendor has not announced the certificate as compromised or untrusted
+- The certificate is still valid and used by deployed TPM devices
+
+**Security note:** Fingerprint validation remains mandatory for local certificates - only the source location changes, the cryptographic verification is identical.
 
 > [!INFO]
 > See the [certificates](../../../certificates) directory for more details.
-
 > [!TIP]
 > See the [Configuration File Specification](../../specifications/01-configuration-file.md) for complete format details.
 
 ### 2. `src/` - The Evidence Archive
 
-Saying "I found this URL on the vendor website" isn't enough. Prove it!
+Saying "I found this URI on the vendor website" isn't enough. Prove it!
 
 The `src/` directory contains receipts:
 - 📄 **PDFs** from vendor documentation
@@ -90,7 +94,7 @@ src/
 ```
 
 **Why this matters:**
-- 🔍 **Transparency:** Anyone can verify how URLs were discovered
+- 🔍 **Transparency:** Anyone can verify how URIs were discovered
 - 📜 **History:** Future auditors can understand past decisions
 
 > [!NOTE]
@@ -118,7 +122,7 @@ tpmtb config validate --config .tpm-intermediates.yaml
 The CLI checks:
 - ✅ YAML syntax is correct
 - ✅ Vendor IDs exist in TCG registry
-- ✅ All URLs use HTTPS
+- ✅ All URIs use HTTPS (or `file:///{local}/` for local certificates)
 - ✅ Fingerprints are properly formatted
 
 > [!IMPORTANT]
@@ -135,7 +139,7 @@ tpmtb generate --config .tpm-intermediates.yaml --workers 10 --output tpm-interm
 ```
 
 For each certificate (root or intermediate):
-1. **Fetch** from the vendor URL (HTTPS only) or read from local path (if using `file:///{local}/`)
+1. **Fetch** from the vendor URI (HTTPS) or read from local path (`file:///{local}/`)
 2. **Verify** fingerprint matches the configuration
 3. **Extract** certificate metadata (issuer, subject, validity, etc.)
 4. **Format** with human-readable comments
@@ -198,7 +202,7 @@ A scheduled job runs daily to:
 
 - 🔄 **Regenerate** the bundle from scratch
 - 🔐 **Verify** all certificate fingerprints still match
-- 🌐 **Check** vendor URLs are still accessible
+- 🌐 **Check** vendor URIs are still accessible
 - ⏰ **Monitor** certificate expiration dates
 - 🛡️ **Test** the latest release verification workflow
 
