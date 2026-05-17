@@ -29,7 +29,7 @@ vendors:
     name: "STMicroelectronics"
     certificates:
       - name: "Existing Cert"
-        url: "https://example.com/cert.crt"
+        uri: "https://example.com/cert.crt"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
@@ -73,7 +73,7 @@ vendors:
     name: "STMicroelectronics"
     certificates:
       - name: "GlobalSign Trusted Computing CA"
-        url: "https://secure.globalsign.com/cacert/gstpmroot.crt"
+        uri: "https://secure.globalsign.com/cacert/gstpmroot.crt"
         validation:
           fingerprint:
             sha1: "3D:5E:6B:4A:8C:2F:1E:4B:9A:7C:8D:2E:3F:4A:5B:6C:7D:8E:9F:0A"
@@ -120,7 +120,7 @@ vendors:
     certificates:
       - name: "Existing Cert"
         description: "Existing certificate description"
-        url: "https://example.com/cert.crt"
+        uri: "https://example.com/cert.crt"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
@@ -155,7 +155,7 @@ vendors:
     name: "STMicroelectronics"
     certificates:
       - name: "Test Cert"
-        url: "https://example.com/cert.crt"
+        uri: "https://example.com/cert.crt"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"

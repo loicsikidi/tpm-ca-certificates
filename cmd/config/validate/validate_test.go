@@ -26,7 +26,7 @@ vendors:
     name: "STMicroelectronics"
     certificates:
       - name: "Test Certificate"
-        url: "https://example.com/cert.crt"
+        uri: "https://example.com/cert.crt"
         validation:
           fingerprint:
             sha256: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99"
@@ -45,7 +45,7 @@ vendors:
     name: "STMicroelectronics"
     certificates:
       - name: "Test Certificate"
-        url: "https://example.com/cert.crt"
+        uri: "https://example.com/cert.crt"
         validation:
           fingerprint:
             sha256: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99"
@@ -63,7 +63,7 @@ vendors:
     name: "STMicroelectronics"
     certificates:
       - name: "Test Certificate"
-        url: "http://example.com/cert.crt"
+        uri: "https://example.com/cert.crt"
         validation:
           fingerprint:
             sha256: "invalid-fingerprint"
@@ -82,7 +82,7 @@ vendors:
     name: "STMicroelectronics"
     certificates:
       - name: "Test Certificate"
-        url: "http://example.com/cert.crt"
+        uri: "https://example.com/cert.crt"
         validation:
           fingerprint:
             sha256: "invalid-fingerprint"

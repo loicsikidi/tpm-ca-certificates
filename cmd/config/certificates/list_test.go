@@ -25,12 +25,12 @@ vendors:
     name: "Vendor A"
     certificates:
       - name: "Cert A1"
-        url: "https://example.com/a1.crt"
+        uri: "https://example.com/a1.crt"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
       - name: "Cert A2"
-        url: "https://example.com/a2.crt"
+        uri: "https://example.com/a2.crt"
         validation:
           fingerprint:
             sha256: "11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00"
@@ -38,7 +38,7 @@ vendors:
     name: "Vendor B"
     certificates:
       - name: "Cert B1"
-        url: "https://example.com/b1.crt"
+        uri: "https://example.com/b1.crt"
         validation:
           fingerprint:
             sha1: "FF:EE:DD:CC:BB:AA:99:88:77:66:55:44:33:22:11:00:FF:EE:DD:CC"
@@ -64,7 +64,7 @@ vendors:
     name: "Vendor A"
     certificates:
       - name: "Cert A1"
-        url: "https://example.com/a1.crt"
+        uri: "https://example.com/a1.crt"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
@@ -72,7 +72,7 @@ vendors:
     name: "Vendor B"
     certificates:
       - name: "Cert B1"
-        url: "https://example.com/b1.crt"
+        uri: "https://example.com/b1.crt"
         validation:
           fingerprint:
             sha1: "FF:EE:DD:CC:BB:AA:99:88:77:66:55:44:33:22:11:00:FF:EE:DD:CC"
@@ -94,7 +94,7 @@ vendors:
     name: "Vendor A"
     certificates:
       - name: "Cert A1"
-        url: "https://example.com/a1.crt"
+        uri: "https://example.com/a1.crt"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
@@ -112,7 +112,7 @@ vendors:
     name: "Test Vendor"
     certificates:
       - name: "Multi-Hash Cert"
-        url: "https://example.com/multi.crt"
+        uri: "https://example.com/multi.crt"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"

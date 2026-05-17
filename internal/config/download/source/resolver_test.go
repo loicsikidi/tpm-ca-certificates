@@ -23,7 +23,7 @@ func TestHTTPSResolver_Fetch(t *testing.T) {
 			/* optionalUseTLS= */ true)
 		resolver := NewHTTPSResolver(uri, srv.Client(),
 			/* allowHttpFallback= */ false)
-		data, err := resolver.Fetch(context.Background())
+		data, err := resolver.Fetch(t.Context())
 		if err != nil {
 			t.Fatalf("Fetch() error = %v, want nil", err)
 		}
@@ -40,7 +40,7 @@ func TestHTTPSResolver_Fetch(t *testing.T) {
 
 		resolver := NewHTTPSResolver(invalidURL, srv.Client(),
 			/* allowHttpFallback= */ false)
-		_, err := resolver.Fetch(context.Background())
+		_, err := resolver.Fetch(t.Context())
 		if err == nil {
 			t.Fatal("Fetch() error = nil, want error")
 		}
@@ -56,7 +56,7 @@ func TestHTTPSResolver_Fetch(t *testing.T) {
 		}))
 		defer server.Close()
 
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(t.Context())
 		cancel()
 
 		resolver := NewHTTPSResolver(server.URL, server.Client(), false)
@@ -142,7 +142,7 @@ func TestFileResolver_Fetch(t *testing.T) {
 			t.Fatalf("NewFileResolver() error = %v, want nil", err)
 		}
 
-		data, err := resolver.Fetch(context.Background())
+		data, err := resolver.Fetch(t.Context())
 
 		if err != nil {
 			t.Fatalf("Fetch() error = %v, want nil", err)
@@ -161,7 +161,7 @@ func TestFileResolver_Fetch(t *testing.T) {
 			t.Fatalf("NewFileResolver() error = %v, want nil", err)
 		}
 
-		_, err = resolver.Fetch(context.Background())
+		_, err = resolver.Fetch(t.Context())
 
 		if err == nil {
 			t.Fatal("Fetch() error = nil, want error for non-existent file")
@@ -185,7 +185,7 @@ func TestFileResolver_Fetch(t *testing.T) {
 			t.Fatalf("NewFileResolver() error = %v, want nil", err)
 		}
 
-		data, err := resolver.Fetch(context.Background())
+		data, err := resolver.Fetch(t.Context())
 
 		if err != nil {
 			t.Fatalf("Fetch() error = %v, want nil", err)
@@ -210,7 +210,7 @@ func TestFileResolver_Fetch(t *testing.T) {
 			t.Fatalf("NewFileResolver() error = %v, want nil", err)
 		}
 
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(t.Context())
 		cancel()
 
 		data, err := resolver.Fetch(ctx)
@@ -356,7 +356,7 @@ func TestResolver_Integration(t *testing.T) {
 			t.Fatalf("NewResolver() error = %v, want nil", err)
 		}
 
-		data, err := resolver.Fetch(context.Background())
+		data, err := resolver.Fetch(t.Context())
 		if err != nil {
 			t.Fatalf("Fetch() error = %v, want nil", err)
 		}
@@ -399,7 +399,7 @@ func TestResolver_Integration(t *testing.T) {
 		}
 
 		// Should fail because HTTP fallback is disabled
-		_, err = resolver.Fetch(context.Background())
+		_, err = resolver.Fetch(t.Context())
 		if err == nil {
 			t.Fatal("Fetch() error = nil, want error because HTTP fallback is disabled")
 		}
@@ -415,7 +415,7 @@ func TestResolver_Integration(t *testing.T) {
 		}
 
 		// Should succeed because HTTP fallback is enabled
-		data, err := resolver.Fetch(context.Background())
+		data, err := resolver.Fetch(t.Context())
 		if err != nil {
 			t.Fatalf("Fetch() error = %v, want nil", err)
 		}
@@ -440,7 +440,7 @@ func TestResolver_Integration(t *testing.T) {
 			t.Fatalf("NewResolver() error = %v, want nil", err)
 		}
 
-		data, err := resolver.Fetch(context.Background())
+		data, err := resolver.Fetch(t.Context())
 		if err != nil {
 			t.Fatalf("Fetch() error = %v, want nil", err)
 		}

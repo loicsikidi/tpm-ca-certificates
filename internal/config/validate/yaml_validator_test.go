@@ -15,6 +15,7 @@ func TestYAMLValidator_ValidateFile(t *testing.T) {
 		yaml        string
 		wantErrors  int
 		errorChecks []string
+		wantError   string // if non-empty, expect ValidateFile() to return an error containing this string
 	}{
 		{
 			name: "valid file",
@@ -25,7 +26,7 @@ vendors:
     name: "STMicroelectronics"
     certificates:
       - name: "Cert A"
-        url: "https://example.com/cert.cer"
+        uri: "https://example.com/cert.cer"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
@@ -40,7 +41,7 @@ vendors:
     name: "STMicroelectronics"
     certificates:
       - name: "Cert A"
-        url: "https://example.com/cert.cer"
+        uri: "https://example.com/cert.cer"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
@@ -70,7 +71,7 @@ vendors:
     name: "Nuvoton Technology"
     certificates:
       - name: "Cert A"
-        url: "https://example.com/cert.cer"
+        uri: "https://example.com/cert.cer"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
@@ -78,7 +79,7 @@ vendors:
     name: "Intel"
     certificates:
       - name: "Cert A"
-        url: "https://example.com/cert.cer"
+        uri: "https://example.com/cert.cer"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
@@ -95,12 +96,12 @@ vendors:
     name: "STMicroelectronics"
     certificates:
       - name: "Cert Z"
-        url: "https://example.com/cert-z.cer"
+        uri: "https://example.com/cert-z.cer"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
       - name: "Cert A"
-        url: "https://example.com/cert-a.cer"
+        uri: "https://example.com/cert-a.cer"
         validation:
           fingerprint:
             sha1: "11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44"
@@ -117,13 +118,13 @@ vendors:
     name: "STMicroelectronics"
     certificates:
       - name: "Cert A"
-        url: "https://example.com/cert with space.cer"
+        uri: "https://example.com/cert with space.cer"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
 `,
 			wantErrors:  1,
-			errorChecks: []string{"url not properly encoded"},
+			errorChecks: []string{"uri not properly encoded"},
 		},
 		{
 			name: "http URL",
@@ -134,13 +135,12 @@ vendors:
     name: "STMicroelectronics"
     certificates:
       - name: "Cert A"
-        url: "http://example.com/cert.cer"
+        uri: "http://example.com/cert.cer"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
 `,
-			wantErrors:  1,
-			errorChecks: []string{"url must use HTTPS scheme"},
+			wantError: "invalid uri scheme 'http'",
 		},
 		{
 			name: "lowercase fingerprint",
@@ -151,7 +151,7 @@ vendors:
     name: "STMicroelectronics"
     certificates:
       - name: "Cert A"
-        url: "https://example.com/cert.cer"
+        uri: "https://example.com/cert.cer"
         validation:
           fingerprint:
             sha1: "aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99:aa:bb:cc:dd"
@@ -168,7 +168,7 @@ vendors:
     name: "STMicroelectronics"
     certificates:
       - name: "Cert A"
-        url: "https://example.com/cert.cer"
+        uri: "https://example.com/cert.cer"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
@@ -185,7 +185,7 @@ vendors:
     name: "Unknown Vendor"
     certificates:
       - name: "Cert A"
-        url: "https://example.com/cert.cer"
+        uri: "https://example.com/cert.cer"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
@@ -202,7 +202,7 @@ vendors:
     name: "STMicroelectronics"
     certificates:
       - name: "Cert A"
-        url: "https://example.com/cert-a.cer"
+        uri: "https://example.com/cert-a.cer"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
@@ -210,7 +210,7 @@ vendors:
     name: "STMicroelectronics Duplicate"
     certificates:
       - name: "Cert B"
-        url: "https://example.com/cert-b.cer"
+        uri: "https://example.com/cert-b.cer"
         validation:
           fingerprint:
             sha1: "11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44"
@@ -227,12 +227,12 @@ vendors:
     name: "STMicroelectronics"
     certificates:
       - name: "Cert A"
-        url: "https://example.com/cert-a.cer"
+        uri: "https://example.com/cert-a.cer"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
       - name: "Cert A"
-        url: "https://example.com/cert-b.cer"
+        uri: "https://example.com/cert-b.cer"
         validation:
           fingerprint:
             sha1: "11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44"
@@ -249,12 +249,12 @@ vendors:
     name: "STMicroelectronics"
     certificates:
       - name: "Cert A"
-        url: "https://example.com/cert.cer"
+        uri: "https://example.com/cert.cer"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
       - name: "Cert B"
-        url: "https://example.com/cert.cer"
+        uri: "https://example.com/cert.cer"
         validation:
           fingerprint:
             sha1: "11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44"
@@ -271,12 +271,12 @@ vendors:
     name: "STMicroelectronics"
     certificates:
       - name: "Cert A"
-        url: "https://example.com/cert-a.cer"
+        uri: "https://example.com/cert-a.cer"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
       - name: "Cert B"
-        url: "https://example.com/cert-b.cer"
+        uri: "https://example.com/cert-b.cer"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
@@ -361,13 +361,13 @@ vendors:
     certificates:
       - name: "AMDTPM ECC"
         description: "test certificate"
-        url: "https://example.com/cert with space.der"
+        uri: "https://example.com/cert with space.der"
         validation:
           fingerprint:
             sha256: "C2:CB:57:BF:72:3C:17:4F:16:6C:5A:A1:DC:64:16:09:81:05:4B:EE:18:C7:0E:B1:DE:BF:C1:51:8A:FA:92:D2"
 `,
 			wantErrors:  1,
-			errorChecks: []string{"url not properly encoded"},
+			errorChecks: []string{"uri not properly encoded"},
 		},
 		{
 			name: "multiple unencoded URIs report correct line numbers",
@@ -405,6 +405,16 @@ vendors:
 
 			validator := validate.NewYAMLValidator()
 			errors, err := validator.ValidateFile(testFile)
+
+			if tt.wantError != "" {
+				if err == nil {
+					t.Fatalf("ValidateFile() expected error containing %q, but got nil", tt.wantError)
+				}
+				if !contains(err.Error(), tt.wantError) {
+					t.Fatalf("ValidateFile() error = %q, want error containing %q", err.Error(), tt.wantError)
+				}
+				return
+			}
 			if err != nil {
 				t.Fatalf("ValidateFile() unexpected error: %v", err)
 			}

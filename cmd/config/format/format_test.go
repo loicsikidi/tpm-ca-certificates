@@ -24,7 +24,7 @@ vendors:
     name: Test Vendor
     certificates:
       - name: Test Cert
-        url: https://example.com/test.cer
+        uri: https://example.com/test.cer
         validation:
           fingerprint:
             sha1: aa:bb:cc:dd
@@ -72,7 +72,7 @@ vendors:
     name: "Vendor B"
     certificates:
       - name: "Cert"
-        url: "https://example.com/b.cer"
+        uri: "https://example.com/b.cer"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD"
@@ -80,7 +80,7 @@ vendors:
     name: "Vendor A"
     certificates:
       - name: "Cert"
-        url: "https://example.com/a.cer"
+        uri: "https://example.com/a.cer"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD"
@@ -113,12 +113,12 @@ vendors:
     name: "Test Vendor"
     certificates:
       - name: "Z Certificate"
-        url: "https://example.com/z.cer"
+        uri: "https://example.com/z.cer"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD"
       - name: "A Certificate"
-        url: "https://example.com/a.cer"
+        uri: "https://example.com/a.cer"
         validation:
           fingerprint:
             sha1: "EE:FF:00:11"
@@ -153,7 +153,7 @@ vendors:
     name: Test Vendor
     certificates:
       - name: Test Cert
-        url: https://example.com/test.cer
+        uri: https://example.com/test.cer
         validation:
           fingerprint:
             sha1: aa:bb:cc:dd
@@ -186,7 +186,7 @@ vendors:
       name: "Test Vendor"
       certificates:
         - name: "Test Cert"
-          url: "https://example.com/test.cer"
+          uri: "https://example.com/test.cer"
           validation:
             fingerprint:
                 sha1: "AA:BB:CC:DD"
@@ -215,7 +215,7 @@ vendors:
     name: "Test Vendor"
     certificates:
       - name: "Test Cert"
-        url: "https://example.com/test cert with spaces.cer"
+        uri: "https://example.com/test cert with spaces.cer"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD"
@@ -316,7 +316,7 @@ vendors:
     name: "Test"
     certificates:
       - name: "Cert"
-        url: "https://example.com/cert.cer"
+        uri: "https://example.com/cert.cer"
         validation:
           fingerprint:
             sha1: "aa:bb:cc:dd"
@@ -332,7 +332,7 @@ vendors:
     name: Test
     certificates:
       - name: Cert
-        url: https://example.com/cert.cer
+        uri: https://example.com/cert.cer
         validation:
           fingerprint:
             sha1: aa:bb:cc:dd
@@ -349,7 +349,7 @@ vendors:
       name: "Test"
       certificates:
         - name: "Cert"
-          url: "https://example.com/cert.cer"
+          uri: "https://example.com/cert.cer"
           validation:
             fingerprint:
                 sha1: "AA:BB:CC:DD"

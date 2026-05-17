@@ -1,7 +1,6 @@
 package observability
 
 import (
-	"context"
 	"sync"
 	"testing"
 
@@ -9,7 +8,7 @@ import (
 )
 
 func TestInitialize_WithDisabled(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Test with Enabled=false (default)
 	cfg := Config{
@@ -35,7 +34,7 @@ func TestInitialize_WithInvalidConfig(t *testing.T) {
 	// Reset state for this test
 	resetInitState()
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Invalid sampler
 	cfg := Config{
@@ -83,7 +82,7 @@ func TestTracer(t *testing.T) {
 	}
 
 	// Should be able to start a span
-	ctx := context.Background()
+	ctx := t.Context()
 	_, span := tracer.Start(ctx, "test-span")
 	if span == nil {
 		t.Fatal("span should not be nil")
@@ -95,7 +94,7 @@ func TestNoopMode_TracerReturnsNoopSpan(t *testing.T) {
 	cleanup := setTracerProviderForTest()
 	defer cleanup()
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Get tracer and verify it returns noop spans
 	tracer := Tracer()
@@ -153,7 +152,7 @@ func TestInitialize_ConcurrentCalls(t *testing.T) {
 	// Reset state for this test
 	resetInitState()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	cfg := Config{
 		Enabled: false,
 	}
@@ -202,7 +201,7 @@ func TestTracer_ConcurrentAccess(t *testing.T) {
 	cleanup := setTracerProviderForTest()
 	defer cleanup()
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Call Tracer concurrently from multiple goroutines
 	const numGoroutines = 50
@@ -235,7 +234,7 @@ func TestNoopMode_StartSpanReturnsNoopSpan(t *testing.T) {
 	cleanup := setTracerProviderForTest()
 	defer cleanup()
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Use StartSpan helper
 	_, span := StartSpan(ctx, "test-operation")
@@ -272,7 +271,7 @@ func TestTracerProvider_InitialState(t *testing.T) {
 		t.Fatal("Tracer() should not return nil")
 	}
 
-	_, span := tracer.Start(context.Background(), "test-span")
+	_, span := tracer.Start(t.Context(), "test-span")
 
 	// Should be a noop span
 	if span.IsRecording() {

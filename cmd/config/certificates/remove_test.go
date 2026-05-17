@@ -24,17 +24,17 @@ vendors:
     name: "Test Vendor"
     certificates:
       - name: "Certificate A"
-        url: "https://example.com/cert-a.crt"
+        uri: "https://example.com/cert-a.crt"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
       - name: "Certificate B"
-        url: "https://example.com/cert-b.crt"
+        uri: "https://example.com/cert-b.crt"
         validation:
           fingerprint:
             sha1: "11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44"
       - name: "Certificate C"
-        url: "https://example.com/cert-c.crt"
+        uri: "https://example.com/cert-c.crt"
         validation:
           fingerprint:
             sha1: "FF:EE:DD:CC:BB:AA:99:88:77:66:55:44:33:22:11:00:FF:EE:DD:CC"
@@ -68,12 +68,12 @@ vendors:
     name: "Test Vendor"
     certificates:
       - name: "FirstCert"
-        url: "https://example.com/first.crt"
+        uri: "https://example.com/first.crt"
         validation:
           fingerprint:
             sha1: "11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44"
       - name: "MyTestCertificate"
-        url: "https://example.com/cert.crt"
+        uri: "https://example.com/cert.crt"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
@@ -101,7 +101,7 @@ vendors:
     name: "Test Vendor"
     certificates:
       - name: "Test Cert"
-        url: "https://example.com/cert.crt"
+        uri: "https://example.com/cert.crt"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
@@ -120,7 +120,7 @@ vendors:
     name: "Test Vendor"
     certificates:
       - name: "Certificate A"
-        url: "https://example.com/cert-a.crt"
+        uri: "https://example.com/cert-a.crt"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
@@ -139,12 +139,12 @@ vendors:
     name: "Test Vendor"
     certificates:
       - name: "First Cert"
-        url: "https://example.com/first.crt"
+        uri: "https://example.com/first.crt"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
       - name: "Second Cert"
-        url: "https://example.com/second.crt"
+        uri: "https://example.com/second.crt"
         validation:
           fingerprint:
             sha1: "11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44"
@@ -172,12 +172,12 @@ vendors:
     name: "Test Vendor"
     certificates:
       - name: "First Cert"
-        url: "https://example.com/first.crt"
+        uri: "https://example.com/first.crt"
         validation:
           fingerprint:
             sha1: "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD"
       - name: "Last Cert"
-        url: "https://example.com/last.crt"
+        uri: "https://example.com/last.crt"
         validation:
           fingerprint:
             sha1: "11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44"
