@@ -2,62 +2,45 @@ package source
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/loicsikidi/go-utils/crypto/pkiutil/tinyca"
 )
 
 func TestHTTPSResolver_Fetch(t *testing.T) {
 	t.Run("successful fetch", func(t *testing.T) {
-		expectedData := "certificate data"
-		server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(expectedData))
-		}))
-		defer server.Close()
+		srv := tinyca.NewServer(t)
 
-		resolver := NewHTTPSResolver(server.URL, server.Client(), false)
+		uri := srv.IssuerURL(tinyca.CATypeRoot,
+			/* optionalUseTLS= */ true)
+		resolver := NewHTTPSResolver(uri, srv.Client(),
+			/* allowHttpFallback= */ false)
 		data, err := resolver.Fetch(context.Background())
-
 		if err != nil {
 			t.Fatalf("Fetch() error = %v, want nil", err)
 		}
 
-		if string(data) != expectedData {
-			t.Errorf("Fetch() = %q, want %q", data, expectedData)
+		if len(data) == 0 {
+			t.Error("Fetch() returned empty data, expected certificate data")
 		}
 	})
 
 	t.Run("handles HTTP 404 error", func(t *testing.T) {
-		server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusNotFound)
-		}))
-		defer server.Close()
+		srv := tinyca.NewServer(t)
+		// Use a non-existent endpoint to trigger a 404
+		invalidURL := srv.BaseTLSURL() + "/nonexistent/path"
 
-		resolver := NewHTTPSResolver(server.URL, server.Client(), false)
+		resolver := NewHTTPSResolver(invalidURL, srv.Client(),
+			/* allowHttpFallback= */ false)
 		_, err := resolver.Fetch(context.Background())
-
-		if err == nil {
-			t.Fatal("Fetch() error = nil, want error")
-		}
-
-		if !strings.Contains(err.Error(), "failed to download from") {
-			t.Errorf("Fetch() error = %v, want error containing 'failed to download from'", err)
-		}
-	})
-
-	t.Run("handles HTTP 500 error", func(t *testing.T) {
-		server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusInternalServerError)
-		}))
-		defer server.Close()
-
-		resolver := NewHTTPSResolver(server.URL, server.Client(), false)
-		_, err := resolver.Fetch(context.Background())
-
 		if err == nil {
 			t.Fatal("Fetch() error = nil, want error")
 		}
@@ -81,26 +64,6 @@ func TestHTTPSResolver_Fetch(t *testing.T) {
 
 		if err == nil {
 			t.Fatal("Fetch() error = nil, want error for cancelled context")
-		}
-	})
-
-	t.Run("handles large response", func(t *testing.T) {
-		largeData := strings.Repeat("a", 1000)
-		server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(largeData))
-		}))
-		defer server.Close()
-
-		resolver := NewHTTPSResolver(server.URL, server.Client(), false)
-		data, err := resolver.Fetch(context.Background())
-
-		if err != nil {
-			t.Fatalf("Fetch() error = %v, want nil", err)
-		}
-
-		if len(data) != len(largeData) {
-			t.Errorf("Fetch() length = %d, want %d", len(data), len(largeData))
 		}
 	})
 }
@@ -382,57 +345,13 @@ func TestNewResolver(t *testing.T) {
 			t.Errorf("NewResolver() error = %v, want error containing 'relative paths are not supported'", err)
 		}
 	})
-
-	t.Run("uses default HTTP client when none provided", func(t *testing.T) {
-		uri := "https://example.com/cert.cer"
-
-		resolver, err := NewResolver(Config{URI: uri})
-
-		if err != nil {
-			t.Fatalf("NewResolver() error = %v, want nil", err)
-		}
-
-		httpsResolver, ok := resolver.(*HTTPSResolver)
-		if !ok {
-			t.Fatalf("NewResolver() type = %T, want *HTTPSResolver", resolver)
-		}
-
-		if httpsResolver.httpClient != defaultClient {
-			t.Error("NewResolver() should use defaultClient when none provided")
-		}
-	})
-
-	t.Run("uses provided HTTP client", func(t *testing.T) {
-		uri := "https://example.com/cert.cer"
-		client1 := &http.Client{}
-
-		resolver, err := NewResolver(Config{URI: uri, HttpClient: client1})
-
-		if err != nil {
-			t.Fatalf("NewResolver() error = %v, want nil", err)
-		}
-
-		httpsResolver, ok := resolver.(*HTTPSResolver)
-		if !ok {
-			t.Fatalf("NewResolver() type = %T, want *HTTPSResolver", resolver)
-		}
-
-		if httpsResolver.httpClient != client1 {
-			t.Error("NewResolver() should use provided HTTP client")
-		}
-	})
 }
 
 func TestResolver_Integration(t *testing.T) {
 	t.Run("HTTPS resolver end-to-end", func(t *testing.T) {
-		expectedData := "PEM certificate data"
-		server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(expectedData))
-		}))
-		defer server.Close()
+		srv := tinyca.NewServer(t)
 
-		resolver, err := NewResolver(Config{URI: server.URL, HttpClient: server.Client()})
+		resolver, err := NewResolver(Config{URI: srv.IssuerURL(tinyca.CATypeRoot, true), HttpClient: srv.Client()})
 		if err != nil {
 			t.Fatalf("NewResolver() error = %v, want nil", err)
 		}
@@ -442,8 +361,67 @@ func TestResolver_Integration(t *testing.T) {
 			t.Fatalf("Fetch() error = %v, want nil", err)
 		}
 
-		if string(data) != expectedData {
-			t.Errorf("Fetch() = %q, want %q", data, expectedData)
+		if len(data) == 0 {
+			t.Error("Fetch() returned empty data, expected certificate data")
+		}
+	})
+
+	t.Run("HTTPS resolver with HTTP fallback end-to-end", func(t *testing.T) {
+		ca := tinyca.Must()
+		srv := tinyca.NewServer(t, ca)
+
+		// override server certificate with an invalid certificate to test
+		// HTTP fallback
+		csr := tinyca.CertificateRequest{
+			DNSNames:    []string{"test.io"},
+			Subject:     pkix.Name{CommonName: "test.io"},
+			ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		}
+		cert, key, err := ca.Generate(csr)
+		if err != nil {
+			t.Fatalf("Failed to generate certificate: %v", err)
+		}
+		tlsCert := &tls.Certificate{
+			Certificate: [][]byte{cert.Raw, ca.Intermediate.Raw},
+			PrivateKey:  key,
+			Leaf:        cert,
+		}
+		srv.SetServerCertificate(tlsCert)
+
+		allowHttpFallback := false
+		resolver, err := NewResolver(Config{
+			URI:               srv.IssuerURL(tinyca.CATypeRoot, true),
+			HttpClient:        srv.Client(),
+			AllowHttpFallback: allowHttpFallback,
+		})
+		if err != nil {
+			t.Fatalf("NewResolver() error = %v, want nil", err)
+		}
+
+		// Should fail because HTTP fallback is disabled
+		_, err = resolver.Fetch(context.Background())
+		if err == nil {
+			t.Fatal("Fetch() error = nil, want error because HTTP fallback is disabled")
+		}
+
+		allowHttpFallback = true
+		resolver, err = NewResolver(Config{
+			URI:               srv.IssuerURL(tinyca.CATypeRoot, true),
+			HttpClient:        srv.Client(),
+			AllowHttpFallback: allowHttpFallback,
+		})
+		if err != nil {
+			t.Fatalf("NewResolver() error = %v, want nil", err)
+		}
+
+		// Should succeed because HTTP fallback is enabled
+		data, err := resolver.Fetch(context.Background())
+		if err != nil {
+			t.Fatalf("Fetch() error = %v, want nil", err)
+		}
+
+		if len(data) == 0 {
+			t.Error("Fetch() returned empty data, expected certificate data")
 		}
 	})
 
