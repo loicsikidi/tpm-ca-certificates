@@ -133,6 +133,15 @@ vendors:
           validation:
             fingerprint:
                 sha1: "5E:74:87:90:69:4F:6A:7F:6E:AB:AF:70:15:26:86:3C:DD:FE:6D:AC"
+    - id: "NTZ"
+      name: "Nationz"
+      certificates:
+        - name: "Nationz TPM Root CA"
+          uri: "https://pki.nationz.com.cn/EkRootCA/EkRootCA.crt"
+          allowHttpFallback: true
+          validation:
+            fingerprint:
+                sha256: "12:93:D7:1D:6F:61:C8:6B:98:10:2F:D3:D4:08:5F:F1:25:38:F1:08:E9:25:48:9C:0D:54:50:59:E5:F8:9C:36"
     - id: "STM"
       name: "STMicroelectronics"
       certificates:

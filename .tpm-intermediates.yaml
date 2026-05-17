@@ -634,6 +634,27 @@ vendors:
           validation:
             fingerprint:
                 sha1: "E2:12:26:B8:26:A3:81:01:25:4D:E7:90:01:A7:63:33:4D:B5:97:71"
+    - id: "NTZ"
+      name: "Nationz"
+      certificates:
+        - name: "Nationz TPM Manufacturing CA 001"
+          uri: "https://pki.nationz.com.cn/EkMfrCA001/EkMfrCA001.crt"
+          allowHttpFallback: true
+          validation:
+            fingerprint:
+                sha256: "44:AF:C4:B6:5D:4F:61:71:43:CF:30:85:63:7E:88:E6:EC:C7:71:0F:95:94:B3:7F:65:A3:DE:A8:2D:30:0B:A3"
+        - name: "Nationz TPM Manufacturing CA 002"
+          uri: "https://pki.nationz.com.cn/EkMfrCA002/EkMfrCA002.crt"
+          allowHttpFallback: true
+          validation:
+            fingerprint:
+                sha256: "23:56:51:02:58:C1:92:46:32:12:E8:48:55:C5:1D:05:18:98:E9:6D:AE:77:88:BB:06:CD:39:12:AA:03:24:17"
+        - name: "Nationz TPM Manufacturing CA 003"
+          uri: "https://pki.nationz.com.cn/EkMfrCA003/EkMfrCA003.crt"
+          allowHttpFallback: true
+          validation:
+            fingerprint:
+                sha256: "49:27:2A:C2:C7:1A:89:5E:7A:64:56:C2:B4:1D:7B:20:FD:74:D0:71:8D:B0:8D:29:A2:0C:47:E8:0B:D2:12:0E"
     - id: "STM"
       name: "STMicroelectronics"
       certificates:

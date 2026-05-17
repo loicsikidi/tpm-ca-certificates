@@ -12,6 +12,7 @@ This directory contains the evidence and documentation proving how the URLs for 
 | MSFT | Microsoft | [README](MSFT/) | C |
 | NTC | Nuvoton Technology | [README](NTC/) | A |
 | NSG | NSING | [README](NSG/) | B |
+| NTZ| Nationz Technologies Inc | [README](NTZ/) | C |
 | STM | STMicroelectronics | [README](STM/) | A |
 
 ### Accessibility Score Legend
