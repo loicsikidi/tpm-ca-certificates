@@ -33,7 +33,7 @@ Expected output should contain: `CA Issuers - URI:http://pki.nationz.com.cn/EkMf
 #### Source Information
 
 - **Screenshot Reference**: 
-![](h3c_support.png)
+![H3C support documentation showing EkMfrCA001 certificate details](h3c_support.png)
 
 ### Nationz TPM Root CA
 
