@@ -2,7 +2,6 @@ package apiv1beta
 
 import (
 	"bytes"
-	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -56,7 +55,7 @@ func TestPersist(t *testing.T) {
 		tb.(*trustedBundle).vendorFilter = []VendorID{IFX}
 
 		// Persist the bundle
-		if err := tb.Persist(context.Background(), tmpDir); err != nil {
+		if err := tb.Persist(t.Context(), tmpDir); err != nil {
 			t.Fatalf("Failed to persist bundle: %v", err)
 		}
 
@@ -116,7 +115,7 @@ func TestPersist(t *testing.T) {
 			t.Fatalf("Failed to create trusted bundle: %v", err)
 		}
 
-		if err := tb.Persist(context.Background(), tmpDir); err != nil {
+		if err := tb.Persist(t.Context(), tmpDir); err != nil {
 			t.Fatalf("Failed to persist bundle: %v", err)
 		}
 

@@ -1,7 +1,6 @@
 package bundle_test
 
 import (
-	"context"
 	"os"
 	"strings"
 	"testing"
@@ -89,7 +88,7 @@ func TestGenerateCommand(t *testing.T) {
 				Type:       tt.typeFlag,
 			}
 
-			ctx := context.Background()
+			ctx := t.Context()
 			if err := generate.Run(ctx, opts); err != nil {
 				t.Fatalf("generate command failed: %v", err)
 			}
@@ -149,7 +148,7 @@ func TestGenerateCommand_InvalidType(t *testing.T) {
 	}
 
 	// Run generate (should fail)
-	ctx := context.Background()
+	ctx := t.Context()
 	err = generate.Run(ctx, opts)
 	if err == nil {
 		t.Fatal("expected error for invalid bundle type, but got nil")
