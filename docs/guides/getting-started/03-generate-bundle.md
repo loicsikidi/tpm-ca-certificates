@@ -69,9 +69,8 @@ certificates:
 
 **Security note:** Fingerprint validation remains mandatory for local certificates - only the source location changes, the cryptographic verification is identical.
 
-> [!INFO]
+> [!NOTE]
 > See the [certificates](../../../certificates) directory for more details.
-
 > [!TIP]
 > See the [Configuration File Specification](../../specifications/01-configuration-file.md) for complete format details.
 
