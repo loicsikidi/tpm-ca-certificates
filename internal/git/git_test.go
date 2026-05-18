@@ -182,6 +182,89 @@ func TestGetInfo(t *testing.T) {
 			},
 		},
 		{
+			name: "repository with tag in packed-refs",
+			setupRepo: func(t *testing.T, repoDir string) {
+				gitDir := filepath.Join(repoDir, ".git")
+				if err := os.MkdirAll(gitDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+
+				commitHash := "1234567890abcdef1234567890abcdef12345678"
+
+				// Create detached HEAD
+				if err := os.WriteFile(filepath.Join(gitDir, "HEAD"), []byte(commitHash+"\n"), 0644); err != nil {
+					t.Fatal(err)
+				}
+
+				// Create empty refs/tags directory
+				refsTags := filepath.Join(gitDir, "refs", "tags")
+				if err := os.MkdirAll(refsTags, 0755); err != nil {
+					t.Fatal(err)
+				}
+
+				// Create packed-refs with tag
+				packedRefs := `# pack-refs with: peeled fully-peeled sorted
+fedcba9876543210fedcba9876543210fedcba98 refs/heads/main
+1234567890abcdef1234567890abcdef12345678 refs/tags/2026-05-18
+0000000000000000000000000000000000000000 refs/tags/v1.0.0
+`
+				if err := os.WriteFile(filepath.Join(gitDir, "packed-refs"), []byte(packedRefs), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			expectError: false,
+			validateResult: func(t *testing.T, info *Info) {
+				expectedCommit := "1234567890abcdef1234567890abcdef12345678"
+				if info.Commit != expectedCommit {
+					t.Errorf("expected commit %s, got %s", expectedCommit, info.Commit)
+				}
+				if info.Tag != "2026-05-18" {
+					t.Errorf("expected tag '2026-05-18', got '%s'", info.Tag)
+				}
+			},
+		},
+		{
+			name: "repository with tag in both loose refs and packed-refs",
+			setupRepo: func(t *testing.T, repoDir string) {
+				gitDir := filepath.Join(repoDir, ".git")
+				if err := os.MkdirAll(gitDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+
+				commitHash := "aaabbbcccdddeeefff000111222333444555666"
+
+				// Create detached HEAD
+				if err := os.WriteFile(filepath.Join(gitDir, "HEAD"), []byte(commitHash+"\n"), 0644); err != nil {
+					t.Fatal(err)
+				}
+
+				// Create tag in loose refs
+				refsTags := filepath.Join(gitDir, "refs", "tags")
+				if err := os.MkdirAll(refsTags, 0755); err != nil {
+					t.Fatal(err)
+				}
+
+				if err := os.WriteFile(filepath.Join(refsTags, "2026-01-01"), []byte(commitHash+"\n"), 0644); err != nil {
+					t.Fatal(err)
+				}
+
+				// Create packed-refs with different tag for same commit
+				packedRefs := `# pack-refs with: peeled fully-peeled sorted
+aaabbbcccdddeeefff000111222333444555666 refs/tags/2026-02-02
+`
+				if err := os.WriteFile(filepath.Join(gitDir, "packed-refs"), []byte(packedRefs), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			expectError: false,
+			validateResult: func(t *testing.T, info *Info) {
+				// Should prefer loose refs over packed-refs
+				if info.Tag != "2026-01-01" {
+					t.Errorf("expected tag '2026-01-01' from loose refs, got '%s'", info.Tag)
+				}
+			},
+		},
+		{
 			name: "not a git repository",
 			setupRepo: func(t *testing.T, repoDir string) {
 				// Don't create .git directory
