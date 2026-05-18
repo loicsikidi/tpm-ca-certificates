@@ -30,6 +30,17 @@ jobs:
       - name: Install Cosign
         uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
 
+      - name: Debug git state
+        run: |
+          echo "=== Current HEAD ==="
+          cat .git/HEAD
+          echo "=== Tags directory ==="
+          ls -la .git/refs/tags/ || echo "No tags directory"
+          echo "=== Packed refs ==="
+          head -20 .git/packed-refs || echo "No packed-refs"
+          echo "=== Git describe ==="
+          git describe --tags --exact-match HEAD || echo "No exact tag match"
+          
       - name: Generate TPM trust bundles (root and intermediate) and sign checksum
         run: |
           # Generate the TPM root trust bundle (with maximum concurrency to speed up downloads)
