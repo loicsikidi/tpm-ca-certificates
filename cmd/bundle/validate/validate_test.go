@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/loicsikidi/tpm-ca-certificates/internal/testutil"
@@ -164,12 +165,7 @@ func TestValidateCommand_FileNotFound(t *testing.T) {
 		t.Error("expected error for nonexistent file")
 	}
 
-	if !contains(err.Error(), "failed to read bundle") {
+	if !strings.Contains(err.Error(), "failed to read bundle") {
 		t.Errorf("expected 'failed to read bundle' error, got: %v", err)
 	}
-}
-
-func contains(s, substr string) bool {
-	return len(s) > 0 && len(substr) > 0 && len(s) >= len(substr) &&
-		(s == substr || bytes.Contains([]byte(s), []byte(substr)))
 }

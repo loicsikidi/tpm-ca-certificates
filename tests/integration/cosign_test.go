@@ -14,11 +14,6 @@ import (
 	"github.com/loicsikidi/tpm-ca-certificates/internal/transparency/utils/verifier"
 )
 
-// contains checks if a string contains a substring.
-func contains(s, substr string) bool {
-	return strings.Contains(s, substr)
-}
-
 // testPolicyConfig returns a valid policy.Config for testing purposes.
 func testPolicyConfig(metadata *bundle.Metadata) policy.Config {
 	return policy.Config{
@@ -74,7 +69,7 @@ func TestCosignVerification(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected verification to fail with invalid checksum, but it succeeded")
 		}
-		if !contains(err.Error(), "checksum mismatch") {
+		if !strings.Contains(err.Error(), "checksum mismatch") {
 			t.Errorf("Expected error about checksum mismatch, got: %v", err)
 		}
 	})
@@ -87,7 +82,7 @@ func TestCosignVerification(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected verification to fail with invalid signature data, but it succeeded")
 		}
-		if !contains(err.Error(), "failed to load signature bundle") {
+		if !strings.Contains(err.Error(), "failed to load signature bundle") {
 			t.Errorf("Expected error about loading signature bundle, got: %v", err)
 		}
 	})
@@ -163,7 +158,7 @@ func TestValidateChecksumFilesExist(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected validation to fail with missing checksum file")
 		}
-		if !contains(err.Error(), "checksums file not found") {
+		if !strings.Contains(err.Error(), "checksums file not found") {
 			t.Errorf("Expected error about checksums file not found, got: %v", err)
 		}
 	})
@@ -173,7 +168,7 @@ func TestValidateChecksumFilesExist(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected validation to fail with missing signature file")
 		}
-		if !contains(err.Error(), "signature file not found") {
+		if !strings.Contains(err.Error(), "signature file not found") {
 			t.Errorf("Expected error about signature file not found, got: %v", err)
 		}
 	})
@@ -209,7 +204,7 @@ func TestValidateChecksum(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected checksum validation to fail")
 		}
-		if !contains(err.Error(), "checksum mismatch") {
+		if !strings.Contains(err.Error(), "checksum mismatch") {
 			t.Errorf("Expected error about checksum mismatch, got: %v", err)
 		}
 	})
@@ -227,7 +222,7 @@ func TestValidateChecksum(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected checksum validation to fail for unknown artifact")
 		}
-		if !contains(err.Error(), "not found in checksums data") {
+		if !strings.Contains(err.Error(), "not found in checksums data") {
 			t.Errorf("Expected error about artifact not found, got: %v", err)
 		}
 	})

@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -159,7 +160,7 @@ vendors:
 			if !tt.expectOutput && output != "" {
 				t.Errorf("expected no output but got: %s", output)
 			}
-			if tt.outputContains != "" && !contains(output, tt.outputContains) {
+			if tt.outputContains != "" && !strings.Contains(output, tt.outputContains) {
 				t.Errorf("expected output to contain '%s', got: %s", tt.outputContains, output)
 			}
 
@@ -167,9 +168,4 @@ vendors:
 			osExit = os.Exit
 		})
 	}
-}
-
-func contains(s, substr string) bool {
-	return len(s) > 0 && len(substr) > 0 && len(s) >= len(substr) &&
-		(s == substr || bytes.Contains([]byte(s), []byte(substr)))
 }

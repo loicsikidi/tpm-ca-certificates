@@ -175,7 +175,7 @@ MIIBdjCCARygAwIBAgIRAKjIOzWTCC66SJLRB5eewJMwCgYIKoZIzj0EAwIwGTEX
 				if err == nil {
 					t.Fatalf("Expected error containing %q, got nil", tt.wantErrMsg)
 				}
-				if !containsString(err.Error(), tt.wantErrMsg) {
+				if !strings.Contains(err.Error(), tt.wantErrMsg) {
 					t.Errorf("Expected error containing %q, got %q", tt.wantErrMsg, err.Error())
 				}
 				return
@@ -220,20 +220,4 @@ func TestParseMetadata_RealBundle(t *testing.T) {
 
 	// Log the values for visibility
 	t.Logf("Parsed test bundle metadata - Date: %s, Commit: %s", metadata.Date, metadata.Commit)
-}
-
-// containsString checks if a string contains a substring.
-func containsString(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(substr) == 0 ||
-		(len(s) > 0 && len(substr) > 0 && indexString(s, substr) >= 0))
-}
-
-// indexString returns the index of substr in s, or -1 if not found.
-func indexString(s, substr string) int {
-	for i := 0; i+len(substr) <= len(s); i++ {
-		if s[i:i+len(substr)] == substr {
-			return i
-		}
-	}
-	return -1
 }
