@@ -98,9 +98,9 @@ release:
     git clone https://github.com/loicsikidi/{{ .ProjectName }}
     cd {{ .ProjectName }}
     git checkout {{ .Tag }}
-    go run ./ generate --workers 10 --output tpm-ca-certificates.pem
-    go run ./ generate --workers 10 --config .tpm-intermediates.yaml --output tpm-intermediate-ca-certificates.pem --type intermediate
-    sha256sum tpm-ca-certificates.pem  # Compare with checksums.txt
+    go run ./ bundle generate --workers 10 --config .tpm-roots.yaml --output tpm-ca-certificates.pem
+    go run ./ bundle generate --workers 10 --config .tpm-intermediates.yaml --output tpm-intermediate-ca-certificates.pem --type intermediate
+    sha256sum tpm-ca-certificates.pem tpm-intermediate-ca-certificates.pem # Compare with checksums.txt
     ```
   footer: |
     **Generated with GoReleaser 🚀**
