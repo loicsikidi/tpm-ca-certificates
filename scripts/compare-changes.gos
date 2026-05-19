@@ -5,21 +5,26 @@
 // ]
 // ///
 
-// compare-changes.gos compares two versions of TPM certificate configurations
-// and generates a markdown changelog table.
+// compare-changes.go compares two versions of TPM certificate configurations
+// and generates a markdown changelog table. 
 //
 // Usage:
 //
-//	scripts/compare-changes.gos <old-roots.yaml> <new-roots.yaml> <old-intermediates.yaml> <new-intermediates.yaml>
+//	scripts/compare-changes.go <old-roots.yaml> <new-roots.yaml> <old-intermediates.yaml> <new-intermediates.yaml>
 //
 // Example:
 //
+//  # Bootstrap
+//  mv scripts/compare-changes.gos scripts/compare-changes.go
 //	# Compare two git tags
 //	git show 2026-01-12:.tpm-roots.yaml > /tmp/roots-old.yaml
 //	git show 2026-01-22:.tpm-roots.yaml > /tmp/roots-new.yaml
 //	git show 2026-01-12:.tpm-intermediates.yaml > /tmp/intermediates-old.yaml
 //	git show 2026-01-22:.tpm-intermediates.yaml > /tmp/intermediates-new.yaml
-//	scripts/compare-changes.gos /tmp/roots-old.yaml /tmp/roots-new.yaml /tmp/intermediates-old.yaml /tmp/intermediates-new.yaml
+//	scripts/compare-changes.go /tmp/roots-old.yaml /tmp/roots-new.yaml /tmp/intermediates-old.yaml /tmp/intermediates-new.yaml
+//  # Clean up
+//  rm -f /tmp/roots-old.yaml /tmp/roots-new.yaml /tmp/intermediates-old.yaml /tmp/intermediates-new.yaml
+//  mv scripts/compare-changes.go scripts/compare-changes.gos
 //
 // The script outputs a markdown table with the following columns:
 //   - Certificate: The name of the certificate
