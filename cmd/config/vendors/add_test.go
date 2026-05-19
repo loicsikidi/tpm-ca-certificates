@@ -3,6 +3,7 @@ package vendors
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config"
@@ -258,7 +259,7 @@ vendors:
 
 			// Check error message
 			if tt.expectError && tt.errorContains != "" {
-				if err == nil || !containsString(err.Error(), tt.errorContains) {
+				if err == nil || !strings.Contains(err.Error(), tt.errorContains) {
 					t.Errorf("expected error to contain '%s', got: %v", tt.errorContains, err)
 				}
 			}
@@ -280,17 +281,4 @@ vendors:
 			}
 		})
 	}
-}
-
-func containsString(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && stringContains(s, substr))
-}
-
-func stringContains(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }

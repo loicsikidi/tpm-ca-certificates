@@ -3,6 +3,7 @@ package config_test
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/loicsikidi/tpm-ca-certificates/cmd/config/certificates"
@@ -298,19 +299,19 @@ func TestHashAlgorithmValidation(t *testing.T) {
 		{
 			name:        "fingerprint algo inferred from SHA1",
 			hashAlgo:    "sha256", // default value, will be overridden by fingerprint
-			fingerprint: "SHA1:AB:CD:EF",
+			fingerprint: "SHA1:E7:5F:25:C5:18:5A:3A:D6:07:B9:14:2E:AD:7F:D8:02:CC:9B:C4:F9",
 			expectError: false, // should succeed with inferred algorithm
 		},
 		{
 			name:        "fingerprint algo inferred from SHA256",
 			hashAlgo:    "sha256",
-			fingerprint: "SHA256:AB:CD:EF",
+			fingerprint: "SHA256:F2:7B:F0:2C:6E:00:C7:3D:91:5E:EB:6A:6A:2F:5F:BF:0C:31:AE:03:93:14:9E:6B:5C:31:E4:1B:11:38:41:C3",
 			expectError: false,
 		},
 		{
 			name:        "fingerprint algo inferred from SHA512",
 			hashAlgo:    "sha256", // default value, will be overridden by fingerprint
-			fingerprint: "SHA512:AB:CD:EF:01:23:45:67:89:AB:CD:EF:01:23:45:67:89:AB:CD:EF:01:23:45:67:89:AB:CD:EF:01:23:45:67:89:AB:CD:EF:01:23:45:67:89:AB:CD:EF:01:23:45:67:89:AB:CD:EF:01:23:45:67:89:AB:CD:EF:01",
+			fingerprint: "SHA512:BF:3D:D2:EC:25:41:94:C2:FC:05:2F:C8:C2:00:05:15:47:6B:93:52:58:06:D7:74:D3:B5:A8:34:D6:D6:F0:D2:71:04:8A:1B:63:99:CB:43:99:76:C4:34:45:F1:F7:FB:A9:87:F2:48:8B:0E:18:23:94:33:14:DF:F2:D7:92:5A",
 			expectError: false,
 		},
 	}
@@ -345,19 +346,15 @@ vendors:
 				if err == nil {
 					t.Fatal("expected error but got none")
 				}
-				if tt.errorMessage != "" && !containsSubstring(err.Error(), tt.errorMessage) {
+				if tt.errorMessage != "" && !strings.Contains(err.Error(), tt.errorMessage) {
 					t.Errorf("expected error to contain '%s', got: %v", tt.errorMessage, err)
 				}
-			} else if err != nil && !containsSubstring(err.Error(), "failed to download") {
+			} else if err != nil && !strings.Contains(err.Error(), "failed to download") {
 				// Allow download failures in tests, but not validation errors
 				t.Fatalf("unexpected error: %v", err)
 			}
 		})
 	}
-}
-
-func containsSubstring(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > len(substr))
 }
 
 func TestParseFingerprint(t *testing.T) {

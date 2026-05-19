@@ -3,6 +3,7 @@ package format
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config"
@@ -56,10 +57,10 @@ vendors:
 				content := string(data)
 
 				// Check that strings are quoted
-				if !contains(content, `"alpha"`) {
+				if !strings.Contains(content, `"alpha"`) {
 					t.Error("expected version to be quoted")
 				}
-				if !contains(content, `"Test Vendor"`) {
+				if !strings.Contains(content, `"Test Vendor"`) {
 					t.Error("expected vendor name to be quoted")
 				}
 			},
@@ -169,10 +170,10 @@ vendors:
 
 				content := string(data)
 				// File should still have unformatted content
-				if contains(content, `"alpha"`) {
+				if strings.Contains(content, `"alpha"`) {
 					t.Error("file should not have been modified in dry-run mode")
 				}
-				if !contains(content, "version: alpha") {
+				if !strings.Contains(content, "version: alpha") {
 					t.Error("file content was unexpectedly changed")
 				}
 			},
@@ -202,7 +203,7 @@ vendors:
 
 				content := string(data)
 				// Should still be formatted
-				if !contains(content, `"alpha"`) {
+				if !strings.Contains(content, `"alpha"`) {
 					t.Error("formatted file should still have quotes")
 				}
 			},
@@ -230,7 +231,7 @@ vendors:
 
 				content := string(data)
 				// Check URL is encoded
-				if !contains(content, "test%20cert%20with%20spaces.cer") {
+				if !strings.Contains(content, "test%20cert%20with%20spaces.cer") {
 					t.Error("expected URL to be encoded with %20 for spaces")
 				}
 			},
@@ -402,20 +403,4 @@ vendors:
 			}
 		})
 	}
-}
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || findSubstring(s, substr))
-}
-
-func findSubstring(s, substr string) bool {
-	if len(substr) > len(s) {
-		return false
-	}
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }

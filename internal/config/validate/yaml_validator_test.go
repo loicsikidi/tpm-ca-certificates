@@ -3,6 +3,7 @@ package validate_test
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/loicsikidi/tpm-ca-certificates/internal/config/validate"
@@ -410,7 +411,7 @@ vendors:
 				if err == nil {
 					t.Fatalf("ValidateFile() expected error containing %q, but got nil", tt.wantError)
 				}
-				if !contains(err.Error(), tt.wantError) {
+				if !strings.Contains(err.Error(), tt.wantError) {
 					t.Fatalf("ValidateFile() error = %q, want error containing %q", err.Error(), tt.wantError)
 				}
 				return
@@ -429,7 +430,7 @@ vendors:
 			for _, check := range tt.errorChecks {
 				found := false
 				for _, e := range errors {
-					if contains(e.Message, check) {
+					if strings.Contains(e.Message, check) {
 						found = true
 						break
 					}
@@ -488,17 +489,4 @@ func TestIsValidFingerprintFormat(t *testing.T) {
 			}
 		})
 	}
-}
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && findSubstring(s, substr))
-}
-
-func findSubstring(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }
