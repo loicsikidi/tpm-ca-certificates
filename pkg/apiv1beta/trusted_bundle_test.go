@@ -28,7 +28,7 @@ func TestGetTrustedBundle(t *testing.T) {
 			SkipVerify: true,
 			VendorIDs:  []VendorID{"INVALID_VENDOR"},
 			AutoUpdate: AutoUpdateConfig{
-				DisableAutoUpdate: true,
+				Disabled: true,
 			},
 		}
 

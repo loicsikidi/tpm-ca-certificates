@@ -332,10 +332,10 @@ func (c LoadConfig) GetCachePath() string {
 
 // AutoUpdateConfig configures automatic updates of the bundle.
 type AutoUpdateConfig struct {
-	// DisableAutoUpdate disables automatic updates of the bundle.
+	// Disabled disables automatic updates of the bundle.
 	//
 	// Optional. Default is false (auto-update enabled).
-	DisableAutoUpdate bool `json:"disableAutoUpdate"`
+	Disabled bool `json:"disabled"`
 
 	// Interval specifies how often the bundle should be updated.
 	//
@@ -345,7 +345,7 @@ type AutoUpdateConfig struct {
 
 // CheckAndSetDefaults validates and sets default values.
 func (c *AutoUpdateConfig) CheckAndSetDefaults() error {
-	if c.Interval == 0 && !c.DisableAutoUpdate {
+	if c.Interval == 0 && !c.Disabled {
 		c.Interval = 24 * time.Hour
 	}
 	return nil

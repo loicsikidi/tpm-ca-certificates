@@ -16,7 +16,7 @@ func TestRunOfflineMode(t *testing.T) {
 		SkipVerify:    false,
 		LastTimestamp: time.Now(),
 		AutoUpdate: &apiv1beta.AutoUpdateConfig{
-			DisableAutoUpdate: true,
+			Disabled: true,
 		},
 	}
 	cacheConfigData, err := json.Marshal(cacheConfig)
@@ -99,7 +99,7 @@ func TestRunWithCacheDir(t *testing.T) {
 				SkipVerify:    false,
 				LastTimestamp: time.Now(),
 				AutoUpdate: &apiv1beta.AutoUpdateConfig{
-					DisableAutoUpdate: true,
+					Disabled: true,
 				},
 			}
 			cacheConfigData, err := json.Marshal(cacheConfig)

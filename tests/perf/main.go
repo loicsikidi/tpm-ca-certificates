@@ -33,7 +33,7 @@ func main() {
 		_, err := apiv1beta.GetTrustedBundle(context.Background(), apiv1beta.GetConfig{
 			CachePath: cacheDir,
 			AutoUpdate: apiv1beta.AutoUpdateConfig{
-				DisableAutoUpdate: true,
+				Disabled: true,
 			},
 		})
 		if err != nil {
