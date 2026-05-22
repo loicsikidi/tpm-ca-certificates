@@ -1,0 +1,179 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" width="1200" height="400" preserveAspectRatio="xMidYMid meet">
+  <defs>
+    <style type="text/css">
+      @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@800&amp;display=swap');
+      .logo-text {
+        font-family: 'Baloo 2', 'Nunito', sans-serif;
+        font-weight: 800;
+        font-size: 48px;
+        fill: #0A1E5C;
+        letter-spacing: -1.5px;
+      }
+    </style>
+    
+    <!-- Forme du bouclier rayonnant (centré sur 600,180) -->
+    <path id="shieldPath" d="M 600 75 
+                              L 685 100 
+                              L 685 185 
+                              Q 685 235 600 290 
+                              Q 515 235 515 185 
+                              L 515 100 Z"/>
+    
+    <clipPath id="shieldClip">
+      <use href="#shieldPath"/>
+    </clipPath>
+  </defs>
+  
+  <!-- Fond blanc -->
+  <rect width="1200" height="400" fill="#FFFFFF"/>
+  
+  <!-- Étoiles décoratives gauche -->
+  <g fill="#6B8FE8">
+    <path d="M 410 270 L 418 285 L 433 293 L 418 301 L 410 316 L 402 301 L 387 293 L 402 285 Z">
+      <animate attributeName="opacity" values="0.5;1;0.5" dur="2.5s" repeatCount="indefinite"/>
+    </path>
+    <circle cx="430" cy="100" r="5">
+      <animate attributeName="opacity" values="0.4;1;0.4" dur="3s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="460" cy="290" r="4">
+      <animate attributeName="opacity" values="1;0.4;1" dur="2.8s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  
+  <!-- Étoile décorative droite -->
+  <g fill="#6B8FE8">
+    <path d="M 790 270 L 798 285 L 813 293 L 798 301 L 790 316 L 782 301 L 767 293 L 782 285 Z">
+      <animate attributeName="opacity" values="1;0.5;1" dur="2.5s" repeatCount="indefinite"/>
+    </path>
+    <circle cx="770" cy="120" r="4">
+      <animate attributeName="opacity" values="0.4;1;0.4" dur="3.2s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="740" cy="290" r="4">
+      <animate attributeName="opacity" values="0.5;1;0.5" dur="2.6s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  
+  <!-- Bandes en éventail à GAUCHE du texte -->
+  <g stroke="#6B8FE8" stroke-width="5" stroke-linecap="round" fill="none">
+    <line x1="240" y1="338" x2="275" y2="350"/>
+    <line x1="230" y1="360" x2="280" y2="360"/>
+    <line x1="240" y1="382" x2="275" y2="370"/>
+  </g>
+  
+  <!-- Bandes en éventail à DROITE du texte -->
+  <g stroke="#6B8FE8" stroke-width="5" stroke-linecap="round" fill="none">
+    <line x1="925" y1="350" x2="960" y2="338"/>
+    <line x1="920" y1="360" x2="970" y2="360"/>
+    <line x1="925" y1="370" x2="960" y2="382"/>
+  </g>
+  
+  <!-- ====== RAYONS autour du bouclier (animés avec pulsation décalée) ====== -->
+  <g stroke="#6B8FE8" stroke-width="5" stroke-linecap="round" fill="none">
+    <!-- Rayon du haut -->
+    <line x1="600" y1="35" x2="600" y2="60">
+      <animate attributeName="opacity" values="0.4;1;0.4" dur="2s" repeatCount="indefinite"/>
+    </line>
+    <!-- Rayons haut-gauche -->
+    <line x1="500" y1="55" x2="515" y2="75">
+      <animate attributeName="opacity" values="0.4;1;0.4" dur="2.2s" begin="0.2s" repeatCount="indefinite"/>
+    </line>
+    <line x1="455" y1="100" x2="475" y2="110">
+      <animate attributeName="opacity" values="0.4;1;0.4" dur="2.4s" begin="0.4s" repeatCount="indefinite"/>
+    </line>
+    <!-- Rayons gauche -->
+    <line x1="440" y1="155" x2="465" y2="155">
+      <animate attributeName="opacity" values="0.4;1;0.4" dur="2.1s" begin="0.6s" repeatCount="indefinite"/>
+    </line>
+    <line x1="455" y1="210" x2="475" y2="200">
+      <animate attributeName="opacity" values="0.4;1;0.4" dur="2.3s" begin="0.8s" repeatCount="indefinite"/>
+    </line>
+    <!-- Rayons haut-droite -->
+    <line x1="700" y1="55" x2="685" y2="75">
+      <animate attributeName="opacity" values="0.4;1;0.4" dur="2.2s" begin="0.3s" repeatCount="indefinite"/>
+    </line>
+    <line x1="745" y1="100" x2="725" y2="110">
+      <animate attributeName="opacity" values="0.4;1;0.4" dur="2.4s" begin="0.5s" repeatCount="indefinite"/>
+    </line>
+    <!-- Rayons droite -->
+    <line x1="760" y1="155" x2="735" y2="155">
+      <animate attributeName="opacity" values="0.4;1;0.4" dur="2.1s" begin="0.7s" repeatCount="indefinite"/>
+    </line>
+    <line x1="745" y1="210" x2="725" y2="200">
+      <animate attributeName="opacity" values="0.4;1;0.4" dur="2.3s" begin="0.9s" repeatCount="indefinite"/>
+    </line>
+  </g>
+  
+  <!-- ====== BOUCLIER avec pulsation ====== -->
+  <g transform-origin="600 180">
+    <animateTransform 
+      attributeName="transform"
+      type="scale"
+      values="1; 1.04; 1"
+      keyTimes="0; 0.5; 1"
+      dur="2.5s"
+      repeatCount="indefinite"
+      additive="sum"/>
+    
+    <!-- Halo de protection qui pulse -->
+    <circle cx="600" cy="180" r="120" fill="none" stroke="#6B8FE8" stroke-width="3" opacity="0">
+      <animate attributeName="r" values="100;160" dur="2.5s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.5;0" dur="2.5s" repeatCount="indefinite"/>
+    </circle>
+    
+    <!-- Ombre légère sous le bouclier -->
+    <path d="M 600 78 L 685 103 L 685 188 Q 685 238 600 293 Q 515 238 515 188 L 515 103 Z" 
+          fill="#0A1E5C" opacity="0.15"/>
+    
+    <!-- Corps extérieur du bouclier -->
+    <use href="#shieldPath" fill="#1E3A8A"/>
+    
+    <!-- Corps intérieur (plus clair) -->
+    <path d="M 600 95 
+             L 670 115 
+             L 670 185 
+             Q 670 225 600 270 
+             Q 530 225 530 185 
+             L 530 115 Z" 
+          fill="#2952B8"/>
+    
+    <!-- Reflet en haut à gauche -->
+    <path d="M 540 115 
+             Q 548 105 562 100 
+             L 562 185
+             Q 548 200 540 185 Z" 
+          fill="#FFFFFF" opacity="0.15"/>
+    
+    <!-- Coche ✓ qui se dessine -->
+    <path d="M 565 175 L 595 210 L 645 145" 
+          fill="none" 
+          stroke="#A5D8F3" 
+          stroke-width="12" 
+          stroke-linecap="round" 
+          stroke-linejoin="round"
+          stroke-dasharray="200"
+          stroke-dashoffset="200">
+      <animate attributeName="stroke-dashoffset"
+               values="200; 200; 0; 0; 0; 200"
+               keyTimes="0; 0.1; 0.35; 0.7; 0.9; 1"
+               dur="5s"
+               repeatCount="indefinite"/>
+    </path>
+    
+    <!-- Reflet brillant qui glisse en diagonale -->
+    <g clip-path="url(#shieldClip)">
+      <rect x="-100" y="0" width="70" height="400" fill="#FFFFFF" opacity="0.3" 
+            transform="skewX(-20)">
+        <animate attributeName="x"
+                 values="380; 380; 820; 820"
+                 keyTimes="0; 0.5; 0.85; 1"
+                 dur="5s"
+                 repeatCount="indefinite"/>
+      </rect>
+    </g>
+  </g>
+  
+  <!-- Texte -->
+  <text x="600" y="378" 
+        class="logo-text"
+        text-anchor="middle">tpm-ca-certificates</text>
+</svg>

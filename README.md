@@ -1,4 +1,4 @@
-# TPM CA Certificates
+![Banner](./static/banner.svg)
 
 ![go version](https://img.shields.io/github/go-mod/go-version/loicsikidi/tpm-ca-certificates)
 [![godoc](https://pkg.go.dev/badge/github.com/loicsikidi/tpm-ca-certificates/v1.svg)](https://pkg.go.dev/github.com/loicsikidi/tpm-ca-certificates/pkg/apiv1beta)
