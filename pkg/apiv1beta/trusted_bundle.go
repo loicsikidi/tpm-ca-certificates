@@ -549,7 +549,7 @@ func LoadTrustedBundle(ctx context.Context, cfg LoadConfig) (TrustedBundle, erro
 	// In offline mode, auto-update must be disabled since the cached trusted-root.json
 	// may not work with future bundles due to Sigstore key rotation
 	if cacheCfg.AutoUpdate != nil {
-		if !cfg.OfflineMode && !cacheCfg.AutoUpdate.DisableAutoUpdate {
+		if !cfg.OfflineMode && !cacheCfg.AutoUpdate.Disabled {
 			tb.(*trustedBundle).startWatcher(ctx, cfg, cacheCfg.AutoUpdate.Interval)
 		}
 	}
@@ -595,7 +595,7 @@ func (tb *trustedBundle) checkAndUpdate(ctx context.Context, cfg updaterConfig) 
 		SkipVerify: cfg.GetSkipVerify(),
 		HTTPClient: cfg.GetHTTPClient(),
 		AutoUpdate: AutoUpdateConfig{
-			DisableAutoUpdate: true, // Don't start a watcher for this temporary bundle
+			Disabled: true, // Don't start a watcher for this temporary bundle
 		},
 	})
 	if err != nil {

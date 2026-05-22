@@ -115,7 +115,7 @@ func TestGetTrustedBundle(t *testing.T) {
 		cfg := apiv1beta.GetConfig{
 			SkipVerify: true,
 			AutoUpdate: apiv1beta.AutoUpdateConfig{
-				DisableAutoUpdate: true,
+				Disabled: true,
 			},
 			CachePath: t.TempDir(),
 		}
@@ -162,7 +162,7 @@ func TestGetTrustedBundle(t *testing.T) {
 		cfg := apiv1beta.GetConfig{
 			Date: testutil.BundleVersion,
 			AutoUpdate: apiv1beta.AutoUpdateConfig{
-				DisableAutoUpdate: true,
+				Disabled: true,
 			},
 			CachePath: t.TempDir(),
 		}
@@ -183,7 +183,7 @@ func TestGetTrustedBundle(t *testing.T) {
 		cfg := apiv1beta.GetConfig{
 			SkipVerify: true,
 			AutoUpdate: apiv1beta.AutoUpdateConfig{
-				DisableAutoUpdate: true,
+				Disabled: true,
 			},
 			CachePath: t.TempDir(),
 		}
@@ -207,7 +207,7 @@ func TestGetTrustedBundle(t *testing.T) {
 		cfg := apiv1beta.GetConfig{
 			SkipVerify: true,
 			AutoUpdate: apiv1beta.AutoUpdateConfig{
-				DisableAutoUpdate: true,
+				Disabled: true,
 			},
 			CachePath: t.TempDir(),
 		}
@@ -251,7 +251,7 @@ func TestGetTrustedBundle(t *testing.T) {
 		cfg := apiv1beta.GetConfig{
 			SkipVerify: true,
 			AutoUpdate: apiv1beta.AutoUpdateConfig{
-				DisableAutoUpdate: true,
+				Disabled: true,
 			},
 			CachePath: t.TempDir(),
 		}
@@ -305,7 +305,7 @@ func TestGetTrustedBundle(t *testing.T) {
 			SkipVerify: true,
 			VendorIDs:  []apiv1beta.VendorID{apiv1beta.NTC, apiv1beta.IFX},
 			AutoUpdate: apiv1beta.AutoUpdateConfig{
-				DisableAutoUpdate: true,
+				Disabled: true,
 			},
 			CachePath: t.TempDir(),
 		}
@@ -379,7 +379,7 @@ func TestTrustedBundle_ThreadSafety(t *testing.T) {
 	cfg := apiv1beta.GetConfig{
 		SkipVerify: true,
 		AutoUpdate: apiv1beta.AutoUpdateConfig{
-			DisableAutoUpdate: true,
+			Disabled: true,
 		},
 	}
 
@@ -451,7 +451,7 @@ func TestSmartCache(t *testing.T) {
 			SkipVerify: true,
 			CachePath:  tmpDir,
 			AutoUpdate: apiv1beta.AutoUpdateConfig{
-				DisableAutoUpdate: true,
+				Disabled: true,
 			},
 		}
 
@@ -498,7 +498,7 @@ func TestSmartCache(t *testing.T) {
 			SkipVerify: true,
 			CachePath:  tmpDir,
 			AutoUpdate: apiv1beta.AutoUpdateConfig{
-				DisableAutoUpdate: true,
+				Disabled: true,
 			},
 		}
 
@@ -525,7 +525,7 @@ func TestSmartCache(t *testing.T) {
 			SkipVerify: true,
 			CachePath:  tmpDir,
 			AutoUpdate: apiv1beta.AutoUpdateConfig{
-				DisableAutoUpdate: true,
+				Disabled: true,
 			},
 		}
 
@@ -562,7 +562,7 @@ func TestSmartCache(t *testing.T) {
 			SkipVerify: true,
 			CachePath:  tmpDir,
 			AutoUpdate: apiv1beta.AutoUpdateConfig{
-				DisableAutoUpdate: true,
+				Disabled: true,
 			},
 		}
 
@@ -578,7 +578,7 @@ func TestSmartCache(t *testing.T) {
 			SkipVerify: true,
 			CachePath:  tmpDir,
 			AutoUpdate: apiv1beta.AutoUpdateConfig{
-				DisableAutoUpdate: true,
+				Disabled: true,
 			},
 		}
 
@@ -622,7 +622,7 @@ func TestSmartCache(t *testing.T) {
 			CachePath:         tmpDir,
 			DisableLocalCache: true,
 			AutoUpdate: apiv1beta.AutoUpdateConfig{
-				DisableAutoUpdate: true,
+				Disabled: true,
 			},
 		}
 
@@ -725,8 +725,8 @@ func TestLoad(t *testing.T) {
 		cfg := apiv1beta.CacheConfig{
 			Version: testutil.BundleVersion,
 			AutoUpdate: &apiv1beta.AutoUpdateConfig{
-				DisableAutoUpdate: false,
-				Interval:          2 * time.Second,
+				Disabled: false,
+				Interval: 2 * time.Second,
 			},
 			VendorIDs:     []apiv1beta.VendorID{apiv1beta.IFX},
 			LastTimestamp: time.Now(),

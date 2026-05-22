@@ -181,7 +181,7 @@ func GetTrustedBundle(ctx context.Context, optionalCfg ...GetConfig) (TrustedBun
 		}
 	}
 
-	if !cfg.AutoUpdate.DisableAutoUpdate {
+	if !cfg.AutoUpdate.Disabled {
 		tbImpl.startWatcher(ctx, cfg, cfg.AutoUpdate.Interval)
 	}
 
@@ -361,7 +361,7 @@ func SaveTrustedBundle(ctx context.Context, optionalCfg ...SaveConfig) (*SaveRes
 		VendorIDs:  cfg.VendorIDs,
 		HTTPClient: cfg.HTTPClient,
 		AutoUpdate: AutoUpdateConfig{
-			DisableAutoUpdate: true,
+			Disabled: true,
 		},
 	})
 	if err != nil {
@@ -383,7 +383,7 @@ func SaveTrustedBundle(ctx context.Context, optionalCfg ...SaveConfig) (*SaveRes
 	cacheCfg := CacheConfig{
 		Version:       metadata.Date,
 		VendorIDs:     cfg.VendorIDs,
-		AutoUpdate:    &AutoUpdateConfig{DisableAutoUpdate: true},
+		AutoUpdate:    &AutoUpdateConfig{Disabled: true},
 		SkipVerify:    false,
 		LastTimestamp: time.Now(),
 	}

@@ -211,7 +211,7 @@ func TestCacheConfigValidation(t *testing.T) {
 	t.Run("CheckAndSetDefaults succeeds with valid version", func(t *testing.T) {
 		cfg := CacheConfig{
 			Version:    "2025-12-15",
-			AutoUpdate: &AutoUpdateConfig{DisableAutoUpdate: true},
+			AutoUpdate: &AutoUpdateConfig{Disabled: true},
 		}
 
 		err := cfg.CheckAndSetDefaults()
