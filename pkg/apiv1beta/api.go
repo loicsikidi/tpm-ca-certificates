@@ -92,10 +92,11 @@ func SetHTTPClient(client *http.Client) {
 //	        Interval: 6 * time.Hour,
 //	    },
 //	})
-func GetTrustedBundle(ctx context.Context, cfg GetConfig) (TrustedBundle, error) {
+func GetTrustedBundle(ctx context.Context, optionalCfg ...GetConfig) (TrustedBundle, error) {
 	ctx, span := observability.StartSpan(ctx, "tpmtb.GetTrustedBundle")
 	defer span.End()
 
+	cfg := goutils.OptionalArg(optionalCfg)
 	if err := cfg.CheckAndSetDefaults(); err != nil {
 		observability.RecordError(span, err)
 		return nil, fmt.Errorf("invalid config: %w", err)
@@ -210,10 +211,11 @@ func GetTrustedBundle(ctx context.Context, cfg GetConfig) (TrustedBundle, error)
 //	    Checksum:          checksumData,
 //	    ChecksumSignature: checksumSigData,
 //	})
-func VerifyTrustedBundle(ctx context.Context, cfg VerifyConfig) (*VerifyResult, error) {
+func VerifyTrustedBundle(ctx context.Context, optionalCfg ...VerifyConfig) (*VerifyResult, error) {
 	ctx, span := observability.StartSpan(ctx, "tpmtb.VerifyTrustedBundle")
 	defer span.End()
 
+	cfg := goutils.OptionalArg(optionalCfg)
 	if err := cfg.CheckAndSetDefaults(); err != nil {
 		observability.RecordError(span, err)
 		return nil, fmt.Errorf("invalid config: %w", err)
@@ -345,7 +347,8 @@ func (sr *SaveResponse) Persist(ctx context.Context, optionalOutputDir ...string
 //	    Date:      "2025-12-05",
 //	    VendorIDs: []apiv1beta.VendorID{apiv1beta.IFX, apiv1beta.NTC},
 //	})
-func SaveTrustedBundle(ctx context.Context, cfg SaveConfig) (*SaveResponse, error) {
+func SaveTrustedBundle(ctx context.Context, optionalCfg ...SaveConfig) (*SaveResponse, error) {
+	cfg := goutils.OptionalArg(optionalCfg)
 	if err := cfg.CheckAndSetDefaults(); err != nil {
 		return nil, fmt.Errorf("invalid config: %w", err)
 	}
