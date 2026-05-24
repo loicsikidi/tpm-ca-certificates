@@ -136,6 +136,16 @@ vendors:
     - id: "NTZ"
       name: "Nationz"
       certificates:
+        - name: "Nations TPM ECC ROOT CA 001"
+          uri: "https://pki.nationstech.com/NSTPMEccRootCA001/NSTPMEccRootCA001.crt"
+          validation:
+            fingerprint:
+                sha256: "31:E7:A6:DE:95:99:1C:FC:CA:3E:7C:16:80:BE:3B:A9:6D:E8:B2:C4:BC:A7:2D:A1:07:2E:E6:99:DA:23:B2:D2"
+        - name: "Nations TPM RSA ROOT CA 001"
+          uri: "https://pki.nationstech.com/NSTPMRsaRootCA001/NSTPMRsaRootCA001.crt"
+          validation:
+            fingerprint:
+                sha256: "00:60:8B:41:4F:9C:52:2C:5D:30:36:6C:4B:75:16:81:C3:FD:10:B7:EA:00:27:E0:F3:87:77:42:C4:77:C5:A7"
         - name: "Nationz TPM Root CA"
           uri: "https://pki.nationz.com.cn/EkRootCA/EkRootCA.crt"
           allowHttpFallback: true
