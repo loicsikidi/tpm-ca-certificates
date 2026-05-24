@@ -33,6 +33,14 @@ vendors:
           validation:
             fingerprint:
                 sha256: "67:BD:24:72:A5:46:75:1C:AC:A5:F3:58:A7:8F:80:72:75:31:67:13:38:96:0A:9B:CF:DF:BE:6A:34:D0:C6:A1"
+    - id: "GOOG"
+      name: "Google"
+      certificates:
+        - name: "EK/AK CA Root"
+          uri: "https://privateca-content-62d71773-0000-21da-852e-f4f5e80d7778.storage.googleapis.com/032bf9d39db4fa06aade/ca.crt"
+          validation:
+            fingerprint:
+                sha256: "59:47:59:59:4B:9B:61:52:4F:6C:8E:F6:68:F7:17:7F:7B:90:66:BC:06:74:F2:F4:9F:E9:E0:52:BE:78:BE:B2"
     - id: "IFX"
       name: "Infineon"
       certificates:

@@ -7,6 +7,7 @@ This directory contains the evidence and documentation proving how the URLs for 
 | Vendor ID | Vendor Name | Documentation | Accessibility Score |
 |-----------|-------------|:-------------:|:-------------------:|
 | AMD | AMD | [README](AMD/) | C |
+| GOOG | Google | [README](GOOG/) | C |
 | INTC | Intel | [README](INTC/) | C |
 | IFX | Infineon | [README](IFX/) | A |
 | MSFT | Microsoft | [README](MSFT/) | C |
