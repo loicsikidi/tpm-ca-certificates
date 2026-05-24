@@ -637,6 +637,56 @@ vendors:
     - id: "NTZ"
       name: "Nationz"
       certificates:
+        - name: "Nations TPM ECC EK CA 001"
+          uri: "https://pki.nationstech.com/NSTPMEccEkCA001/NSTPMEccEkCA001.crt"
+          validation:
+            fingerprint:
+                sha256: "31:DD:08:E2:FB:F7:6A:DE:46:F8:20:99:D0:8C:5D:60:F0:CD:02:5D:7D:38:21:DD:28:39:6E:B4:1A:62:B9:B6"
+        - name: "Nations TPM ECC EK CA 002"
+          uri: "https://pki.nationstech.com/NSTPMEccEkCA002/NSTPMEccEkCA002.crt"
+          validation:
+            fingerprint:
+                sha256: "5F:D8:34:27:66:51:AE:E9:BC:32:02:13:9D:C3:F3:A1:80:DA:C1:F7:37:27:8B:09:18:E7:6C:DD:EF:92:1E:EB"
+        - name: "Nations TPM ECC EK CA 003"
+          uri: "https://pki.nationstech.com/NSTPMEccEkCA003/NSTPMEccEkCA003.crt"
+          validation:
+            fingerprint:
+                sha256: "8A:33:56:06:02:1F:44:1D:E5:78:E4:A7:DE:CE:B5:45:6C:89:58:00:42:40:C8:16:DB:41:5C:D3:72:B8:1F:89"
+        - name: "Nations TPM ECC EK CA 004"
+          uri: "https://pki.nationstech.com/NSTPMEccEkCA004/NSTPMEccEkCA004.crt"
+          validation:
+            fingerprint:
+                sha256: "6B:2E:24:2C:04:BA:93:75:D8:79:07:8D:4C:9F:24:70:24:5B:79:0A:3B:8F:1D:AE:67:3B:3A:BB:E1:DC:22:78"
+        - name: "Nations TPM ECC EK CA 005"
+          uri: "https://pki.nationstech.com/NSTPMEccEkCA005/NSTPMEccEkCA005.crt"
+          validation:
+            fingerprint:
+                sha256: "64:30:08:21:D6:28:E0:3F:22:2A:0D:2D:E6:96:08:D7:3E:16:A1:DD:43:B2:D8:A2:2C:DD:59:56:4B:4A:D3:93"
+        - name: "Nations TPM RSA EK CA 001"
+          uri: "https://pki.nationstech.com/NSTPMRsaEkCA001/NSTPMRsaEkCA001.crt"
+          validation:
+            fingerprint:
+                sha256: "3D:C1:E6:09:F8:20:3C:1C:27:02:65:00:07:1D:FA:2C:EE:3E:5C:B2:68:03:2A:A8:F0:66:98:C1:67:52:93:B1"
+        - name: "Nations TPM RSA EK CA 002"
+          uri: "https://pki.nationstech.com/NSTPMRsaEkCA002/NSTPMRsaEkCA002.crt"
+          validation:
+            fingerprint:
+                sha256: "79:7D:7C:66:A2:7E:0B:91:D4:59:8E:FF:F2:F5:F5:14:94:C5:07:F5:28:93:44:16:91:40:60:E6:51:B2:63:6B"
+        - name: "Nations TPM RSA EK CA 003"
+          uri: "https://pki.nationstech.com/NSTPMRsaEkCA003/NSTPMRsaEkCA003.crt"
+          validation:
+            fingerprint:
+                sha256: "0D:21:AB:A0:90:33:B0:53:A6:73:C6:42:A4:DC:43:77:38:5D:C8:D1:2A:F4:34:CC:78:4C:12:8B:34:A4:5A:32"
+        - name: "Nations TPM RSA EK CA 004"
+          uri: "https://pki.nationstech.com/NSTPMRsaEkCA004/NSTPMRsaEkCA004.crt"
+          validation:
+            fingerprint:
+                sha256: "BE:BA:61:A4:82:CD:F9:5D:60:5D:15:E3:5F:3B:80:63:27:CF:43:07:AF:BE:FE:19:FF:27:1D:8E:F6:1C:C1:57"
+        - name: "Nations TPM RSA EK CA 005"
+          uri: "https://pki.nationstech.com/NSTPMRsaEkCA005/NSTPMRsaEkCA005.crt"
+          validation:
+            fingerprint:
+                sha256: "23:D1:2C:54:3B:D8:18:29:26:49:BC:D8:7E:39:5F:2B:ED:6F:98:6A:63:8B:A1:4F:3A:1C:BB:2B:66:23:69:28"
         - name: "Nationz TPM Manufacturing CA 001"
           uri: "https://pki.nationz.com.cn/EkMfrCA001/EkMfrCA001.crt"
           allowHttpFallback: true

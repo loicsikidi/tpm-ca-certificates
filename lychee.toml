@@ -13,5 +13,7 @@ exclude = [
     '^https://www\.st\.com',
     '^https://software\.intel\.com',
     '^https://(.*\.)?github(usercontent)?\.(com|io)',
+    '^https://pki\.nationstech\.com/NSTPMEccEkCA%7B001-005%7D/',
+    '^https://pki\.nationstech\.com/NSTPMRsaEkCA%7B001-005%7D/',
     'http://localhost:16686',
 ]
