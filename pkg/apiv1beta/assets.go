@@ -18,6 +18,11 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+const (
+	// PredicateTypeSLSAProvenance is the predicate type for SLSA provenance attestations.
+	PredicateTypeSLSAProvenance = "https://slsa.dev/provenance/v1"
+)
+
 var (
 	ErrIncompleteCache = fmt.Errorf("incomplete cache: missing verification assets")
 )
@@ -315,6 +320,25 @@ func downloadMissingBundles(ctx context.Context, client *github.HTTPClient, cfg 
 	return nil
 }
 
+// isProvenanceAttestation checks if the given attestation is a SLSA provenance attestation.
+func isProvenanceAttestation(att *github.Attestation) bool {
+	if att == nil || att.Bundle == nil {
+		return false
+	}
+
+	envelope, err := att.Bundle.Envelope()
+	if err != nil {
+		return false
+	}
+
+	statement, err := envelope.Statement()
+	if err != nil {
+		return false
+	}
+
+	return statement.PredicateType == PredicateTypeSLSAProvenance
+}
+
 // downloadProvenance downloads and returns the provenance attestation for the given bundle.
 func downloadProvenance(ctx context.Context, client *github.HTTPClient, cfg assetsConfig, rootBundleData []byte) ([]byte, error) {
 	if len(rootBundleData) == 0 {
@@ -330,7 +354,20 @@ func downloadProvenance(ctx context.Context, client *github.HTTPClient, cfg asse
 		return nil, fmt.Errorf("no attestations found for digest %s", bundleDigest)
 	}
 
-	provenanceJSON, err := json.Marshal(attestations[0].Bundle)
+	// Filter for SLSA provenance attestations
+	var provenanceAttestation *github.Attestation
+	for _, att := range attestations {
+		if isProvenanceAttestation(att) {
+			provenanceAttestation = att
+			break
+		}
+	}
+
+	if provenanceAttestation == nil {
+		return nil, fmt.Errorf("no SLSA provenance attestation found for digest %s", bundleDigest)
+	}
+
+	provenanceJSON, err := json.Marshal(provenanceAttestation.Bundle)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal provenance: %w", err)
 	}
