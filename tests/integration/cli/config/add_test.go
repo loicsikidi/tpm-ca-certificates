@@ -276,6 +276,10 @@ func TestInsertCertificateAlphabetically(t *testing.T) {
 }
 
 func TestHashAlgorithmValidation(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test that downloads certificates from remote URLs")
+	}
+
 	tests := []struct {
 		name         string
 		hashAlgo     string
