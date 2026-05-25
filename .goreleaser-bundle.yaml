@@ -49,7 +49,7 @@ release:
     > `tpmtb` is able to verify Github attestation signatures and Cosign keyless signatures natively (no need to install Cosign or gh).
 
     > [!TIP]
-    > Make sure to use **`tpmtb >= v0.5.0`** to support intermediate bundle verification.
+    > Make sure to use **`tpmtb >= v0.11.2`**.
 
     ```bash
     tpmtb bundle verify tpm-ca-certificates.pem
