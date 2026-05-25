@@ -61,7 +61,7 @@ func loadAttestationFromFile(t *testing.T, path string) *github.Attestation {
 
 	bundleData, err := fsutil.ReadFile(path)
 	if err != nil {
-		t.Skipf("test file not found: %v", err)
+		t.Fatalf("test file not found: %v", err)
 	}
 
 	var bundle sigstoreBundle.Bundle
