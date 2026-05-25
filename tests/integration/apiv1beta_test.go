@@ -322,6 +322,37 @@ func TestGetTrustedBundle(t *testing.T) {
 		}
 	})
 
+	t.Run("fetch 2026-05-24 with multiple attestations selects SLSA provenance", func(t *testing.T) {
+		t.Parallel()
+		// Release 2026-05-24 introduced immutable releases, which creates 2 attestations:
+		// - SLSA provenance (CI/CD)
+		// - GitHub Release attestation
+		// This test ensures GetTrustedBundle correctly selects the SLSA provenance.
+		cfg := apiv1beta.GetConfig{
+			Date: "2026-05-24",
+			AutoUpdate: apiv1beta.AutoUpdateConfig{
+				Disabled: true,
+			},
+			CachePath: t.TempDir(),
+		}
+
+		tb, err := apiv1beta.GetTrustedBundle(t.Context(), cfg)
+		if err != nil {
+			t.Fatalf("GetTrustedBundle() error = %v", err)
+		}
+		defer tb.Stop()
+
+		metadata := tb.GetRootMetadata()
+		if metadata.Date != "2026-05-24" {
+			t.Errorf("Expected date '2026-05-24', got %q", metadata.Date)
+		}
+
+		certPool := tb.GetRootCertPool()
+		if certPool == nil {
+			t.Fatal("Expected cert pool, got nil - verification likely failed")
+		}
+	})
+
 	t.Run("auto-update refreshes to newer version", func(t *testing.T) {
 		// Start with an older version (2025-12-05)
 		cfg := apiv1beta.GetConfig{
