@@ -112,7 +112,7 @@ Now you can use `tpm-ca-certificates.pem` as the trusted root certificate bundle
 
 ## Documentation
 
-Go to [documentation index](docs/README.md) to explore concepts, guides, and specifications.
+The [companion blog series](https://words.lsikidi.com/tags/tpm-ca-certificates/) is a great starting point to understand the motivation and design decisions. If you want to dive deeper into the technical details, the [documentation index](docs/README.md) provides a comprehensive collection of guides, specifications, and references to explore.
 
 ## Tracing
 
