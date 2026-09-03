@@ -12,8 +12,9 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    # due to: "github.com/sigstore/rekor-tiles/v2@v2.3.0 requires go >= 1.25.8"
-    continue-on-error: ${{ matrix.go.go-version-file == 'go.mod' && matrix.deps == 'latest' }}
+    # Note: latest dependencies require a recent version of Go.
+    # continue-on-error: ${{ matrix.go.go-version-file == 'go.mod' && matrix.deps == 'latest' }}
+    continue-on-error: ${{ matrix.deps == 'latest' }}
     strategy:
       fail-fast: false
       matrix:
