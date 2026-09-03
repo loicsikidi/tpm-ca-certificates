@@ -22,7 +22,7 @@ func TestContainsCertificate(t *testing.T) {
 			certs: []config.Certificate{},
 			cert: config.Certificate{
 				Name: "Test Cert",
-				URL:  "https://example.com/cert1.crt",
+				URI:  "https://example.com/cert1.crt",
 				Validation: config.Validation{
 					Fingerprint: *config.NewFingerprint(fingerprint.SHA256, "abc123"),
 				},
@@ -34,7 +34,7 @@ func TestContainsCertificate(t *testing.T) {
 			certs: []config.Certificate{
 				{
 					Name: "Test Cert",
-					URL:  "https://example.com/cert1.crt",
+					URI:  "https://example.com/cert1.crt",
 					Validation: config.Validation{
 						Fingerprint: *config.NewFingerprint(fingerprint.SHA256, "abc123"),
 					},
@@ -42,7 +42,7 @@ func TestContainsCertificate(t *testing.T) {
 			},
 			cert: config.Certificate{
 				Name: "Test Cert",
-				URL:  "https://example.com/cert2.crt",
+				URI:  "https://example.com/cert2.crt",
 				Validation: config.Validation{
 					Fingerprint: *config.NewFingerprint(fingerprint.SHA256, "def456"),
 				},
@@ -54,7 +54,7 @@ func TestContainsCertificate(t *testing.T) {
 			certs: []config.Certificate{
 				{
 					Name: "Cert A",
-					URL:  "https://example.com/cert1.crt",
+					URI:  "https://example.com/cert1.crt",
 					Validation: config.Validation{
 						Fingerprint: *config.NewFingerprint(fingerprint.SHA256, "abc123"),
 					},
@@ -62,7 +62,7 @@ func TestContainsCertificate(t *testing.T) {
 			},
 			cert: config.Certificate{
 				Name: "Cert B",
-				URL:  "https://example.com/cert1.crt",
+				URI:  "https://example.com/cert1.crt",
 				Validation: config.Validation{
 					Fingerprint: *config.NewFingerprint(fingerprint.SHA256, "def456"),
 				},
@@ -74,7 +74,7 @@ func TestContainsCertificate(t *testing.T) {
 			certs: []config.Certificate{
 				{
 					Name: "Cert A",
-					URL:  "https://example.com/cert1.crt",
+					URI:  "https://example.com/cert1.crt",
 					Validation: config.Validation{
 						Fingerprint: *config.NewFingerprint(fingerprint.SHA256, "abc123"),
 					},
@@ -82,7 +82,7 @@ func TestContainsCertificate(t *testing.T) {
 			},
 			cert: config.Certificate{
 				Name: "Cert B",
-				URL:  "https://example.com/cert2.crt",
+				URI:  "https://example.com/cert2.crt",
 				Validation: config.Validation{
 					Fingerprint: *config.NewFingerprint(fingerprint.SHA256, "abc123"),
 				},
@@ -94,7 +94,7 @@ func TestContainsCertificate(t *testing.T) {
 			certs: []config.Certificate{
 				{
 					Name: "Cert A",
-					URL:  "https://example.com/cert1.crt",
+					URI:  "https://example.com/cert1.crt",
 					Validation: config.Validation{
 						Fingerprint: *config.NewFingerprint(fingerprint.SHA256, "abc123"),
 					},
@@ -102,7 +102,7 @@ func TestContainsCertificate(t *testing.T) {
 			},
 			cert: config.Certificate{
 				Name: "Cert B",
-				URL:  "https://example.com/cert2.crt",
+				URI:  "https://example.com/cert2.crt",
 				Validation: config.Validation{
 					Fingerprint: *config.NewFingerprint(fingerprint.SHA256, "def456"),
 				},
@@ -114,21 +114,21 @@ func TestContainsCertificate(t *testing.T) {
 			certs: []config.Certificate{
 				{
 					Name: "Cert A",
-					URL:  "https://example.com/cert1.crt",
+					URI:  "https://example.com/cert1.crt",
 					Validation: config.Validation{
 						Fingerprint: *config.NewFingerprint(fingerprint.SHA256, "abc123"),
 					},
 				},
 				{
 					Name: "Target Cert",
-					URL:  "https://example.com/cert2.crt",
+					URI:  "https://example.com/cert2.crt",
 					Validation: config.Validation{
 						Fingerprint: *config.NewFingerprint(fingerprint.SHA256, "target"),
 					},
 				},
 				{
 					Name: "Cert C",
-					URL:  "https://example.com/cert3.crt",
+					URI:  "https://example.com/cert3.crt",
 					Validation: config.Validation{
 						Fingerprint: *config.NewFingerprint(fingerprint.SHA256, "ghi789"),
 					},
@@ -136,7 +136,7 @@ func TestContainsCertificate(t *testing.T) {
 			},
 			cert: config.Certificate{
 				Name: "Target Cert",
-				URL:  "https://example.com/different.crt",
+				URI:  "https://example.com/different.crt",
 				Validation: config.Validation{
 					Fingerprint: *config.NewFingerprint(fingerprint.SHA256, "different"),
 				},
@@ -178,7 +178,7 @@ func TestCheckCertificate(t *testing.T) {
 			certs: []config.Certificate{
 				{
 					Name: "Existing Cert",
-					URL:  "https://example.com/cert1.crt",
+					URI:  "https://example.com/cert1.crt",
 					Validation: config.Validation{
 						Fingerprint: *config.NewFingerprint(fingerprint.SHA256, fp1SHA256),
 					},
