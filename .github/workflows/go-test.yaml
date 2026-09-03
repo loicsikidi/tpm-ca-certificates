@@ -12,7 +12,7 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    # note: latest deps requires a recent version of Go"
+    # Note: latest dependencies require a recent version of Go.
     # continue-on-error: ${{ matrix.go.go-version-file == 'go.mod' && matrix.deps == 'latest' }}
     continue-on-error: ${{ matrix.deps == 'latest' }}
     strategy:
